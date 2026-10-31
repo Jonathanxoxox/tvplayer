@@ -1369,6 +1369,19 @@
 1	technical	app/src/main/java/tv/own/owntv/launcher/LauncherTiles.kt	launcher_logos
 1	technical	app/src/main/java/tv/own/owntv/launcher/LauncherTiles.kt	launcher_tiles
 1	technical	app/src/main/java/tv/own/owntv/launcher/LauncherTiles.kt	–
+1	uri	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	categories
+1	uri	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	category
+1	uri	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	channels
+2	protocol	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	id
+1	uri	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	limit
+1	protocol	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	link
+1	protocol	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	logo
+2	protocol	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	name
+1	protocol	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	now_end
+1	protocol	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	now_start
+1	protocol	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	now_title
+1	uri	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	recent
+2	protocol	app/src/main/java/tv/own/owntv/launcher/MayoHomeProvider.kt	source_id
 1	log	app/src/main/java/tv/own/owntv/launcher/RecentRowWatcher.kt	LauncherRows
 1	log	app/src/main/java/tv/own/owntv/launcher/RecentRowWatcher.kt	recent row not decorated
 1	log	app/src/main/java/tv/own/owntv/launcher/RecentRowWatcher.kt	recent row watcher not registered

@@ -75,6 +75,13 @@
             android:authorities="${applicationId}.tiles"
             android:exported="true" />
 
+        <!-- Kategorien, Sender und zuletzt gesehene Sender für Mayo Home (den eigenen Launcher), siehe
+             MayoHomeProvider. Nur Namen, Logos, laufende Sendung und Abspiel-Link, keine Stream-Adressen. -->
+        <provider
+            android:name="tv.own.owntv.launcher.MayoHomeProvider"
+            android:authorities="${applicationId}.home"
+            android:exported="true" />
+
         <!-- Puts the launcher rows up after a reboot and when the launcher asks for them. -->
         <receiver
             android:name="tv.own.owntv.launcher.LauncherRowsReceiver"
