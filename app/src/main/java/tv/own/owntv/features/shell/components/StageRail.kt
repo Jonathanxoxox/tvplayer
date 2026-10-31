@@ -203,10 +203,12 @@ fun StageRail(
                 modifier = (if (focusSection == MainSection.SEARCH) Modifier.focusRequester(selectedItemFocusRequester) else Modifier)
                     .focusProperties { canFocus = itemsFocusable() },
             )
-            // Beside the guide the items start on its first channel row, so menu, groups and guide begin on
-            // one line (30 Oct 2026); elsewhere they sit a little above the middle as before. The logo stays on top.
-            val itemsTop = StageRailOpen.itemsTop
-            if (itemsTop != null) Spacer(Modifier.height((itemsTop - RailItemsOffset).coerceAtLeast(0.mpx))) else Spacer(Modifier.weight(0.55f))
+            // Beside the guide the first section is centred on its first channel row, so menu, groups and guide
+            // begin on one line (30 Oct 2026; by the middle since 31 Oct: the rows are not equally high); elsewhere
+            // they sit a little above the middle as before. The logo stays on top.
+            val itemsCentre = StageRailOpen.itemsCentre
+            if (itemsCentre != null) Spacer(Modifier.height((itemsCentre - RailItemHeight / 2 - RailItemsOffset).coerceAtLeast(0.mpx)))
+            else Spacer(Modifier.weight(0.55f))
             items.forEach { section ->
                 RailItem(
                     icon = section.stageIcon,
@@ -243,6 +245,9 @@ private val StripWidth = 110.mpx
  *  Search under it (68) and the gaps between them. */
 private val RailItemsOffset = (40 + 64 + 8 + 68 + 8 + 8).mpx
 
+/** A menu item's height, open (at least) or as the strip's square. */
+private val RailItemHeight = 68.mpx
+
 /** What every screen leaves free at its left edge for the resting icon strip. */
 val StageRailStripWidth = StripWidth
 
@@ -257,8 +262,8 @@ object StageRailOpen {
     var fullPage by mutableStateOf(false)
     /** That page holds focus: the strip steps aside as for the guide. ◀ brings it back. */
     var fullPageFocused by mutableStateOf(false)
-    /** Where a page wants the menu's items to begin (the guide: its first channel row); null = the menu's own place. */
-    var itemsTop by mutableStateOf<androidx.compose.ui.unit.Dp?>(null)
+    /** Where a page wants the menu's first section centred (the guide: on its first channel row); null = the menu's own place. */
+    var itemsCentre by mutableStateOf<androidx.compose.ui.unit.Dp?>(null)
 }
 
 /**
@@ -327,7 +332,7 @@ private fun RailItem(
         onClick = onClick,
         radius = r,
         idle = if (active) Modifier.background(Color.White.copy(alpha = 0.08f), RoundedCornerShape(r)) else Modifier,
-        modifier = modifier.then(if (expanded) Modifier.fillMaxWidth().heightIn(min = 68.mpx) else Modifier.size(68.mpx)),
+        modifier = modifier.then(if (expanded) Modifier.fillMaxWidth().heightIn(min = RailItemHeight) else Modifier.size(RailItemHeight)),
         contentAlignment = if (expanded) Alignment.CenterStart else Alignment.Center,
     ) { focused ->
         val tint = if (focused) a.onAccent else Color.White

@@ -435,6 +435,8 @@ internal fun LiveCategories(
     searchPlaceholder: String? = null,
     /** ▶ leaves the search field for the content even with text in it: the guide shows its results there. */
     searchLeavesRight: Boolean = false,
+    /** Between the search field and the first row; null = the usual 14 (sheet) / 16 (column). */
+    searchGap: androidx.compose.ui.unit.Dp? = null,
 ) {
     var localQuery by remember { mutableStateOf("") }
     val query = if (showSearch) searchQuery ?: localQuery else ""
@@ -542,7 +544,7 @@ internal fun LiveCategories(
                     onEditingChange = onSearchEditingChange,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = if (sheet) 8.mpx else 0.mpx, end = if (sheet) 8.mpx else 0.mpx, bottom = if (sheet) 14.mpx else 16.mpx)
+                        .padding(start = if (sheet) 8.mpx else 0.mpx, end = if (sheet) 8.mpx else 0.mpx, bottom = searchGap ?: if (sheet) 14.mpx else 16.mpx)
                         .focusRequester(searchFocus)
                         .then(if (query.isEmpty() || searchLeavesRight) rightKey else Modifier),
                     height = if (sheet) 54.mpx else 48.mpx,

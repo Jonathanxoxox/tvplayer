@@ -637,8 +637,8 @@ fun EpgScreen(
         LaunchedEffect(showGroups) { tv.own.owntv.features.shell.components.StageRailOpen.guideGroups = showGroups }
         // Menu and groups begin on the first channel row, so the three columns start on one line (30 Oct 2026).
         DisposableEffect(Unit) {
-            tv.own.owntv.features.shell.components.StageRailOpen.itemsTop = GuideRowsTop
-            onDispose { tv.own.owntv.features.shell.components.StageRailOpen.itemsTop = null }
+            tv.own.owntv.features.shell.components.StageRailOpen.itemsCentre = GuideFirstRowCentre
+            onDispose { tv.own.owntv.features.shell.components.StageRailOpen.itemsCentre = null }
         }
         DisposableEffect(Unit) { onDispose { tv.own.owntv.features.shell.components.StageRailOpen.guideGroups = false; tv.own.owntv.features.shell.components.StageRailOpen.guideFocused = false } }
         val groupsShift = androidx.compose.animation.core.animateDpAsState(if (showGroups) groupsW else 0.mpx, tv.own.owntv.ui.theme.stageSlide())
@@ -884,6 +884,7 @@ fun EpgScreen(
                 onSearchQueryChange = { vm.setCategoryQuery(it); vm.setQuery(it) },
                 searchPlaceholder = stringResource(R.string.tvplayer_guide_search),
                 searchLeavesRight = true,
+                searchGap = GroupsSearchGap,
                 entries = groupEntries,
                 selectedIndex = railItems.indexOfFirst { it.key == (categoryKey ?: LiveKey.All) }.coerceAtLeast(0),
                 groupsHeading = groupsHeading,
@@ -948,8 +949,8 @@ fun EpgScreen(
                 focusRowIndex = groupsFocusIndex
                     ?: if (groupsEnter) railItems.indexOfFirst { it.key == (categoryKey ?: LiveKey.All) }.coerceAtLeast(0) else null,
                 modifier = Modifier
-                    // The search field on the ruler's line, the groups from the first channel row (see [GuideRowsTop]).
-                    .padding(start = fx(24), end = fx(16), top = GuideRowsTop - GuideRulerToRows, bottom = 24.mpx)
+                    // The search field on the ruler's line, the first group centred on the first channel row (see [GroupsTop]).
+                    .padding(start = fx(24), end = fx(16), top = GroupsTop, bottom = 24.mpx)
                     .width(groupsW - fx(40))
                     .fillMaxHeight()
                     .graphicsLayer {
@@ -1362,5 +1363,15 @@ private const val GUIDE_PAGE_ROWS = 7
  */
 internal val GuideRowsTop = (40 + 240 + 18 + 48).mpx
 
-/** The ruler's line above the rows, where the groups' search field stands. */
-private val GuideRulerToRows = 48.mpx
+/**
+ * The middle of the guide's first channel row. The menu's first section and the first group are centred on it,
+ * not started at its top: their rows are 68 and 52 high against the guide's 56, so started at the top the
+ * group's count sat 18 below the row number and the menu 6 below (Jonathan, 31 Oct 2026).
+ */
+internal val GuideFirstRowCentre = GuideRowsTop + GuideGridDefaults.RowHeight / 2
+
+/** Between the groups' search field and the first group: small, so the field stays on the ruler's line. */
+private val GroupsSearchGap = 8.mpx
+
+/** The groups column's top: the list's padding (4), the search field (48) and the gap above the first group (52, centred). */
+private val GroupsTop = GuideFirstRowCentre - 26.mpx - GroupsSearchGap - 48.mpx - 4.mpx
