@@ -35,6 +35,7 @@
         <item quantity="other">noch %1$d Min.</item>
     </plurals>
     <string name="tvplayer_card_settings" translatable="false">Einstellungen</string>
+    <string name="tvplayer_guide_search" translatable="false">Gruppe, Sender, Sendung</string>
     <string name="tvplayer_card_next" translatable="false">Danach</string>
     <string name="tvplayer_font_manrope" translatable="false">Manrope</string>
     <string name="content_search_channels">Search channels\u2026</string>

@@ -988,17 +988,18 @@ fun PlayerHud(
         // Next-episode countdown card (VOD queue only) — surfaces the automatic advance with Play now /
         // Cancel. Shown independently of the main controls so it appears even after they auto-hide.
         if (showNextCard) {
+            val nextUnits = rememberScreenUnits()
             NextEpisodeCard(
                 seconds = { ((msToAdvance() + 999L) / 1000L).toInt().coerceIn(0, 30) },
                 title = nextUpTitle ?: "",
                 playFocus = nextFocus,
                 onPlayNow = { autoNextDismissed = true; player.next() },
                 onCancel = { autoNextDismissed = true; player.cancelAutoNext() },
-                // Above the film's band while it is up, under the clock; otherwise where it always sat.
+                // In the bottom corner, on the band's margins; while the film's band is up, under the clock.
                 modifier = if (vodBandUp) {
-                    Modifier.align(Alignment.TopEnd).padding(end = 28.dp, top = 96.dp)
+                    Modifier.align(Alignment.TopEnd).padding(end = nextUnits.dp(72), top = nextUnits.dp(110))
                 } else {
-                    Modifier.align(Alignment.BottomEnd).padding(end = 28.dp, bottom = 120.dp)
+                    Modifier.align(Alignment.BottomEnd).padding(end = nextUnits.dp(72), bottom = nextUnits.dp(72))
                 },
             )
         }

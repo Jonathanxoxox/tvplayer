@@ -431,6 +431,10 @@ internal fun LiveCategories(
     onSearchEditingChange: (Boolean) -> Unit = {},
     /** False = no search field on top (Filme / Serien: their one search is above the titles). */
     showSearch: Boolean = true,
+    /** The search field's placeholder; the guide's also finds channels and what runs on them. */
+    searchPlaceholder: String? = null,
+    /** ▶ leaves the search field for the content even with text in it: the guide shows its results there. */
+    searchLeavesRight: Boolean = false,
 ) {
     var localQuery by remember { mutableStateOf("") }
     val query = if (showSearch) searchQuery ?: localQuery else ""
@@ -534,13 +538,13 @@ internal fun LiveCategories(
                 StageSearchField(
                     query = query,
                     onQueryChange = setQuery,
-                    placeholder = stringResource(R.string.content_search_categories).trimEnd('…'),
+                    placeholder = searchPlaceholder ?: stringResource(R.string.content_search_categories).trimEnd('…'),
                     onEditingChange = onSearchEditingChange,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(start = if (sheet) 8.mpx else 0.mpx, end = if (sheet) 8.mpx else 0.mpx, bottom = if (sheet) 14.mpx else 16.mpx)
                         .focusRequester(searchFocus)
-                        .then(if (query.isEmpty()) rightKey else Modifier),
+                        .then(if (query.isEmpty() || searchLeavesRight) rightKey else Modifier),
                     height = if (sheet) 54.mpx else 48.mpx,
                     radius = if (sheet) 16.mpx else 15.mpx,
                     horizontalPadding = if (sheet) 16.mpx else 18.mpx,

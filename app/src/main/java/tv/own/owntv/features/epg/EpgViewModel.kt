@@ -123,6 +123,8 @@ class EpgViewModel(
     private val _categoryQuery = kotlinx.coroutines.flow.MutableStateFlow("")
     val categoryQuery: kotlinx.coroutines.flow.StateFlow<String> = _categoryQuery
     fun setCategoryQuery(query: String) { _categoryQuery.value = query }
+    /** The groups' search emptied, and the guide's channels with it. */
+    fun clearSearch() { _categoryQuery.value = ""; _query.value = "" }
 
     /** The one candidate set the picker and both auto-match paths read — see [GuideCandidates]. */
     private val guideCandidates = GuideCandidates(epgDao)
@@ -912,12 +914,15 @@ class EpgViewModel(
         // The channel table is read once and reused while only the category moves: a switch used to read up
         // to 20,000 channels again, twice on a playlist without XMLTV (Jonathan, 27 Oct 2026: switching groups
         // was slow). Anything else that reloads — opening the guide, a sort, a hidden channel — reads afresh.
-        val baseKey = listOf(pid, playlistIds, ids, q, showAll)
+        // The search is applied to the base rather than read with it, so typing does not read the channel table
+        // again for every letter.
+        val baseKey = listOf(pid, playlistIds, ids, showAll)
         val reusedBase = base?.takeIf { it.key == baseKey }
-        val b = reusedBase ?: buildBase(baseKey, pid, playlistIds, ids, q, showAll).also { base = it }
+        val b = reusedBase ?: buildBase(baseKey, pid, playlistIds, ids, "", showAll).also { base = it }
         loadedHidden = b.cust.hiddenItems.keys to b.cust.hiddenCategories
-        val category = _categoryFilter.value
-        val channels = channelsFor(b, category)
+        // The search's results belong to no category: a group picked meanwhile waits for its own list.
+        val category = _categoryFilter.value.takeIf { q.isBlank() }
+        val channels = if (q.isBlank()) channelsFor(b, category) else searchChannels(b, q, now)
 
         val stored = epgDao.countForSources(ids)
 
@@ -1045,6 +1050,26 @@ class EpgViewModel(
             SettingsRepository.GuideSort.FAVORITES -> matched.sortedWith(compareByDescending<ChannelEntity> { it.id in b.favoriteIds }.then(byProvider))
             // LIVE_TV, the old default, is the provider's order too (Channel number was the same thing).
             SettingsRepository.GuideSort.LIVE_TV -> matched.sortedWith(byProvider)
+        }
+    }
+
+    /**
+     * The groups' search in the guide: every channel, whatever group is open, whose name holds [q] or on which
+     * a programme with [q] in its title runs now. Searching "Champions League" lists the channels showing it
+     * (Jonathan, 30 Oct 2026). The stored guide is asked, and the rows already read cover the provider's own EPG.
+     */
+    private suspend fun searchChannels(b: GuideBase, q: String, now: Long): List<ChannelEntity> {
+        val all = channelsFor(b, tv.own.owntv.core.live.LiveKey.All)
+        // One letter would match nearly every title: programmes only from two letters on.
+        val airing: Set<String> = if (q.length < 2) emptySet() else runCatching {
+            epgDao.searchTitles(q, now, now, LIVE_SEARCH_LIMIT).mapTo(HashSet()) { it.epgChannelId.trim().lowercase() }
+        }.getOrDefault(emptySet())
+        return withContext(Dispatchers.Default) {
+            all.filter { ch ->
+                ch.name.contains(q, ignoreCase = true) ||
+                    ch.epgChannelId?.trim()?.lowercase()?.let { it in airing } == true ||
+                    cachedProgrammes(ch)?.any { it.startMs <= now && it.stopMs > now && it.title.contains(q, ignoreCase = true) } == true
+            }
         }
     }
 
@@ -1208,6 +1233,8 @@ class EpgViewModel(
         private const val CATCHUP_LOOKBACK_CAP_MS = 7L * 24 * 60 * 60 * 1000
         // Generous safety bound only (rows load lazily, so this is about the channel list itself).
         private const val MAX_CHANNELS = 20_000
+        /** How many airing programmes the guide's search reads at most. */
+        private const val LIVE_SEARCH_LIMIT = 1_000
         // Cap the candidate set the bulk matcher scans against (keeps the O(channels×candidates) scan bounded).
         // Bound values sent to a single `IN (...)`. SQLite's parameter ceiling is 999 on older
         // Android; core chunks its own bulk lookups at the same size.

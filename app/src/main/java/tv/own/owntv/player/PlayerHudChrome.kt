@@ -11,6 +11,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -547,9 +548,13 @@ private fun VodTimeline(player: PlaybackEngine, position: () -> Long, duration: 
     }
 }
 
-/** Next-episode countdown card: "Next episode in Ns" + title, with Play now / Cancel. Play now advances
- *  immediately; Cancel suppresses the automatic advance for the current item. [seconds] is read inside,
- *  so the countdown redraws this card rather than the whole HUD. */
+/**
+ * The next episode, small in the corner as the classic players have it (Jonathan, 30 Oct 2026: the old card
+ * took too much of the picture): "Nächste Folge in N s" over its title, Jetzt abspielen and ✕ as small
+ * pills, and a thin line along the foot that runs down with the countdown. Play now advances at once; ✕
+ * keeps this episode from advancing by itself. [seconds] is read inside, so the countdown redraws this
+ * card rather than the whole HUD.
+ */
 @Composable
 internal fun NextEpisodeCard(
     seconds: () -> Int,
@@ -559,40 +564,56 @@ internal fun NextEpisodeCard(
     onCancel: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val u = rememberScreenUnits()
+    // The countdown as the card first saw it, so the line runs from full to empty.
+    val total = remember { seconds().coerceAtLeast(1) }
+    val shape = RoundedCornerShape(u.dp(18))
+    val accent = hudAccent
     Column(
         modifier = modifier
-            .widthIn(max = 360.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(hudShade(0.82f))
-            .padding(horizontal = 18.dp, vertical = 14.dp),
+            .width(u.dp(400))
+            .clip(shape)
+            .background(Color(0xFF04080A).copy(alpha = 0.78f))
+            .border(u.dp(1), Color.White.copy(alpha = 0.08f), shape)
+            .drawBehind {
+                val h = u.toPx(3)
+                val left = (seconds().toFloat() / total).coerceIn(0f, 1f)
+                drawRect(Color.White.copy(alpha = 0.1f), Offset(0f, size.height - h), Size(size.width, h))
+                drawRect(accent, Offset(0f, size.height - h), Size(size.width * left, h))
+            }
+            .padding(start = u.dp(22), end = u.dp(22), top = u.dp(16), bottom = u.dp(20)),
     ) {
         Text(
             stringResource(R.string.player_next_episode, seconds()),
-            style = tv.own.owntv.ui.theme.stageText(25, 600),
-            color = hudAccent,
-            fontWeight = FontWeight.Bold,
+            style = u.cardText(16, 600),
+            color = Color.White.copy(alpha = 0.62f),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
-        Spacer(Modifier.height(4.dp))
         Text(
             title,
-            style = tv.own.owntv.ui.theme.stageText(25, 500),
-            color = hudInk,
+            style = u.cardText(22, 500),
+            color = Color.White,
             maxLines = 1,
-            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = u.dp(4)),
         )
-        Spacer(Modifier.height(12.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.padding(top = u.dp(14)), horizontalArrangement = Arrangement.spacedBy(u.dp(10))) {
             tv.own.owntv.ui.stage.StageButton(
                 stringResource(R.string.player_play_now),
                 onClick = onPlayNow,
                 modifier = Modifier.focusRequester(playFocus),
                 icon = OwnTVIcon.PLAY,
-                tinted = true,
+                height = u.dp(46),
+                textSize = 17,
             )
             tv.own.owntv.ui.stage.StageButton(
-                stringResource(R.string.common_cancel),
+                null,
                 onClick = onCancel,
                 icon = OwnTVIcon.CLOSE,
+                round = true,
+                height = u.dp(46),
+                textSize = 17,
             )
         }
     }

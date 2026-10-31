@@ -72,9 +72,10 @@ enum class RailState {
     PINNED,
 }
 
-/** The menu order: Home on top (Jonathan's start page), then Search and TV (which opens as the guide), More last. */
+/** The menu order: Home on top (Jonathan's start page), then TV (which opens as the guide), More last. Search
+ *  stands apart above them, right under the logo. */
 private val StageRailOrder = listOf(
-    MainSection.HOME, MainSection.SEARCH, MainSection.LIVE_TV, MainSection.SPORTS,
+    MainSection.HOME, MainSection.LIVE_TV, MainSection.SPORTS,
     MainSection.MOVIES, MainSection.SERIES, MainSection.DOWNLOADS,
 )
 
@@ -124,7 +125,7 @@ fun StageRail(
         selected == MainSection.SEARCH || selected in visibleSections -> selected
         else -> StageRailOrder.firstOrNull { it in visibleSections } ?: MainSection.MORE
     }
-    val items = StageRailOrder.filter { it == MainSection.SEARCH || it in visibleSections }
+    val items = StageRailOrder.filter { it in visibleSections }
 
     // Opened over the page (Floating, or a widened Compact): the page slides aside ([rememberRailPush]),
     // bright as before, as in the classic IPTV player. Pages that add a column beside the menu read it.
@@ -192,6 +193,16 @@ fun StageRail(
             verticalArrangement = Arrangement.spacedBy(8.mpx),
         ) {
             MenuLogo(drawnOpen)
+            // Search right under the logo, apart from the sections (Jonathan, 30 Oct 2026: further up).
+            RailItem(
+                icon = MainSection.SEARCH.stageIcon,
+                label = stringResource(MainSection.SEARCH.labelRes),
+                expanded = drawnOpen,
+                active = selected == MainSection.SEARCH,
+                onClick = { onSelect(MainSection.SEARCH) },
+                modifier = (if (focusSection == MainSection.SEARCH) Modifier.focusRequester(selectedItemFocusRequester) else Modifier)
+                    .focusProperties { canFocus = itemsFocusable() },
+            )
             // Beside the guide the items start on its first channel row, so menu, groups and guide begin on
             // one line (30 Oct 2026); elsewhere they sit a little above the middle as before. The logo stays on top.
             val itemsTop = StageRailOpen.itemsTop
@@ -228,8 +239,9 @@ private val StripPanel = Color(0xFF0E4950)
 private val MenuWidth = 440.mpx
 private val StripWidth = 110.mpx
 
-/** Where the first item would start without a spacer: the menu's top padding, the logo (56 + 4 around) and two gaps. */
-private val RailItemsOffset = (40 + 64 + 8 + 8).mpx
+/** Where the first section would start without a spacer: the menu's top padding, the logo (56 + 4 around),
+ *  Search under it (68) and the gaps between them. */
+private val RailItemsOffset = (40 + 64 + 8 + 68 + 8 + 8).mpx
 
 /** What every screen leaves free at its left edge for the resting icon strip. */
 val StageRailStripWidth = StripWidth
