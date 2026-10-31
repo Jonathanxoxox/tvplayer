@@ -330,6 +330,14 @@ fun EpgScreen(
     // through the programmes. Without it, reaching the channel list meant ◀ past every programme.
     var inCellMode by remember { mutableStateOf(false) }
     BackHandler(enabled = inCellMode && gridHasFocus) { inCellMode = false }
+    // The axis keeps up with the clock: unless the programmes are being browsed, the half hour that is now
+    // stays at the left edge, as when the guide opens. It was set on opening only, so a guide left on for an
+    // evening (or waiting behind full screen) still started at 18:30 with now at its right edge, and the
+    // provider's rows, which begin with what is on, showed blanks before it (Jonathan, 31 Oct 2026).
+    LaunchedEffect(liveNow, inCellMode, timelinePx, state.windowStart) {
+        if (inCellMode || timelinePx <= 0 || state.channels.isEmpty()) return@LaunchedEffect
+        showTime(liveNow)
+    }
     // The programme the block on top shows and the buttons act on: the one under the cursor.
     var selected by remember { mutableStateOf<Pair<ChannelEntity, EpgProgrammeEntity?>?>(null) }
 

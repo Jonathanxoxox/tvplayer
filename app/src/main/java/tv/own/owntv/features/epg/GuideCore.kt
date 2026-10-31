@@ -192,6 +192,32 @@ internal fun ProgrammeStripCanvas(
                 drawText(time, topLeft = Offset(cx, lineTop))
             }
         }
+        // A stretch in view with nothing on, between or after the programmes (the provider's short guide
+        // begins with what is on now; a feed can stop or skip), says so as a quiet cell, as a row with nothing
+        // at all does, instead of a hole (Jonathan, 31 Oct 2026). The focused one is drawn above already.
+        if (drawnAny) {
+            val visTo = windowStart + ((scroll + viewW) / pxPerMin * 60_000f).toLong()
+            fun gap(from: Long, to: Long) {
+                if (focusTime != null && focusTime in from until to) return
+                val gx = ((from - windowStart) / 60_000f) * pxPerMin - scroll + 2 * px
+                val gw = ((to - from) / 60_000f) * pxPerMin - 4 * px
+                if (gw < 48 * px) return
+                drawRoundRect(ink.copy(alpha = 0.03f), Offset(gx, 0f), Size(gw, h), r)
+                val tx = maxOf(gx, 0f)
+                val textW = (gx + gw - tx - 28 * px).toInt()
+                if (textW <= 4) return
+                val label = measurer.measure(emptyText, emptyStyle.copy(color = dimColor), overflow = TextOverflow.Ellipsis, maxLines = 1, softWrap = false, constraints = Constraints(maxWidth = textW))
+                drawText(label, topLeft = Offset(tx + 14 * px, (h - label.size.height) / 2f))
+            }
+            var t = maxOf(windowStart, windowStart + (scroll / pxPerMin * 60_000f).toLong())
+            for (p in programmes) {
+                if (t >= visTo) break
+                if (p.stopMs <= t) continue
+                if (p.startMs > t) gap(t, minOf(p.startMs, visTo))
+                t = maxOf(t, p.stopMs)
+            }
+            if (t < visTo) gap(t, minOf(visTo, windowEnd))
+        }
         // Nothing on anywhere in view: say so, rather than a row that looks broken.
         if (!drawnAny) {
             drawRoundRect(ink.copy(alpha = 0.03f), Offset(3 * px, 0f), Size(viewW - 6 * px, h), r)
