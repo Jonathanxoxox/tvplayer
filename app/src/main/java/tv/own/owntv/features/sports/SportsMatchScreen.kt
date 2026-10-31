@@ -134,8 +134,14 @@ fun SportsMatchScreen(
     }
     // Focus follows the search: the tabs while there is no list (Find channels' button goes away while it
     // runs, and must not take focus with it), the first channel once there is one.
+    // Not while a channel plays full screen over the page: playing one records it in the sports settings, the
+    // search starts again (Searching, then Found), and the page took the focus from the player, so OK went to
+    // a channel row behind the picture instead of opening the channel's menu (Jonathan, 31 Oct 2026). Back
+    // from the player puts the focus here through the shell's way in (onEntryHook).
     LaunchedEffect(state.search::class, state.list.shown.isNotEmpty()) {
+        if (!active) return@LaunchedEffect
         kotlinx.coroutines.delay(60)
+        if (!active) return@LaunchedEffect
         runCatching { if (state.list.shown.isNotEmpty()) firstRow.requestFocus() else tabFocus.requestFocus() }
     }
 
