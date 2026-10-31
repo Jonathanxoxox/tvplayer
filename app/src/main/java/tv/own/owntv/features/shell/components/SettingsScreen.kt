@@ -379,9 +379,13 @@ fun SettingsScreen(
         videoRowKey = null
         selectedGroup = 0
     }
+    // Between the page and a sub-page the focused row goes with the screen: the focus waits out of sight
+    // meanwhile instead of lighting up the menu for a frame (see LocalParkFocus).
+    val parkFocus = LocalParkFocus.current
     // Opening a sub-screen the ordinary way cancels any pending Quick-shortcut return, or the Back
     // from it would aim at the shortcut instead of the row just used.
-    val open: (SettingsTab) -> Unit = { lastTab = it; deepReturnKey = null; videoRowKey = null; tab = it }
+    val open: (SettingsTab) -> Unit = { parkFocus(); lastTab = it; deepReturnKey = null; videoRowKey = null; tab = it }
+    val toRoot: () -> Unit = { parkFocus(); tab = SettingsTab.ROOT }
     LaunchedEffect(openEpgAdd) {
         if (openEpgAdd) { consumeEpgAdd = true; open(SettingsTab.EPG); onEpgAddConsumed() }
     }
@@ -389,33 +393,33 @@ fun SettingsScreen(
     // Sub-screens sit below the status cluster (StageContentTop), 6 dp in from the edges.
     val sub = modifier.padding(start = 6.dp, end = 6.dp, bottom = 6.dp, top = StageContentTop)
     // A full page's search hands over to Settings search, keyboard up.
-    val openSearch: () -> Unit = { lastTab = null; searchQuery = ""; searchMode = true; searchFromMore = false; searchAutoEdit = true; tab = SettingsTab.ROOT }
+    val openSearch: () -> Unit = { parkFocus(); lastTab = null; searchQuery = ""; searchMode = true; searchFromMore = false; searchAutoEdit = true; tab = SettingsTab.ROOT }
     if (tab != SettingsTab.ROOT) {
     CompositionLocalProvider(tv.own.owntv.features.settings.LocalSettingsSearch provides openSearch) {
     when (tab) {
-        SettingsTab.LANGUAGE -> { LanguageSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.SOURCES -> { ManageSourcesScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.EPG -> { tv.own.owntv.features.settings.EpgSourcesScreen(onBack = { tab = SettingsTab.ROOT; consumeEpgAdd = false }, modifier = modifier, startOnAdd = consumeEpgAdd) }
-        SettingsTab.BACKUP -> { BackupScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }
-        SettingsTab.LOCAL_SYNC -> { LocalSyncScreen(onBack = { tab = SettingsTab.ROOT }, modifier = sub) }
-        SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.HOME -> { HomeSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.NETWORK -> { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.DNS -> { tv.own.owntv.features.settings.DnsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.METADATA -> { tv.own.owntv.features.settings.MetadataSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.OPEN_SUBTITLES -> { tv.own.owntv.features.settings.OpenSubtitlesAccountScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.WEATHER -> { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-        SettingsTab.CONTENT_MENUS -> { tv.own.owntv.features.settings.ContentMenuSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-            SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-            SettingsTab.GUIDE_WIDTH -> { tv.own.owntv.features.settings.GuideWidthSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-            SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier) }
-            SettingsTab.SUBTITLE_STYLE -> tv.own.owntv.features.settings.SubtitleStylePage(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
-            SettingsTab.BROWSING -> tv.own.owntv.features.settings.BrowsingListsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
-            SettingsTab.SPORTS -> tv.own.owntv.features.sports.SportsSettingsScreen(onBack = { tab = SettingsTab.ROOT }, modifier = modifier)
+        SettingsTab.LANGUAGE -> { LanguageSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.SOURCES -> { ManageSourcesScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.EPG -> { tv.own.owntv.features.settings.EpgSourcesScreen(onBack = { toRoot(); consumeEpgAdd = false }, modifier = modifier, startOnAdd = consumeEpgAdd) }
+        SettingsTab.BACKUP -> { BackupScreen(onBack = { toRoot() }, modifier = sub) }
+        SettingsTab.LOCAL_SYNC -> { LocalSyncScreen(onBack = { toRoot() }, modifier = sub) }
+        SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.HOME -> { HomeSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.NETWORK -> { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.DNS -> { tv.own.owntv.features.settings.DnsSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.METADATA -> { tv.own.owntv.features.settings.MetadataSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.OPEN_SUBTITLES -> { tv.own.owntv.features.settings.OpenSubtitlesAccountScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.WEATHER -> { tv.own.owntv.features.settings.WeatherSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.CH_NAV -> { tv.own.owntv.features.settings.ChNavSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+        SettingsTab.CONTENT_MENUS -> { tv.own.owntv.features.settings.ContentMenuSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+            SettingsTab.PANEL_WIDTH -> { tv.own.owntv.features.settings.PanelWidthSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+            SettingsTab.GUIDE_WIDTH -> { tv.own.owntv.features.settings.GuideWidthSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+            SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
+            SettingsTab.SUBTITLE_STYLE -> tv.own.owntv.features.settings.SubtitleStylePage(onBack = { toRoot() }, modifier = modifier)
+            SettingsTab.BROWSING -> tv.own.owntv.features.settings.BrowsingListsSettingsScreen(onBack = { toRoot() }, modifier = modifier)
+            SettingsTab.SPORTS -> tv.own.owntv.features.sports.SportsSettingsScreen(onBack = { toRoot() }, modifier = modifier)
             SettingsTab.FONTS -> tv.own.owntv.features.settings.FontSettingsScreen(
                 current = fontCustomization, onSet = onSetFontCustomization, familyLabel = { fontFamilyLabel(it) },
-                onBack = { tab = SettingsTab.ROOT }, modifier = modifier,
+                onBack = { toRoot() }, modifier = modifier,
             )
             SettingsTab.ROOT -> Unit
     }

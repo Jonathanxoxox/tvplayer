@@ -1145,6 +1145,33 @@ fun PlayerHud(
         )
     }
 
+    // Out of line: one more piece of code in this function and ART refused to verify it at all (a
+    // VerifyError on start, 30 Oct 2026, as before with the control panel).
+    HudDialogs(
+        dialog = dialog, onClose = { dialog = HudDialog.NONE }, player = player,
+        onSearchSubtitles = onSearchSubtitles, onSelectLocalSubtitle = onSelectLocalSubtitle,
+        sleepProgrammeEndMs = sleepProgrammeEndMs,
+        jumpBackOptions = jumpBackOptions, jumpBackWindowSec = jumpBackWindowSec, onJumpBack = onJumpBack,
+    )
+}
+
+/** The player's dialogs (audio, subtitles, speed, zoom, quality, volume, sleep timer, go back to…). */
+@Composable
+private fun HudDialogs(
+    dialog: HudDialog,
+    onClose: () -> Unit,
+    player: PlaybackEngine,
+    onSearchSubtitles: (() -> Unit)?,
+    onSelectLocalSubtitle: (() -> Unit)?,
+    sleepProgrammeEndMs: (() -> Long?)?,
+    jumpBackOptions: (() -> List<Int>)?,
+    jumpBackWindowSec: (() -> Int)?,
+    onJumpBack: ((Int) -> Unit)?,
+) {
+    val speed by player.speed.collectAsStateWithLifecycle()
+    val zoomMode by player.zoomMode.collectAsStateWithLifecycle()
+    val audioDelayMs by player.audioDelayMs.collectAsStateWithLifecycle()
+    val audioDelayRemembered by player.audioDelayRemembered.collectAsStateWithLifecycle()
     when (dialog) {
         // Track lists are SNAPSHOT once when the dialog opens (re-polled only while still empty —
         // heavy HDR/DTS streams report their tracks late). Reading player.xxxTracks() directly in
@@ -1165,8 +1192,8 @@ fun PlayerHud(
             }
             TrackDialog(
                 stringResource(R.string.player_audio_track), audioTracks,
-                onSelect = { player.selectAudio(it.mpvId); dialog = HudDialog.NONE }, onOff = null,
-                onDismiss = { dialog = HudDialog.NONE },
+                onSelect = { player.selectAudio(it.mpvId); onClose() }, onOff = null,
+                onDismiss = { onClose() },
                 // A/V-sync nudge wherever the engine can actually shift audio: mpv, VOD *and* live (a live
                 // stream can arrive with the provider's own drift baked in), on mpv and ExoPlayer alike.
                 audioDelayMs = if (player.audioDelayAvailable()) audioDelayMs else null,
@@ -1187,11 +1214,11 @@ fun PlayerHud(
             val subDelay by player.subDelayMs.collectAsStateWithLifecycle()
             TrackDialog(
                 stringResource(R.string.player_subtitles), subTracks,
-                onSelect = { player.selectSubtitle(it.mpvId); dialog = HudDialog.NONE },
-                onOff = { player.disableSubtitles(); dialog = HudDialog.NONE },
-                onDismiss = { dialog = HudDialog.NONE },
-                onSearchSubtitles = onSearchSubtitles?.let { open -> { dialog = HudDialog.NONE; open() } },
-                onSelectLocalSubtitle = onSelectLocalSubtitle?.let { open -> { dialog = HudDialog.NONE; open() } },
+                onSelect = { player.selectSubtitle(it.mpvId); onClose() },
+                onOff = { player.disableSubtitles(); onClose() },
+                onDismiss = { onClose() },
+                onSearchSubtitles = onSearchSubtitles?.let { open -> { onClose(); open() } },
+                onSelectLocalSubtitle = onSelectLocalSubtitle?.let { open -> { onClose(); open() } },
                 // Subtitle timing: only when adjustment applies to the ACTIVE subtitle on the
                 // current engine (any mpv text sub; external side-loads on ExoPlayer).
                 subDelayMs = subDelay,
@@ -1199,19 +1226,19 @@ fun PlayerHud(
                 onResetSubDelay = player::resetSubtitleDelay,
             )
         }
-        HudDialog.SPEED -> SpeedDialog(current = speed, onSelect = { player.setSpeed(it); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
-        HudDialog.ZOOM -> ZoomDialog(current = zoomMode, onSelect = { player.setZoomModeByUser(it); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
+        HudDialog.SPEED -> SpeedDialog(current = speed, onSelect = { player.setSpeed(it); onClose() }, onDismiss = { onClose() })
+        HudDialog.ZOOM -> ZoomDialog(current = zoomMode, onSelect = { player.setZoomModeByUser(it); onClose() }, onDismiss = { onClose() })
         HudDialog.QUALITY -> {
             // Snapshot as it opens, like the track lists above: a live list would rebuild the rows.
             val heights = remember { player.videoQualities.value }
             val pick by player.videoQualityPick.collectAsStateWithLifecycle()
-            QualityDialog(heights, pick, onSelect = { player.selectVideoQuality(it); dialog = HudDialog.NONE }, onDismiss = { dialog = HudDialog.NONE })
+            QualityDialog(heights, pick, onSelect = { player.selectVideoQuality(it); onClose() }, onDismiss = { onClose() })
         }
-        HudDialog.VOLUME -> VolumeDialog(player, onDismiss = { dialog = HudDialog.NONE })
+        HudDialog.VOLUME -> VolumeDialog(player, onDismiss = { onClose() })
         HudDialog.SLEEP_TIMER -> SleepTimerDialog(
             timer = org.koin.compose.koinInject(),
             programmeEndMs = remember { sleepProgrammeEndMs?.invoke() },
-            onDismiss = { dialog = HudDialog.NONE },
+            onDismiss = { onClose() },
         )
         // "Go back to…". The options are read here, as the list opens, so the clock times shown are
         // relative to the moment the user asked rather than to when the HUD was first composed.
@@ -1219,14 +1246,14 @@ fun PlayerHud(
             val options = remember { jumpBackOptions?.invoke().orEmpty() }
             val windowSec = remember { jumpBackWindowSec?.invoke() ?: 0 }
             if (options.isEmpty()) {
-                dialog = HudDialog.NONE
+                onClose()
             } else {
                 tv.own.owntv.features.live.CatchupJumpDialog(
                     title = stringResource(R.string.content_catchup_jump),
                     offsetsSec = options,
                     windowSec = windowSec,
-                    onPick = { dialog = HudDialog.NONE; onJumpBack?.invoke(it) },
-                    onDismiss = { dialog = HudDialog.NONE },
+                    onPick = { onClose(); onJumpBack?.invoke(it) },
+                    onDismiss = { onClose() },
                 )
             }
         }

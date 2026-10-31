@@ -206,6 +206,8 @@ fun MoviesScreen(
     val movieProgress by vm.movieProgress.collectAsStateWithLifecycle()
     val downloadStates by vm.downloadStates.collectAsStateWithLifecycle()
     val movies = vm.movies.collectAsLazyPagingItems()
+    // The category the titles on screen are from: a pick's titles come a moment after it (see ShownCategory).
+    val shown = tv.own.owntv.features.vod.rememberShownCategory(selectedKey, movies)
     val resumeMode by vm.resumeMode.collectAsStateWithLifecycle()
     // Global external-player toggle: never mount the fullscreen in-app player (it spins up mpv)
     // when playback is handed to an external app.
@@ -263,9 +265,9 @@ fun MoviesScreen(
     val perCategoryMovieIds = remember { mutableStateMapOf<LiveKey, Long>() }
     // NOTE: plain constructors, not remember*State() — these are created lazily inside getOrPut, so a
     // @Composable/rememberSaveable call here would register slots conditionally and corrupt the slot table.
-    val effectiveGridState = if (rememberMovies) perCategoryGrid.getOrPut(selectedKey) { LazyGridState() } else gridState
-    val effectiveListState = if (rememberMovies) perCategoryList.getOrPut(selectedKey) { LazyListState() } else listState
-    LaunchedEffect(selectedKey, rememberMovies) {
+    val effectiveGridState = if (rememberMovies) perCategoryGrid.getOrPut(shown.key) { LazyGridState() } else gridState
+    val effectiveListState = if (rememberMovies) perCategoryList.getOrPut(shown.key) { LazyListState() } else listState
+    LaunchedEffect(shown.key, rememberMovies) {
         if (!rememberMovies) { runCatching { gridState.scrollToItem(0) }; runCatching { listState.scrollToItem(0) } }
     }
     // The List view scrolls a LazyListState, the grids (Cinematic and Separate) a LazyGridState.
@@ -287,6 +289,8 @@ fun MoviesScreen(
     val catListState = rememberLazyListState()
     var gridPaneFocused by remember { mutableStateOf(false) }
     var railPaneFocused by remember { mutableStateOf(false) }
+    // CH± in the categories moves the highlight only; OK picks.
+    var catFocusIndex by remember { mutableStateOf<Int?>(null) }
     // Tiles the provider gave no artwork for: ask for the TMDB poster already cached from an earlier
     // focus, so the placeholder is only shown when nothing at all is known. peek() reads the loaded
     // page without triggering a fetch.
@@ -319,9 +323,10 @@ fun MoviesScreen(
     // Search's "Go to movie": the same as Live TV's — scroll to where the movie sits, find its title by
     // id and focus it, re-asserting while the old category's titles may still be showing.
     val reveal by vm.reveal.collectAsStateWithLifecycle()
-    LaunchedEffect(reveal, selectedKey) {
+    // Keyed on the shown category: its grid state (one per category) is the one to scroll.
+    LaunchedEffect(reveal, shown.key) {
         val r = reveal ?: return@LaunchedEffect
-        if (selectedKey != r.key) return@LaunchedEffect
+        if (selectedKey != r.key || shown.key != r.key) return@LaunchedEffect
         if (rememberMovies) perCategoryMovieIds[selectedKey] = r.id
         var found = false
         for (attempt in 0 until 50) {
@@ -397,19 +402,24 @@ fun MoviesScreen(
             runCatching { firstItemFocus.requestFocus() }.getOrDefault(false)
     // From the categories to the titles: the remembered movie, else the first; the search field when empty.
     fun focusTitles() {
-        val targetId = if (rememberMovies) perCategoryMovieIds[selectedKey] ?: selectedMovie?.id else selectedMovie?.id
         scope.launch {
+            // A category just picked: its titles first, the cursor staying on it meanwhile. Focusing one of the
+            // old titles lost the focus when they were replaced, and it bounced between column and titles.
+            if (shown.key != selectedKey) {
+                val from = catFocusIndex
+                shown.awaitShown { selectedKey }
+                // Moved on in the column, or left it, while they came: not to be undone.
+                if (!railPaneFocused || catFocusIndex != from) return@launch
+            }
+            val targetId = if (rememberMovies) perCategoryMovieIds[selectedKey] ?: selectedMovie?.id else selectedMovie?.id
             if (movies.itemCount > 0) {
                 val targetIdx = targetId?.let { id -> movies.itemSnapshotList.items.indexOfFirst { it.id == id }.takeIf { it >= 0 } } ?: 0
                 scrollToIndex(targetIdx)
                 withFrameNanos { }
-                // A category just picked is still loading: the first attempt can land on a title of the
-                // old list, which then vanishes and drops focus to the rail. So keep watching for about
-                // 0.7 s and take focus back whenever the titles lost it.
-                repeat(40) {
-                    if (!gridPaneFocused) {
-                        if (!(targetId != null && focusCurrentTitle())) runCatching { firstItemFocus.requestFocus() }
-                    }
+                // A title scrolled to may be laid out a frame later: one more try then.
+                repeat(2) {
+                    if (gridPaneFocused) return@launch
+                    if (!(targetId != null && focusCurrentTitle())) runCatching { firstItemFocus.requestFocus() }
                     withFrameNanos { }
                 }
             } else {
@@ -440,7 +450,7 @@ fun MoviesScreen(
 
     // The hero shows a title while the categories have focus too, as the classic IPTV player does: the
     // first one of a category just picked there, or of the list when nothing was chosen yet.
-    LaunchedEffect(selectedKey, movies.itemCount > 0) {
+    LaunchedEffect(shown.key, movies.itemCount > 0) {
         if (movies.itemCount > 0 && (selectedMovie == null || railPaneFocused)) movies.peek(0)?.let(vm::onMovieFocused)
     }
     // Back closes the sheet: one level out.
@@ -450,8 +460,6 @@ fun MoviesScreen(
         // However the sheet closed (Back, a pick, ◀ to the rail), the next one starts fresh.
         else sheetHadFocus = false
     }
-    // CH± in the categories moves the highlight only; OK picks.
-    var catFocusIndex by remember { mutableStateOf<Int?>(null) }
     val categoriesModifier = Modifier
         .onFocusChanged {
             railPaneFocused = it.hasFocus
@@ -473,7 +481,10 @@ fun MoviesScreen(
             onJumpToIndex = { idx -> catFocusIndex = idx; railFocusRow = idx },
         )
     val onCategorySelect: (Int) -> Unit = { idx ->
-        railItems.getOrNull(idx)?.let { vm.select(it.key) }
+        railItems.getOrNull(idx)?.let {
+            if (it.key != selectedKey) shown.picked(movies.itemSnapshotList)
+            vm.select(it.key)
+        }
         if (categoriesOpen) { categoriesOpen = false; focusTitles() }
     }
     val onCategoryLongSelect: (Int) -> Unit = { idx ->
@@ -506,11 +517,11 @@ fun MoviesScreen(
             modifier = categoriesModifier.then(columnModifier),
         )
     }
-    val targetMovieId = if (rememberMovies) perCategoryMovieIds[selectedKey] ?: selectedMovie?.id else selectedMovie?.id
+    val targetMovieId = if (rememberMovies) perCategoryMovieIds[shown.key] ?: selectedMovie?.id else selectedMovie?.id
     val openMenu: (MovieEntity, Int) -> Unit = { movie, index -> contextMovie = movie; contextMovieId = movie.id; contextMovieIndex = index }
     val onMovieFocus: (MovieEntity) -> Unit = { movie ->
         vm.onMovieFocused(movie)
-        if (rememberMovies) perCategoryMovieIds[selectedKey] = movie.id
+        if (rememberMovies) perCategoryMovieIds[shown.key] = movie.id
     }
     val posterOf: (MovieEntity) -> String? = { it.posterUrl?.takeIf { u -> u.isNotBlank() } ?: cachedPosters[it.id] }
     val playHint = stringResource(R.string.common_ok) to stringResource(R.string.content_play)

@@ -46,6 +46,32 @@ def key(name, n=1, wait=0.6, long=False):
         time.sleep(wait)
 
 
+_key_dev = []
+
+
+def hold(code=28, seconds=1.5):
+    """Eine Taste wirklich gedrückt halten (Standard: Enter, Linux-Code 28), über das Eingabegerät des
+    Emulators. `input keyevent --longpress` schickt nur eine Wiederholung; gehalten erzeugt Android die
+    Wiederholungen selbst, alle 50 ms, wie bei einer Fernbedienung (braucht adb root, siehe screens.sh)."""
+    if not _key_dev:
+        dev, cur = None, None
+        for line in sh("getevent -pl").splitlines():
+            m = re.match(r"add device \d+: (\S+)", line)
+            if m:
+                cur = m.group(1)
+            elif cur and "KEY_ENTER" in line and dev is None:
+                dev = cur
+        _key_dev.append(dev)
+    dev = _key_dev[0]
+    if not dev:
+        print("[hold] kein Eingabegerät mit KEY_ENTER, nehme --longpress", flush=True)
+        key("ENTER", long=True, wait=0)
+        return
+    sh(f"sendevent {dev} 1 {code} 1; sendevent {dev} 0 0 0")
+    time.sleep(seconds)
+    sh(f"sendevent {dev} 1 {code} 0; sendevent {dev} 0 0 0")
+
+
 def bounds(node):
     m = re.findall(r"\d+", node.get("bounds", "[0,0][0,0]"))
     return tuple(int(v) for v in m)
@@ -784,6 +810,107 @@ def nav_tour():
         dismiss_exit(dump())
 
 
+def record(name, *keys_, seconds=5, wait=0.4):
+    """Bildschirmvideo um Tastendrücke herum. Ein Flackern von ein, zwei Frames zeigt kein Foto; der
+    Workflow zerlegt die Videos in Kontaktbögen (jedes geänderte Bild einmal, zeilenweise in Reihenfolge)."""
+    remote = f"/sdcard/rec-{slug(name)}.mp4"
+    sh(f"rm -f {remote}")
+    rec = subprocess.Popen(["adb", "shell", "screenrecord", "--size", "960x540", "--bit-rate", "6000000",
+                            "--time-limit", str(seconds), remote])
+    time.sleep(1.2)  # screenrecord braucht einen Moment, bis das erste Bild läuft
+    for k in keys_:
+        if k == "HOLD_OK":
+            hold()
+            time.sleep(wait)
+        else:
+            key(k.removesuffix("_LONG"), wait=wait, long=k.endswith("_LONG"))
+    try:
+        rec.wait(timeout=seconds + 20)
+    except subprocess.TimeoutExpired:
+        rec.kill()
+    time.sleep(1.5)
+    counter[0] += 1
+    adb("pull", remote, os.path.join(OUT, f"{counter[0]:03d}-rec-{slug(name)}.mp4"), timeout=120)
+    return probe(f"rec-{name}")
+
+
+def open_settings_card(card):
+    """Mehr › Einstellungen › [card]: die Seite der Gruppe, Fokus auf ihrer ersten Zeile."""
+    if not open_section("Mehr"):
+        return False
+    key("DPAD_RIGHT", wait=0.8)
+    if not goto(r"^Einstellungen$"):
+        return False
+    time.sleep(2)
+    key("DPAD_RIGHT", wait=0.8)
+    key("DPAD_DOWN", wait=0.8)
+    if not goto("^" + re.escape(card) + "$", xmin=600):
+        return False
+    time.sleep(2)
+    return True
+
+
+def longpress_tour():
+    """OK gedrückt halten auf einem Titel: das Menü muss offen bleiben, wenn OK losgelassen wird (es schloss
+    sich wieder und schaltete dabei seine erste Zeile, Favoriten, um). Danach Zurück: das Menü geht zu."""
+    for section in ["Filme", "Serien"]:
+        for i in range(3):
+            if not open_section(section):
+                break
+            key("DPAD_RIGHT", n=2, wait=1.5)
+            s = slug(section)
+            probe(f"{s}-titel-{i}")
+            record(f"{s}-lang-ok-{i}", "HOLD_OK", seconds=6, wait=1.5)
+            probe(f"{s}-lang-ok-zurueck-{i}", "BACK")
+    # Ein frischer Druck im Menü muss sofort wirken (kein „zweimal drücken“): OK auf „Zu Favoriten hinzufügen“
+    # schließt das Menü; beim nächsten Halten heißt die Zeile „Aus Favoriten entfernen“. Dann zurückstellen.
+    if open_section("Filme"):
+        key("DPAD_RIGHT", n=2, wait=1.5)
+        record("Filme-halten-dann-ok", "HOLD_OK", seconds=4, wait=1.5)
+        probe("Filme-frisches-ok", "DPAD_CENTER", wait=1.5)
+        record("Filme-halten-erneut", "HOLD_OK", seconds=4, wait=1.5)
+        probe("Filme-frisches-ok-zurueck", "DPAD_CENTER", wait=1.5)
+    # Im Guide: lang OK auf einem Sender öffnet sein Menü.
+    if open_section("Live-TV"):
+        key("DPAD_RIGHT", n=2, wait=1.5)
+        record("guide-lang-ok", "HOLD_OK", seconds=6, wait=1.5)
+        probe("guide-lang-ok-zurueck", "BACK")
+
+
+def flicker_tour():
+    """Die Wege zurück aus den Einstellungen, gefilmt, mit Animationen wie auf dem Fernseher (Skala 1)."""
+    for k in ["window_animation_scale", "transition_animation_scale", "animator_duration_scale"]:
+        sh(f"settings put global {k} 1")
+    time.sleep(1)
+    try:
+        for i in range(3):
+            # Einstellungsseite › Zurück › Mehr › Zurück › Menü
+            if open_settings_card("Profil"):
+                record(f"einst-zurueck-mehr-{i}", "BACK")
+                record(f"mehr-zurueck-menue-{i}", "BACK")
+                dismiss_exit(dump())
+            # Unterseite (Fernbedienungs-Kurzbefehle) › Zurück › Einstellungsseite › Zurück › Mehr
+            if open_settings_card("Layout") and goto(r"^Fernbedienungs-Kurzbefehle"):
+                time.sleep(2)
+                record(f"unterseite-zurueck-{i}", "BACK")
+                record(f"layout-zurueck-mehr-{i}", "BACK")
+            # Einstellungsseite › ◀ ins Menü › Live-TV (der Guide mit seinen Gruppen neben dem Menü)
+            if open_settings_card("Profil"):
+                record(f"einst-links-menue-{i}", "DPAD_LEFT", "DPAD_LEFT")
+                if goto(r"^Live-TV$", press=False, xmax=RAIL_XMAX):
+                    record(f"menue-ok-livetv-{i}", "DPAD_CENTER", seconds=6)
+                    record(f"livetv-rechts-gruppen-{i}", "DPAD_RIGHT")
+            # Mehr › Zurück › Menü › Filme
+            if open_section("Mehr"):
+                record(f"mehr-zurueck-{i}", "BACK")
+                dismiss_exit(dump())
+                if goto(r"^Filme$", press=False, xmax=RAIL_XMAX):
+                    record(f"menue-ok-filme-{i}", "DPAD_CENTER", seconds=6)
+    finally:
+        for k in ["window_animation_scale", "transition_animation_scale", "animator_duration_scale"]:
+            sh(f"settings put global {k} 0")
+
+
 def to_match_card(downs=8):
     """Fokus auf die erste Spielkarte (hohe Karte, keine Chip- oder Senderzeile) im Sport-Bereich."""
     for _ in range(downs):
@@ -850,12 +977,15 @@ def main():
         return
     # TOUR_PARTS=vod,scenes,player,… läuft nur durch diese Teile (schneller beim Arbeiten an einem Bereich).
     parts = [p for p in os.environ.get("TOUR_PARTS", "all").replace(" ", "").split(",") if p]
-    for part, name, fn in [
+    tour = [
         ("menu", "menue", rail_tour), ("vod", "filme-serien", vod_tour), ("more", "mehr-tour", more_tour),
         ("guide", "guide", guide_tour), ("player", "player", player_tour),
         ("settings", "einstellungen-tour", settings_tour), ("scenes", "szenen", scenes_tour),
         ("nav", "navigation", nav_tour), ("sports", "sport", sports_tour),
-    ]:
+    ]
+    # Nur auf Anfrage (TOUR_PARTS=flicker, longpress): Videos statt Fotos, für kurze Sprünge.
+    tour += [(p, n, f) for p, n, f in [("flicker", "flackern", flicker_tour), ("longpress", "lang-ok", longpress_tour)] if p in parts]
+    for part, name, fn in tour:
         if "all" in parts or part in parts:
             step(name, fn)
     with open(os.path.join(OUT, "steps.json"), "w", encoding="utf-8") as f:

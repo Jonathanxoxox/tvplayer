@@ -317,6 +317,10 @@ fun EpgScreen(
     var anchorId by remember { mutableStateOf<Long?>(null) }
     // The category the cursor is on in the groups column (applied a moment later, or at once by ▶).
     var browsedGroup by remember { mutableStateOf<Int?>(null) }
+    // The group just applied, until its list is in (see the effect beside applyGroup), and whether the grid
+    // takes the focus then (OK, or ▶ before the list was in).
+    var openingGroup by remember { mutableStateOf<LiveKey?>(null) }
+    var focusOnOpen by remember { mutableStateOf(false) }
     // A channel's number is its place in the list on screen: each category counts from 1, as in TiviMate
     // (Jonathan, 27 Oct 2026: the provider's 1351 in a category of twenty read like the whole list).
     fun listNumber(ch: ChannelEntity): Int? = state.channels.indexOfFirst { it.id == ch.id }.takeIf { it >= 0 }?.plus(1)
@@ -326,6 +330,14 @@ fun EpgScreen(
     // through the programmes. Without it, reaching the channel list meant ◀ past every programme.
     var inCellMode by remember { mutableStateOf(false) }
     BackHandler(enabled = inCellMode && gridHasFocus) { inCellMode = false }
+    // The axis keeps up with the clock: unless the programmes are being browsed, the half hour that is now
+    // stays at the left edge, as when the guide opens. It was set on opening only, so a guide left on for an
+    // evening (or waiting behind full screen) still started at 18:30 with now at its right edge, and the
+    // provider's rows, which begin with what is on, showed blanks before it (Jonathan, 31 Oct 2026).
+    LaunchedEffect(liveNow, inCellMode, timelinePx, state.windowStart) {
+        if (inCellMode || timelinePx <= 0 || state.channels.isEmpty()) return@LaunchedEffect
+        showTime(liveNow)
+    }
     // The programme the block on top shows and the buttons act on: the one under the cursor.
     var selected by remember { mutableStateOf<Pair<ChannelEntity, EpgProgrammeEntity?>?>(null) }
 
@@ -625,8 +637,8 @@ fun EpgScreen(
         LaunchedEffect(showGroups) { tv.own.owntv.features.shell.components.StageRailOpen.guideGroups = showGroups }
         // Menu and groups begin on the first channel row, so the three columns start on one line (30 Oct 2026).
         DisposableEffect(Unit) {
-            tv.own.owntv.features.shell.components.StageRailOpen.itemsTop = GuideRowsTop
-            onDispose { tv.own.owntv.features.shell.components.StageRailOpen.itemsTop = null }
+            tv.own.owntv.features.shell.components.StageRailOpen.itemsCentre = GuideFirstRowCentre
+            onDispose { tv.own.owntv.features.shell.components.StageRailOpen.itemsCentre = null }
         }
         DisposableEffect(Unit) { onDispose { tv.own.owntv.features.shell.components.StageRailOpen.guideGroups = false; tv.own.owntv.features.shell.components.StageRailOpen.guideFocused = false } }
         val groupsShift = androidx.compose.animation.core.animateDpAsState(if (showGroups) groupsW else 0.mpx, tv.own.owntv.ui.theme.stageSlide())
@@ -809,10 +821,32 @@ fun EpgScreen(
             val key = railItems.getOrNull(idx)?.key
             if (key != null && key != (categoryKey ?: LiveKey.All)) {
                 if (liveMode) liveVm.select(key) else vm.setCategoryFilter(key)
-                focusedRow = 0
                 anchorId = null
-                scope.launch { runCatching { rowListState.scrollToItem(0) } }
+                openingGroup = key
+                focusOnOpen = false
             }
+        }
+        // The group's list is read off the main thread and arrives a moment after the pick; until then the grid
+        // still shows the old one. OK used to focus row 0 of that old list at once: the new list then replaced the
+        // row and the focus went with it, so the groups slid out and straight back in (or the menu came), and the
+        // old list jumped to its top first. The grid now goes to the top, and takes the focus, once the new list is in.
+        LaunchedEffect(openingGroup, state) {
+            val key = openingGroup ?: return@LaunchedEffect
+            if (state.loading || state.category != key.takeUnless { it == LiveKey.All }) return@LaunchedEffect
+            focusedRow = 0
+            runCatching { rowListState.scrollToItem(0) }
+            // Only while the focus is still on the groups: ◀ to the menu meanwhile is not to be undone.
+            if (focusOnOpen && groupsFocused) focusGrid(0)
+            openingGroup = null
+            focusOnOpen = false
+        }
+        // A pick whose list never comes (a pinned Live TV ignores it) does not hold the focus in the groups.
+        LaunchedEffect(openingGroup) {
+            if (openingGroup == null) return@LaunchedEffect
+            delay(4_000)
+            if (focusOnOpen && groupsFocused) focusGrid()
+            openingGroup = null
+            focusOnOpen = false
         }
         LaunchedEffect(browsedGroup) {
             val idx = browsedGroup ?: return@LaunchedEffect
@@ -850,6 +884,7 @@ fun EpgScreen(
                 onSearchQueryChange = { vm.setCategoryQuery(it); vm.setQuery(it) },
                 searchPlaceholder = stringResource(R.string.tvplayer_guide_search),
                 searchLeavesRight = true,
+                searchGap = GroupsSearchGap,
                 entries = groupEntries,
                 selectedIndex = railItems.indexOfFirst { it.key == (categoryKey ?: LiveKey.All) }.coerceAtLeast(0),
                 groupsHeading = groupsHeading,
@@ -860,11 +895,27 @@ fun EpgScreen(
                     browsedGroup = null
                     // A group chosen from the search opens as itself: the search makes way for it.
                     if (searching) vm.clearSearch()
-                    railItems.getOrNull(idx)?.key?.let { key -> if (liveMode) liveVm.select(key) else vm.setCategoryFilter(key) }
-                    focusedRow = 0
-                    anchorId = null
-                    scope.launch { runCatching { rowListState.scrollToItem(0) } }
-                    focusGrid(0)
+                    val key = railItems.getOrNull(idx)?.key
+                    when {
+                        key != null && key != (categoryKey ?: LiveKey.All) -> {
+                            applyGroup(idx)
+                            focusOnOpen = true
+                        }
+                        // The open group again, from the search: its list comes back once the search is gone.
+                        key != null && searching -> {
+                            anchorId = null
+                            openingGroup = key
+                            focusOnOpen = true
+                        }
+                        // Applied by the rest a moment ago, its list not in yet.
+                        openingGroup != null -> focusOnOpen = true
+                        else -> {
+                            focusedRow = 0
+                            anchorId = null
+                            scope.launch { runCatching { rowListState.scrollToItem(0) } }
+                            focusGrid(0)
+                        }
+                    }
                 },
                 onLongSelect = { idx ->
                     val key = railItems.getOrNull(idx)?.key
@@ -883,17 +934,23 @@ fun EpgScreen(
                     // While searching the guide holds the results: ▶ goes to them, not to the group browsed past.
                     if (!searching) browsedGroup?.let(applyGroup)
                     browsedGroup = null
-                    if (searching) focusGrid(0) else focusGrid()
+                    when {
+                        searching -> focusGrid(0)
+                        openingGroup != null -> focusOnOpen = true
+                        else -> focusGrid()
+                    }
                 },
                 onRowFocus = { idx ->
                     browsedGroup = idx
+                    // Moved on before the list came: it opens without taking the focus from here.
+                    if (railItems.getOrNull(idx)?.key != openingGroup) focusOnOpen = false
                 },
                 focusRequester = groupsFocus,
                 focusRowIndex = groupsFocusIndex
                     ?: if (groupsEnter) railItems.indexOfFirst { it.key == (categoryKey ?: LiveKey.All) }.coerceAtLeast(0) else null,
                 modifier = Modifier
-                    // The search field on the ruler's line, the groups from the first channel row (see [GuideRowsTop]).
-                    .padding(start = fx(24), end = fx(16), top = GuideRowsTop - GuideRulerToRows, bottom = 24.mpx)
+                    // The search field on the ruler's line, the first group centred on the first channel row (see [GroupsTop]).
+                    .padding(start = fx(24), end = fx(16), top = GroupsTop, bottom = 24.mpx)
                     .width(groupsW - fx(40))
                     .fillMaxHeight()
                     .graphicsLayer {
@@ -1306,5 +1363,15 @@ private const val GUIDE_PAGE_ROWS = 7
  */
 internal val GuideRowsTop = (40 + 240 + 18 + 48).mpx
 
-/** The ruler's line above the rows, where the groups' search field stands. */
-private val GuideRulerToRows = 48.mpx
+/**
+ * The middle of the guide's first channel row. The menu's first section and the first group are centred on it,
+ * not started at its top: their rows are 68 and 52 high against the guide's 56, so started at the top the
+ * group's count sat 18 below the row number and the menu 6 below (Jonathan, 31 Oct 2026).
+ */
+internal val GuideFirstRowCentre = GuideRowsTop + GuideGridDefaults.RowHeight / 2
+
+/** Between the groups' search field and the first group: small, so the field stays on the ruler's line. */
+private val GroupsSearchGap = 8.mpx
+
+/** The groups column's top: the list's padding (4), the search field (48) and the gap above the first group (52, centred). */
+private val GroupsTop = GuideFirstRowCentre - 26.mpx - GroupsSearchGap - 48.mpx - 4.mpx

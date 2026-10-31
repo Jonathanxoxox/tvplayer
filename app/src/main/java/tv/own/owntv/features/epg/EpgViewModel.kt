@@ -81,6 +81,9 @@ data class EpgUiState(
     val message: EpgMessage? = null,
     /** False when the user hasn't added any EPG source yet → the screen shows an "Add EPG" prompt. */
     val hasEpgSources: Boolean = true,
+    /** The category filter [channels] was built for (null = All channels), so the screen can tell the
+     *  list of a group just picked from the one still on screen before it. */
+    val category: tv.own.owntv.core.live.LiveKey? = null,
 )
 
 /**
@@ -917,7 +920,9 @@ class EpgViewModel(
         val reusedBase = base?.takeIf { it.key == baseKey }
         val b = reusedBase ?: buildBase(baseKey, pid, playlistIds, ids, "", showAll).also { base = it }
         loadedHidden = b.cust.hiddenItems.keys to b.cust.hiddenCategories
-        val channels = if (q.isBlank()) channelsFor(b, _categoryFilter.value) else searchChannels(b, q, now)
+        // The search's results belong to no category: a group picked meanwhile waits for its own list.
+        val category = _categoryFilter.value.takeIf { q.isBlank() }
+        val channels = if (q.isBlank()) channelsFor(b, category) else searchChannels(b, q, now)
 
         val stored = epgDao.countForSources(ids)
 
@@ -959,7 +964,7 @@ class EpgViewModel(
         }
         _state.value = EpgUiState(
             channels = channels, windowStart = windowStart, windowEnd = windowEnd, now = now,
-            loading = false, message = message, hasEpgSources = hasEpg,
+            loading = false, message = message, hasEpgSources = hasEpg, category = category,
         )
 
         tv.own.owntv.core.CorePerf.log {

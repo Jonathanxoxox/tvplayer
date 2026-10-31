@@ -582,6 +582,18 @@ fun OwnTVShell(
         runCatching { handoverFocus.requestFocus() }
         Unit
     }
+    // The same place while one screen gives way to another in the content area (see LocalParkFocus). The next
+    // screen takes the focus within a frame or two; if none does, the content area gets it rather than nobody.
+    val parkForScreenChange: () -> Unit = {
+        parkFocus()
+        scope.launch {
+            repeat(20) {
+                withFrameNanos { }
+                if (!handoverParking) return@launch
+            }
+            runCatching { contentAreaFocus.requestFocus() }
+        }
+    }
     // Back is pressed and the guide is still getting ready behind the picture (see GuidePreviewSpot.ready).
     var exitPending by remember { mutableStateOf(false) }
     val exitToList: () -> Unit = exit@{
@@ -998,7 +1010,7 @@ fun OwnTVShell(
             // the first press: the fallback below simply moved focus to the rail and nothing else
             // happened. Handled here as well so the answer is the same whichever handler fires; a
             // sub-screen of Settings still wins, because its handler is composed deeper than this.
-            selectedSection == MainSection.SETTINGS -> { restoreFocus = true; onSelectSection(MainSection.MORE) }
+            selectedSection == MainSection.SETTINGS -> { parkForScreenChange(); restoreFocus = true; onSelectSection(MainSection.MORE) }
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
             focusedLayer == ShellLayer.SIDEBAR && railTrulyFocused -> showExit = true
@@ -1076,6 +1088,7 @@ fun OwnTVShell(
     }
     CompositionLocalProvider(
         LocalRemoteShortcuts provides remoteShortcutEnvironment,
+        tv.own.owntv.features.shell.components.LocalParkFocus provides parkForScreenChange,
         tv.own.owntv.features.shell.components.LocalClockWeather provides (weatherInfo to weatherFahrenheit),
     ) {
     Box(
@@ -1270,6 +1283,7 @@ fun OwnTVShell(
                             onPickAvatar = { showAvatarPicker = true },
                             onOpenSettings = { group, search ->
                                 settingsStart = tv.own.owntv.features.shell.components.SettingsStart(group, search)
+                                parkForScreenChange()
                                 onSelectSection(MainSection.SETTINGS)
                             },
                             // The same paths Home uses, so the engine ladder, resume and Continue all apply.
@@ -1296,7 +1310,7 @@ fun OwnTVShell(
                             onOpenPlaylist = {},
                             // Settings is reached through More now, so Back out of its root goes
                             // back there rather than to the rail — one level out, not two.
-                            onBack = { restoreFocus = true; onSelectSection(MainSection.MORE) },
+                            onBack = { parkForScreenChange(); restoreFocus = true; onSelectSection(MainSection.MORE) },
                             openEpgAdd = openEpgAdd,
                             onEpgAddConsumed = { openEpgAdd = false },
                             start = settingsStart,
@@ -1406,8 +1420,8 @@ fun OwnTVShell(
                             onPlayChannel = guidePlayChannel,
                             onPlayCatchup = guidePlayCatchup,
                             onOpenSearch = { onSelectSection(MainSection.SEARCH) },
-                            onOpenSettings = { onSelectSection(MainSection.SETTINGS) },
-                            onAddEpg = { openEpgAdd = true; onSelectSection(MainSection.SETTINGS) },
+                            onOpenSettings = { parkForScreenChange(); onSelectSection(MainSection.SETTINGS) },
+                            onAddEpg = { openEpgAdd = true; parkForScreenChange(); onSelectSection(MainSection.SETTINGS) },
                             previewEnabled = playerMode == PlayerMode.NONE,
                             behindFullscreen = guideBehind,
                             logosPaused = guideBehind && !guideHandover,

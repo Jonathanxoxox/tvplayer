@@ -252,6 +252,8 @@ private fun SeriesGrid(
     val context = androidx.compose.ui.platform.LocalContext.current
     val toast = rememberInAppToast()
     val series = vm.series.collectAsLazyPagingItems()
+    // The category the titles on screen are from: a pick's titles come a moment after it (see ShownCategory).
+    val shown = tv.own.owntv.features.vod.rememberShownCategory(selectedKey, series)
     val moveState by vm.moveState.collectAsStateWithLifecycle()
     val categoryMoveState by vm.categoryMoveState.collectAsStateWithLifecycle()
     var contextCategory by remember { mutableStateOf<LiveRailItem?>(null) }
@@ -315,9 +317,9 @@ private fun SeriesGrid(
     val perCategorySeriesIds = remember { mutableStateMapOf<LiveKey, Long>() }
     // NOTE: plain constructors, not remember*State() — these are created lazily inside getOrPut, so a
     // @Composable/rememberSaveable call here would register slots conditionally and corrupt the slot table.
-    val effectiveGridState = if (rememberSeries) perCategoryGrid.getOrPut(selectedKey) { androidx.compose.foundation.lazy.grid.LazyGridState() } else gridState
-    val effectiveListState = if (rememberSeries) perCategoryList.getOrPut(selectedKey) { androidx.compose.foundation.lazy.LazyListState() } else listState
-    LaunchedEffect(selectedKey, rememberSeries) {
+    val effectiveGridState = if (rememberSeries) perCategoryGrid.getOrPut(shown.key) { androidx.compose.foundation.lazy.grid.LazyGridState() } else gridState
+    val effectiveListState = if (rememberSeries) perCategoryList.getOrPut(shown.key) { androidx.compose.foundation.lazy.LazyListState() } else listState
+    LaunchedEffect(shown.key, rememberSeries) {
         if (!rememberSeries) { runCatching { gridState.scrollToItem(0) }; runCatching { listState.scrollToItem(0) } }
     }
     // The List view scrolls a LazyListState, the grids (Cinematic and Separate) a LazyGridState.
@@ -339,6 +341,8 @@ private fun SeriesGrid(
     val catListState = androidx.compose.foundation.lazy.rememberLazyListState()
     var gridPaneFocused by remember { mutableStateOf(false) }
     var railPaneFocused by remember { mutableStateOf(false) }
+    // CH± in the categories moves the highlight only; OK picks.
+    var catFocusIndex by remember { mutableStateOf<Int?>(null) }
     // Tiles the provider gave no artwork for: ask for the TMDB poster already cached from an earlier
     // focus, so the placeholder is only shown when nothing at all is known (mirrors Movies).
     val cachedPosters by vm.cachedPosters.collectAsStateWithLifecycle()
@@ -455,19 +459,24 @@ private fun SeriesGrid(
             runCatching { firstItemFocus.requestFocus() }.getOrDefault(false)
     // From the categories to the shows: the remembered one, else the first; the search field when empty.
     fun focusTitles() {
-        val targetId = if (rememberSeries) perCategorySeriesIds[selectedKey] ?: selectedSeries?.id else selectedSeries?.id
         scope.launch {
+            // A category just picked: its titles first, the cursor staying on it meanwhile. Focusing one of the
+            // old titles lost the focus when they were replaced, and it bounced between column and titles.
+            if (shown.key != selectedKey) {
+                val from = catFocusIndex
+                shown.awaitShown { selectedKey }
+                // Moved on in the column, or left it, while they came: not to be undone.
+                if (!railPaneFocused || catFocusIndex != from) return@launch
+            }
+            val targetId = if (rememberSeries) perCategorySeriesIds[selectedKey] ?: selectedSeries?.id else selectedSeries?.id
             if (series.itemCount > 0) {
                 val targetIdx = targetId?.let { id -> series.itemSnapshotList.items.indexOfFirst { it.id == id }.takeIf { it >= 0 } } ?: 0
                 scrollToIndex(targetIdx)
                 withFrameNanos { }
-                // A category just picked is still loading: the first attempt can land on a title of the
-                // old list, which then vanishes and drops focus to the rail. So keep watching for about
-                // 0.7 s and take focus back whenever the titles lost it.
-                repeat(40) {
-                    if (!gridPaneFocused) {
-                        if (!(targetId != null && focusCurrentTitle())) runCatching { firstItemFocus.requestFocus() }
-                    }
+                // A title scrolled to may be laid out a frame later: one more try then.
+                repeat(2) {
+                    if (gridPaneFocused) return@launch
+                    if (!(targetId != null && focusCurrentTitle())) runCatching { firstItemFocus.requestFocus() }
                     withFrameNanos { }
                 }
             } else {
@@ -498,7 +507,7 @@ private fun SeriesGrid(
 
     // The hero shows a title while the categories have focus too, as the classic IPTV player does: the
     // first one of a category just picked there, or of the list when nothing was chosen yet.
-    LaunchedEffect(selectedKey, series.itemCount > 0) {
+    LaunchedEffect(shown.key, series.itemCount > 0) {
         if (series.itemCount > 0 && (selectedSeries == null || railPaneFocused)) series.peek(0)?.let(vm::onSeriesFocused)
     }
     // Back closes the sheet: one level out.
@@ -508,8 +517,6 @@ private fun SeriesGrid(
         // However the sheet closed (Back, a pick, ◀ to the rail), the next one starts fresh.
         else sheetHadFocus = false
     }
-    // CH± in the categories moves the highlight only; OK picks.
-    var catFocusIndex by remember { mutableStateOf<Int?>(null) }
     val categoriesModifier = Modifier
         .onFocusChanged {
             railPaneFocused = it.hasFocus
@@ -531,7 +538,10 @@ private fun SeriesGrid(
             onJumpToIndex = { idx -> catFocusIndex = idx; railFocusRow = idx },
         )
     val onCategorySelect: (Int) -> Unit = { idx ->
-        railItems.getOrNull(idx)?.let { vm.select(it.key) }
+        railItems.getOrNull(idx)?.let {
+            if (it.key != selectedKey) shown.picked(series.itemSnapshotList)
+            vm.select(it.key)
+        }
         if (categoriesOpen) { categoriesOpen = false; focusTitles() }
     }
     val onCategoryLongSelect: (Int) -> Unit = { idx ->
@@ -564,11 +574,11 @@ private fun SeriesGrid(
             modifier = categoriesModifier.then(columnModifier),
         )
     }
-    val targetSeriesId = if (rememberSeries) perCategorySeriesIds[selectedKey] ?: selectedSeries?.id else selectedSeries?.id
+    val targetSeriesId = if (rememberSeries) perCategorySeriesIds[shown.key] ?: selectedSeries?.id else selectedSeries?.id
     val openMenu: (tv.own.owntv.core.database.entity.SeriesEntity, Int) -> Unit = { show, index -> contextSeries = show; contextSeriesId = show.id; contextSeriesIndex = index }
     val onShowFocus: (tv.own.owntv.core.database.entity.SeriesEntity) -> Unit = { show ->
         vm.onSeriesFocused(show)
-        if (rememberSeries) perCategorySeriesIds[selectedKey] = show.id
+        if (rememberSeries) perCategorySeriesIds[shown.key] = show.id
     }
     val posterOf: (tv.own.owntv.core.database.entity.SeriesEntity) -> String? = { it.posterUrl?.takeIf { u -> u.isNotBlank() } ?: cachedPosters[it.id] }
     val playHint = stringResource(R.string.common_ok) to stringResource(R.string.content_episodes)
