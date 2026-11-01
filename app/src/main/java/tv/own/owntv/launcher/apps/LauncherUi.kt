@@ -46,6 +46,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StagePopup
 import tv.own.owntv.ui.stage.StagePopupOption
@@ -256,7 +257,9 @@ fun HomeAppsRow(
 /** A held OK on an app: its name as the title, then the actions. */
 @Composable
 internal fun AppMenu(app: LauncherApp, onDismiss: () -> Unit, entries: List<Pair<String, () -> Unit>>) {
-    StagePopup(onDismiss = onDismiss, title = app.label, width = 640.mpx) {
+    // Opened by a held OK: that press's repeats and its release must not "click" the first row (Open),
+    // which opened the app at once instead of leaving the menu up (Jonathan, 1 Nov 2026).
+    StagePopup(onDismiss = onDismiss, title = app.label, width = 640.mpx, modifier = Modifier.longPressMenuGuard()) {
         Column(verticalArrangement = Arrangement.spacedBy(6.mpx), modifier = Modifier.padding(top = 18.mpx)) {
             entries.forEach { (label, action) ->
                 StagePopupOption(title = label, onClick = { onDismiss(); action() })
