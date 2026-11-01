@@ -5,12 +5,17 @@ import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
@@ -83,7 +88,25 @@ fun SettingsSidebar(
     onFocusChanged: (Boolean) -> Unit,
     header: (@Composable () -> Unit)?,
     modifier: Modifier = Modifier,
+    /**
+     * The line the first entry is centred on (from the screen's top): Live TV's, where the menu's first section,
+     * the first group and the first channel sit, so the lists start on one height on every page.
+     */
+    alignCentre: androidx.compose.ui.unit.Dp? = null,
 ) {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    // Measured, as in Live TV: the first entry's real middle against the line, the space above moved by the difference.
+    var fixPx by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(0f) }
+    val listScroll = rememberScrollState()
+    val alignFirst = Modifier.then(
+        if (alignCentre != null) {
+            Modifier.onGloballyPositioned { c ->
+                // Only with the list at its top: scrolled, the entry is meant to be elsewhere.
+                val off = with(density) { alignCentre.toPx() } - c.boundsInRoot().center.y
+                if (listScroll.value == 0 && kotlin.math.abs(off) > 1f) fixPx = (fixPx + off).coerceIn(-400f, 600f)
+            }
+        } else Modifier,
+    )
     val requesters = remember { HashMap<String, FocusRequester>() }
     val searchItem = remember { FocusRequester() }
     fun requesterOf(id: String) = requesters.getOrPut(id) { FocusRequester() }
@@ -95,13 +118,13 @@ fun SettingsSidebar(
         else -> "g:$selected"
     }
     @Composable
-    fun Extra(e: SidebarExtra) {
+    fun Extra(e: SidebarExtra, first: Boolean = false) {
         val id = "x:${e.key}"
         StageGroupItem(
             text = e.label, icon = e.icon, value = e.value, warn = e.warn,
             selected = openId == id,
             onClick = onEnterRows,
-            modifier = Modifier
+            modifier = (if (first) alignFirst else Modifier)
                 .focusRequester(if (openId == id) selectedFocus else requesterOf(id))
                 .onFocusChanged { if (it.isFocused && openId != id) onSelectExtra(e) },
         )
@@ -125,9 +148,13 @@ fun SettingsSidebar(
                 else e.key == Key.DirectionRight
             }
             .focusGroup()
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(listScroll),
         verticalArrangement = Arrangement.spacedBy(2.mpx),
     ) {
+        // The space that brings the first entry onto the line (see [alignCentre]).
+        if (alignCentre != null) androidx.compose.foundation.layout.Spacer(
+            Modifier.height(with(density) { fixPx.coerceAtLeast(0f).toDp() }),
+        )
         header?.invoke()
         StageGroupItem(
             text = stringResource(R.string.more_settings_search),
@@ -139,16 +166,16 @@ fun SettingsSidebar(
         val mine = extras.filter { it.section == 0 }
         if (mine.isNotEmpty()) {
             SidebarLabel(stringResource(R.string.more_group_your_things))
-            mine.forEach { Extra(it) }
+            mine.forEachIndexed { i, e -> Extra(e, first = i == 0) }
         }
         SidebarLabel(stringResource(R.string.common_nav_settings))
-        categories.forEach { c ->
+        categories.forEachIndexed { i, c ->
             val id = "g:${c.index}"
             StageGroupItem(
                 text = c.label, icon = c.icon, value = c.count?.toString(),
                 selected = openId == id,
                 onClick = onEnterRows,
-                modifier = Modifier
+                modifier = (if (i == 0 && mine.isEmpty()) alignFirst else Modifier)
                     .focusRequester(if (openId == id) selectedFocus else requesterOf(id))
                     .onFocusChanged { if (it.isFocused && openId != id) onSelect(c.index) },
             )

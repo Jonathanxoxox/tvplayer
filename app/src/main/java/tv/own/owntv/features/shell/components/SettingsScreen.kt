@@ -2701,7 +2701,14 @@ private fun SettingsSidebarHost(
         }
         tv.own.owntv.features.settings.SettingsCategory(g.ordinal, root.label, root.icon, count)
     }
+    // The menu's first section and the list's first entry on Live TV's line, as on every page with a list beside
+    // the menu (Jonathan, 1 Nov 2026).
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        StageRailOpen.itemsCentre = tv.own.owntv.features.epg.GuideFirstRowCentre
+        onDispose { StageRailOpen.itemsCentre = null }
+    }
     tv.own.owntv.features.settings.SettingsSidebar(
+        alignCentre = tv.own.owntv.features.epg.GuideFirstRowCentre,
         categories = items,
         extras = more?.extras.orEmpty(),
         selected = selected,
