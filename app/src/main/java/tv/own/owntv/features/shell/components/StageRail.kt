@@ -27,6 +27,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.Offset
@@ -212,9 +214,14 @@ fun StageRail(
             // begin on one line (30 Oct 2026; by the middle since 31 Oct: the rows are not equally high); elsewhere
             // they sit a little above the middle as before. The logo stays on top.
             val itemsCentre = StageRailOpen.itemsCentre
-            if (itemsCentre != null) Spacer(Modifier.height((itemsCentre - RailItemHeight / 2 - RailItemsOffset).coerceAtLeast(0.mpx)))
+            // Measured too (Mayo TV, 1 Nov 2026): the first section's real middle against the page's line, and the
+            // spacer moved by what it is off — the sum of the heights above it sat ~25 px high on the TV.
+            val density = androidx.compose.ui.platform.LocalDensity.current
+            var fixPx by remember { mutableStateOf(0f) }
+            if (itemsCentre == null && fixPx != 0f) androidx.compose.runtime.SideEffect { fixPx = 0f }
+            if (itemsCentre != null) Spacer(Modifier.height((itemsCentre - RailItemHeight / 2 - RailItemsOffset + with(density) { fixPx.toDp() }).coerceAtLeast(0.mpx)))
             else Spacer(Modifier.weight(0.55f))
-            items.forEach { section ->
+            items.forEachIndexed { i, section ->
                 RailItem(
                     icon = section.stageIcon,
                     label = stringResource(section.labelRes),
@@ -222,7 +229,15 @@ fun StageRail(
                     active = section == selected && !(appsActive && appsShown),
                     onClick = { onSelect(section) },
                     modifier = (if (section == focusSection) Modifier.focusRequester(selectedItemFocusRequester) else Modifier)
-                        .focusProperties { canFocus = itemsFocusable() },
+                        .focusProperties { canFocus = itemsFocusable() }
+                        .then(
+                            if (i == 0 && itemsCentre != null) {
+                                Modifier.onGloballyPositioned { c ->
+                                    val off = with(density) { itemsCentre.toPx() } - c.boundsInRoot().center.y
+                                    if (kotlin.math.abs(off) > 1f) fixPx = (fixPx + off).coerceIn(-300f, 300f)
+                                }
+                            } else Modifier,
+                        ),
                 )
             }
             if (appsShown) {

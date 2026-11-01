@@ -636,9 +636,16 @@ fun EpgScreen(
         val groupsW = fx(400)
         LaunchedEffect(showGroups) { tv.own.owntv.features.shell.components.StageRailOpen.guideGroups = showGroups }
         // Menu and groups begin on the first channel row, so the three columns start on one line (30 Oct 2026).
+        // Mayo TV (1 Nov 2026): measured, not assumed — on the TV the menu sat ~25 px and the groups ~13 px above
+        // the first channel. The row's real middle goes to the menu; the groups move by what they are off.
+        var firstRowCentrePx by remember { mutableStateOf<Float?>(null) }
+        var groupsFixPx by remember { mutableStateOf(0f) }
         DisposableEffect(Unit) {
             tv.own.owntv.features.shell.components.StageRailOpen.itemsCentre = GuideFirstRowCentre
             onDispose { tv.own.owntv.features.shell.components.StageRailOpen.itemsCentre = null }
+        }
+        LaunchedEffect(firstRowCentrePx) {
+            firstRowCentrePx?.let { px -> tv.own.owntv.features.shell.components.StageRailOpen.itemsCentre = with(density) { px.toDp() } }
         }
         DisposableEffect(Unit) { onDispose { tv.own.owntv.features.shell.components.StageRailOpen.guideGroups = false; tv.own.owntv.features.shell.components.StageRailOpen.guideFocused = false } }
         val groupsShift = androidx.compose.animation.core.animateDpAsState(if (showGroups) groupsW else 0.mpx, tv.own.owntv.ui.theme.stageSlide())
@@ -721,6 +728,13 @@ fun EpgScreen(
                             state = rowListState,
                             modifier = Modifier
                                 .padding(start = fx(48), end = fx(64), top = 48.mpx)
+                                // The first row's middle on screen, while the list is at its top (see firstRowCentrePx).
+                                .onGloballyPositioned { c ->
+                                    if (rowListState.firstVisibleItemIndex == 0 && rowListState.firstVisibleItemScrollOffset == 0) {
+                                        val centre = c.boundsInRoot().top + with(density) { (GuideGridDefaults.RowHeight / 2).toPx() }
+                                        if (firstRowCentrePx?.let { kotlin.math.abs(it - centre) > 1f } != false) firstRowCentrePx = centre
+                                    }
+                                }
                                 .fillMaxSize()
                                 .onFocusChanged { gridHasFocus = it.hasFocus }
                                 .focusProperties { onEnter = { runCatching { rowFocus(focusedRow.coerceIn(0, state.channels.size - 1)).requestFocus() } } }
@@ -885,6 +899,12 @@ fun EpgScreen(
                 searchPlaceholder = stringResource(R.string.tvplayer_guide_search),
                 searchLeavesRight = true,
                 searchGap = GroupsSearchGap,
+                // The first group's middle on the first channel's: off by what was measured, moved by it.
+                onFirstRowCentre = { centre ->
+                    val target = firstRowCentrePx
+                    val atTop = groupsListState.firstVisibleItemIndex == 0 && groupsListState.firstVisibleItemScrollOffset == 0
+                    if (atTop && target != null && kotlin.math.abs(target - centre) > 1f) groupsFixPx = (groupsFixPx + target - centre).coerceIn(-300f, 300f)
+                },
                 entries = groupEntries,
                 selectedIndex = railItems.indexOfFirst { it.key == (categoryKey ?: LiveKey.All) }.coerceAtLeast(0),
                 groupsHeading = groupsHeading,
@@ -950,7 +970,7 @@ fun EpgScreen(
                     ?: if (groupsEnter) railItems.indexOfFirst { it.key == (categoryKey ?: LiveKey.All) }.coerceAtLeast(0) else null,
                 modifier = Modifier
                     // The search field on the ruler's line, the first group centred on the first channel row (see [GroupsTop]).
-                    .padding(start = fx(24), end = fx(16), top = GroupsTop, bottom = 24.mpx)
+                    .padding(start = fx(24), end = fx(16), top = (GroupsTop + with(density) { groupsFixPx.toDp() }).coerceAtLeast(0.mpx), bottom = 24.mpx)
                     .width(groupsW - fx(40))
                     .fillMaxHeight()
                     .graphicsLayer {

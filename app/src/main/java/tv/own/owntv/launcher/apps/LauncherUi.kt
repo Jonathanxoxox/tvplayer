@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -290,6 +291,34 @@ fun AppChannelRows(
         if (apps.isEmpty()) LauncherApps.refreshApps(context)
     }
     val shown = channels.filter { it.key !in config.hiddenChannels }
+    // Android shows other apps' rows only once Mayo TV may read them: until then, one card that asks.
+    val canRead = androidx.compose.runtime.remember(resumes) { LauncherApps.canReadChannels(context) }
+    val ask = androidx.activity.compose.rememberLauncherForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { LauncherApps.canReadChannels(context) }
+    if (config.appChannels && !canRead) {
+        Column(modifier) {
+            tv.own.owntv.features.home.HomeRowHeader(stringResource(R.string.launcher_app_channels), small = null, start = start)
+            val requester = remember { FocusRequester() }
+            StageSurface(
+                onClick = { ask.launch(LauncherApps.PERMISSIONS) },
+                radius = StageRadii.Poster,
+                focusStyle = StageFocus.FX,
+                idle = Modifier.clip(RoundedCornerShape(StageRadii.Poster)).background(StageColors.GlassOff),
+                modifier = Modifier
+                    .padding(start = start)
+                    .width(620.mpx)
+                    .focusRequester(requester)
+                    .onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
+            ) { _ ->
+                Column(Modifier.padding(horizontal = 26.mpx, vertical = 20.mpx), verticalArrangement = Arrangement.spacedBy(6.mpx)) {
+                    Text(stringResource(R.string.launcher_app_channels_allow_title), style = stageText(20, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(stringResource(R.string.launcher_app_channels_allow_line), style = stageText(16, 500), color = StageColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+        return
+    }
     if (!config.appChannels || shown.isEmpty()) return
     val labels = apps.associate { it.pkg to it.label }
     val continueTitle = stringResource(R.string.launcher_row_continue)

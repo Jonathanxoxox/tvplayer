@@ -331,14 +331,18 @@ fun HomeScreen(
     // channels leaves Keep watching and the folded title where they are). The TV default instead pins
     // the focused item a third of the way down, which slid the whole page up on every ▼. The hero
     // itself never scrolls.
-    val homeBringIntoViewSpec = remember {
+    val density = androidx.compose.ui.platform.LocalDensity.current
+    val homeBringIntoViewSpec = remember(density) {
         object : BringIntoViewSpec {
             override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
                 if (heroFocused.value) return 0f
+                // The top-right cluster (clock, date) sits over the list's top: a row scrolled back up stops below
+                // it instead of sliding under the clock (Jonathan, 1 Nov 2026).
+                val top = with(density) { NoHeroTop.toPx() }
                 val trailing = offset + size - containerSize
                 return when {
-                    offset >= 0f && trailing <= 0f -> 0f
-                    offset < 0f || size > containerSize -> offset
+                    offset >= top && trailing <= 0f -> 0f
+                    offset < top || size > containerSize - top -> offset - top
                     else -> trailing
                 }
             }
