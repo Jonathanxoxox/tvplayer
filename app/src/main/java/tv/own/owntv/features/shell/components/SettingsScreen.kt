@@ -431,7 +431,9 @@ fun SettingsScreen(
     // therefore wins while one is open.
     // It is composed after the search-clearing and Quick-pin handlers above, and the last enabled one wins,
     // so it stands aside while either of those has something to undo first.
-    if (onBack != null) BackHandler(enabled = searchQuery.isBlank() && !(deepReturnKey != null && selectedGroup != 0)) { onBack() }
+    // Mayo TV: the categories down the left (SettingsSidebar). Back from the rows goes to them first, then out.
+    val side = remember { SidebarState() }
+    if (onBack != null) BackHandler(enabled = searchQuery.isBlank() && !(deepReturnKey != null && selectedGroup != 0)) { side.back(onBack) }
 
 
     // The root rows, as data (see [RootItem]). Building 40 small objects is a fraction of the cost of
@@ -858,8 +860,10 @@ fun SettingsScreen(
         if (displayedGroup != selectedGroup) {
             runCatching { pageScroll.scrollTo(0) }
             displayedGroup = selectedGroup
-            if (videoRowKey == null) for (attempt in 0 until 10) { withFrameNanos { }; if (runCatching { rowsFocus.requestFocus() }.getOrDefault(false)) break }
+            // A category picked by moving through the list keeps focus in the list.
+            if (videoRowKey == null && !side.fromSidebar) for (attempt in 0 until 10) { withFrameNanos { }; if (runCatching { rowsFocus.requestFocus() }.getOrDefault(false)) break }
         }
+        side.fromSidebar = false
     }
 
     // Restore focus to the row a sub-screen was opened from when the user navigates back. This block
@@ -903,9 +907,10 @@ fun SettingsScreen(
     if (onBack != null) {
         LaunchedEffect(Unit) {
             if (returningRowFocus != null || start?.search == true) return@LaunchedEffect
+            // Mayo TV: a fresh entry lands on the open category in the list on the left.
             repeat(10) {
                 withFrameNanos { }
-                if (runCatching { rowsFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
+                if (runCatching { side.focus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect
             }
         }
     }
@@ -1135,6 +1140,16 @@ fun SettingsScreen(
             modifier = modifier,
             searchAutoEdit = searchAutoEdit,
             panelTop = if (group == SettingsGroup.APPEARANCE && !searching) ({ tv.own.owntv.features.settings.SettingsLivePreview() }) else null,
+            showSearch = searching,
+            sidebar = { m ->
+                SettingsSidebarHost(
+                    categories, selectedGroup, searching, settingsVm, side, m,
+                    onSelect = { side.fromSidebar = true; searchQuery = ""; searchMode = false; selectedGroup = it },
+                    onEnterRows = { runCatching { (if (searching) searchFieldFocus else rowsFocus).requestFocus() } },
+                    onSearch = { searchQuery = ""; searchMode = true; searchAutoEdit = true; side.pendingSearch = true },
+                    searchField = searchFieldFocus,
+                )
+            },
         ) {
             when {
                 searching && searchQuery.isBlank() -> Unit
@@ -2645,5 +2660,77 @@ private fun serviceRowExtras(vm: SettingsViewModel): Map<String, RowExtra> {
         ),
         "tab_NETWORK" to RowExtra(SettingValue.Opens(if (proxy.usable) "${proxy.host}:${proxy.port}" else off)),
         "tab_DNS" to RowExtra(SettingValue.Opens(if (dns.enabled && dnsHost.isNotBlank()) dnsHost else if (dns.enabled) on else off)),
+    )
+}
+
+/** The Settings root's category list: where focus is, and whether a group change came from moving through it. */
+@androidx.compose.runtime.Stable
+private class SidebarState {
+    val focus = FocusRequester()
+    var hasFocus by mutableStateOf(false)
+    var fromSidebar = false
+    /** Search was picked in the list: its field takes focus once it is on screen. */
+    var pendingSearch by mutableStateOf(false)
+
+    /** Back: from the rows to the open category; from the list, out of Settings. */
+    fun back(onBack: () -> Unit) {
+        if (hasFocus || !runCatching { focus.requestFocus() }.getOrDefault(false)) onBack()
+    }
+}
+
+/**
+ * The categories of [categories] for [tv.own.owntv.features.settings.SettingsSidebar], with their counts. Kept out of
+ * [SettingsScreen], whose body is at the JVM method limit. Home screen comes right after Layout, beside the
+ * other look-and-feel groups, though its position among the groups (More opens them by it) stays last.
+ */
+@Composable
+private fun SettingsSidebarHost(
+    categories: List<Pair<RootGroup, List<RootRow>>>,
+    selected: Int,
+    searching: Boolean,
+    settingsVm: SettingsViewModel,
+    side: SidebarState,
+    modifier: Modifier,
+    onSelect: (Int) -> Unit,
+    onEnterRows: () -> Unit,
+    onSearch: () -> Unit,
+    searchField: FocusRequester,
+) {
+    // Search picked in the list: the field appears above the rows, then takes focus with the keyboard up.
+    LaunchedEffect(side.pendingSearch, searching) {
+        if (!side.pendingSearch || !searching) return@LaunchedEffect
+        repeat(10) {
+            kotlinx.coroutines.delay(50)
+            if (runCatching { searchField.requestFocus() }.getOrDefault(false)) { side.pendingSearch = false; return@LaunchedEffect }
+        }
+        side.pendingSearch = false
+    }
+    val profiles = tv.own.owntv.features.settings.profileCount()
+    val items = SettingsGroup.entries.mapNotNull { g ->
+        val (root, rows) = categories.getOrNull(g.ordinal) ?: return@mapNotNull null
+        val count = when {
+            g.video != null -> tv.own.owntv.features.settings.videoGroupCount(g.video, settingsVm) + if (g == SettingsGroup.WATCHING) 4 else 0
+            g == SettingsGroup.PROFILE -> profiles
+            g == SettingsGroup.HOMESCREEN -> tv.own.owntv.features.settings.LAUNCHER_SETTING_COUNT
+            g == SettingsGroup.APP -> rows.size + tv.own.owntv.features.settings.videoGroupCount(VideoGroup.DIAGNOSTICS, settingsVm)
+            else -> rows.size
+        }
+        tv.own.owntv.features.settings.SettingsCategory(g.ordinal, root.label, root.icon, count)
+    }
+    val homescreen = items.firstOrNull { it.index == SettingsGroup.HOMESCREEN.ordinal }
+    val ordered = if (homescreen == null) items else (items - homescreen).let { rest ->
+        val at = rest.indexOfFirst { it.index == SettingsGroup.LAYOUT.ordinal } + 1
+        rest.take(at) + homescreen + rest.drop(at)
+    }
+    tv.own.owntv.features.settings.SettingsSidebar(
+        categories = ordered,
+        selected = selected,
+        searching = searching,
+        onSelect = onSelect,
+        onEnterRows = onEnterRows,
+        onSearch = onSearch,
+        selectedFocus = side.focus,
+        onFocusChanged = { side.hasFocus = it },
+        modifier = modifier,
     )
 }

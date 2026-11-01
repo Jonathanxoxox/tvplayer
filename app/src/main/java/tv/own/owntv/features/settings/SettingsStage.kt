@@ -70,6 +70,7 @@ import tv.own.owntv.ui.theme.StageRadii
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
+import tv.own.owntv.ui.theme.StageListText
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 
@@ -245,6 +246,12 @@ fun StageSettingsPage(
     settingsRoot: Boolean = true,
     /** Off where there is no Settings to search (the setup wizard reuses the Add a source pages). */
     showSearch: Boolean = true,
+    /**
+     * Mayo TV (1 Nov 2026): the Settings root's categories, as a list down the left like the menu. With it the
+     * title moves up beside the clock, the search field sits above the rows (only while searching) and the
+     * rows take the rest of the width.
+     */
+    sidebar: (@Composable (Modifier) -> Unit)? = null,
     rows: @Composable ColumnScope.() -> Unit = {},
 ) {
     val searching = searchQuery.isNotBlank()
@@ -257,8 +264,14 @@ fun StageSettingsPage(
         BoxWithConstraints(modifier.fillMaxSize()) {
             // The 1920 px design frame as fractions of the real width, so other zooms reflow.
             val w = maxWidth / 1920f
+            val withSidebar = sidebar != null
+            // Mayo TV: no help column any more (the focused row explains itself), so the rows take its room.
+            val previewWidth = if (panelTop != null) w * 520 else 0.mpx
+            val rowsStart = if (withSidebar) w * 534 else w * 50
+            val rowsWidth = (if (withSidebar) w * 1322 else w * 1320) - (if (panelTop != null) previewWidth + w * 40 else 0.mpx)
             Row(
-                Modifier.fillMaxWidth().padding(start = w * 64, end = w * 64, top = 128.mpx).height(60.mpx),
+                if (withSidebar) Modifier.padding(start = w * 64, top = 44.mpx).width(w * 1100).height(60.mpx)
+                else Modifier.fillMaxWidth().padding(start = w * 64, end = w * 64, top = 128.mpx).height(60.mpx),
                 horizontalArrangement = Arrangement.spacedBy(16.mpx),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -280,7 +293,7 @@ fun StageSettingsPage(
                     Text(count, style = stageText(17, 700), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.mpx))
                 }
                 if (tools != null) Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically, content = tools)
-                if (showSearch) StageSearchField(
+                if (showSearch && !withSidebar) StageSearchField(
                     query = searchQuery,
                     onQueryChange = onSearchQuery,
                     placeholder = stringResource(R.string.more_settings_search),
@@ -292,21 +305,39 @@ fun StageSettingsPage(
                     onActivate = onSearchActivate,
                 )
             }
-            val rowsTop = if (toolbar != null) 300.mpx else 210.mpx
+            sidebar?.invoke(Modifier.padding(start = w * 64, top = 130.mpx, bottom = 56.mpx).width(w * 430).fillMaxHeight())
+            // With the categories on the left, the search field opens above the rows while searching.
+            val sidebarSearch = withSidebar && showSearch
+            if (sidebarSearch) StageSearchField(
+                query = searchQuery,
+                onQueryChange = onSearchQuery,
+                placeholder = stringResource(R.string.more_settings_search),
+                modifier = Modifier.padding(start = rowsStart, top = 130.mpx).width(rowsWidth).focusRequester(searchFocus),
+                height = 60.mpx,
+                radius = 12.mpx,
+                horizontalPadding = 20.mpx,
+                autoEdit = searchAutoEdit,
+                onActivate = onSearchActivate,
+            )
+            val rowsTop = when {
+                withSidebar -> if (sidebarSearch) 206.mpx else 130.mpx
+                toolbar != null -> 300.mpx
+                else -> 210.mpx
+            }
             if (toolbar != null) {
                 Row(
-                    Modifier.padding(start = w * 50, top = 210.mpx).width(w * 1060).height(84.mpx).padding(horizontal = 6.mpx),
+                    Modifier.padding(start = rowsStart, top = 210.mpx).width(rowsWidth).height(84.mpx).padding(horizontal = 6.mpx),
                     horizontalArrangement = Arrangement.spacedBy(8.mpx),
                     verticalAlignment = Alignment.CenterVertically,
                     content = toolbar,
                 )
             }
-            if (list != null) list(Modifier.padding(start = w * 50, top = rowsTop).width(w * 1060).fillMaxHeight())
+            if (list != null) list(Modifier.padding(start = rowsStart, top = rowsTop).width(rowsWidth).fillMaxHeight())
             else CompositionLocalProvider(LocalBringIntoViewSpec provides edgeScrollSpec) {
                 Column(
                     Modifier
-                        .padding(start = w * 50, top = rowsTop)
-                        .width(w * 1060)
+                        .padding(start = rowsStart, top = rowsTop)
+                        .width(rowsWidth)
                         .fillMaxHeight()
                         .focusRequester(rowsFocus)
                         .focusGroup()
@@ -318,57 +349,47 @@ fun StageSettingsPage(
             }
             val help = panel.help
             val editor = panel.editor
-            if (help != null || panelTop != null || editor != null) {
+            // A page's own picture (Appearance's live preview, Popup size's sample) beside the rows.
+            if (panelTop != null) {
                 Column(
                     Modifier
-                        .padding(start = w * 1160, top = 240.mpx)
-                        .width(w * 696)
-                        .heightIn(max = maxHeight - 280.mpx)
+                        .padding(start = rowsStart + rowsWidth + w * 40, top = rowsTop)
+                        .width(previewWidth)
                         .stageGlass(30.mpx)
                         .padding(26.mpx),
                 ) {
-                    if (editor != null) SettingPanelEditor(editor, help, onClosed = { panel.opener?.let { r -> runCatching { r.requestFocus() } } })
-                    else {
-                        // A row that brings its own picture (Popup size's sample) shows it in place of the page's.
-                        if (panelTop != null && help?.extra == null) panelTop()
-                        if (help != null) SettingPanelBody(help)
-                    }
+                    panelTop()
+                    help?.extra?.invoke()
+                }
+            }
+            // Mayo TV (1 Nov 2026): a row's choices come in as a sheet from the right edge over the dimmed page,
+            // as the menu does, instead of a panel beside the rows.
+            if (editor != null) {
+                Box(Modifier.fillMaxSize().background(StageColors.Scrim))
+                Column(
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .width(660.mpx)
+                        .fillMaxHeight()
+                        .background(SheetBackground)
+                        .drawBehind { drawRect(Color.White.copy(alpha = 0.07f), size = androidx.compose.ui.geometry.Size(1.mpx.toPx(), size.height)) }
+                        .padding(start = 36.mpx, end = 36.mpx, top = 130.mpx, bottom = 40.mpx),
+                ) {
+                    Text(eyebrow, style = stageText(13, 800, 0.13.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(bottom = 10.mpx))
+                    SettingPanelEditor(editor, help, onClosed = { panel.opener?.let { r -> runCatching { r.requestFocus() } } })
                 }
             }
         }
     }
 }
+
+/** The sheet a row's choices open in: the menu's panel colour (the page in the light theme). */
+private val SheetBackground: Color @Composable get() = stageTone(Color(0xFF0F5056), LocalStagePalette.current.page)
 
 /** `.helpc h5`: 13/800 caps, +0.13em, dim. */
 @Composable
 fun SettingPanelHeading(text: String, modifier: Modifier = Modifier) {
     Text(text.uppercase(), style = stageText(13, 800, 0.13.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = modifier.padding(bottom = 8.mpx))
-}
-
-@Composable
-private fun SettingPanelBody(help: SettingHelp) {
-    if (help.title.isNotEmpty()) SettingPanelHeading(help.title)
-    Text(help.text, style = stageText(17, 500).copy(lineHeight = 27.mpxSpLine()), color = PanelText)
-    help.extra?.invoke()
-    if (help.choices.isNotEmpty()) {
-        Box(Modifier.padding(top = 22.mpx, bottom = 16.mpx).fillMaxWidth().height(1.mpx).background(StageColors.Ink.copy(alpha = 0.1f)))
-        SettingPanelHeading(stringResource(R.string.settings_panel_choices))
-        val a = stageAccent
-        help.choices.forEachIndexed { i, label ->
-            val on = i == help.chosen
-            Row(Modifier.height(44.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx), verticalAlignment = Alignment.CenterVertically) {
-                StageRadio(on)
-                Text(label, style = stageText(18, 600), color = if (on) StageColors.Text else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    // A long choice gives way to the RECOMMENDED tag, never the other way round.
-                    modifier = Modifier.weight(1f, fill = false))
-                if (i == help.recommended) {
-                    Box(Modifier.padding(start = 6.mpx)) { StageTag(stringResource(R.string.settings_panel_recommended).uppercase()) }
-                }
-            }
-        }
-    }
-    if (help.hints.isNotEmpty()) StageKeyHints(help.hints, Modifier.padding(top = 20.mpx), textSize = 15)
-    help.footer?.invoke()
 }
 
 /**
@@ -393,8 +414,10 @@ private fun androidx.compose.foundation.layout.ColumnScope.SettingPanelEditor(ed
     val view = androidx.compose.ui.platform.LocalView.current
     androidx.compose.runtime.DisposableEffect(editor.owner) { onDispose { view.post { onClosed() } } }
     androidx.activity.compose.BackHandler { editor.onDismiss() }
-    if (help != null && help.title.isNotEmpty()) SettingPanelHeading(help.title)
-    if (help != null) Text(help.text, style = stageText(17, 500).copy(lineHeight = 27.mpxSpLine()), color = PanelText, maxLines = 3, overflow = TextOverflow.Ellipsis)
+    if (help != null && help.title.isNotEmpty()) {
+        Text(help.title, style = stageText(34, 800, (-0.5f / 34f).em), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(bottom = 8.mpx))
+    }
+    if (help != null) Text(help.text, style = stageText(18, 500).copy(lineHeight = 27.mpxSpLine()), color = PanelText, maxLines = 4, overflow = TextOverflow.Ellipsis)
     Box(Modifier.padding(top = 22.mpx, bottom = 16.mpx).fillMaxWidth().height(1.mpx).background(StageColors.Ink.copy(alpha = 0.1f)))
     editor.content(this, help)
 }
@@ -657,7 +680,7 @@ fun StageSettingRow(
         modifier = modifier
             .focusRequester(self)
             .fillMaxWidth()
-            .height(84.mpx)
+            .heightIn(min = 72.mpx)
             .then(
                 if (onStep != null) {
                     Modifier.onPreviewKeyEvent { e ->
@@ -674,23 +697,25 @@ fun StageSettingRow(
     ) { focused ->
         // While focused the panel follows this row, value changes included.
         if ((focused || keepPanel) && panel != null) androidx.compose.runtime.SideEffect { panel.help = help }
+        // Mayo TV (1 Nov 2026): a row is its name and its value, as the menu's lists are. Only the focused row
+        // says more: its explanation (the old help column's text), up to three lines under the name.
+        val explain = if (focused) (help?.text?.takeIf { it.isNotBlank() } ?: desc)?.takeIf { it.isNotBlank() } else null
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 22.mpx),
-            horizontalArrangement = Arrangement.spacedBy(18.mpx),
+            Modifier.fillMaxWidth().padding(horizontal = 24.mpx, vertical = if (explain != null) 14.mpx else 0.mpx),
+            horizontalArrangement = Arrangement.spacedBy(20.mpx),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            OwnTVIcon(icon, StageColors.Muted, Modifier.size(24.mpx))
             Column(Modifier.weight(1f)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.mpx), verticalAlignment = Alignment.CenterVertically) {
-                    Text(title, style = stageText(21, 700), color = if (enabled) StageColors.Text else StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
+                    Text(title, style = stageText(StageListText + 2, 700), color = if (enabled) StageColors.Text else StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false))
                     if (pinned) Box(Modifier.size(7.mpx).background(a.accent, CircleShape))
                 }
-                if (!desc.isNullOrBlank()) {
+                if (explain != null) {
                     Text(
-                        desc, style = stageText(15.5f, 500),
-                        color = if (focused) FocusedDesc else StageColors.Muted,
-                        maxLines = 1, overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 3.mpx),
+                        explain, style = stageText(17, 500),
+                        color = FocusedDesc,
+                        maxLines = 3, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.mpx),
                     )
                 }
             }
@@ -704,7 +729,7 @@ private val FocusedDesc: Color @Composable get() = StageColors.FxLine
 @Composable
 private fun SettingValueView(value: SettingValue) {
     val a = stageAccent
-    val valueStyle = stageText(18, 700)
+    val valueStyle = stageText(StageListText, 700)
     Row(horizontalArrangement = Arrangement.spacedBy(10.mpx), verticalAlignment = Alignment.CenterVertically) {
         when (value) {
             is SettingValue.Switch -> StageSwitch(value.on)

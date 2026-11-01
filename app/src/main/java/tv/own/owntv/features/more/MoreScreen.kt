@@ -102,7 +102,9 @@ fun MoreScreen(
     vm: MoreCountsViewModel = koinViewModel(),
     settingsVm: SettingsViewModel = koinViewModel(),
 ) {
-    var selected by rememberSaveable { mutableStateOf(MoreItem.SETTINGS) }
+    // Mayo TV (1 Nov 2026): Settings opens straight away (its categories are its own list now), so the page
+    // shown beside the sheet starts on Favourites.
+    var selected by rememberSaveable { mutableStateOf(MoreItem.FAVORITES) }
     val itemFocus = remember { MoreItem.entries.associateWith { FocusRequester() } }
     // What OK / ▶ focuses on the page: a fixed target, or the page's own choice (its first row).
     val pageTarget = remember { FocusRequester() }
@@ -119,6 +121,7 @@ fun MoreScreen(
     val enterItem: () -> Boolean = enter@{
         // On the profile row ▶ moves along the row (picture → Switch), as everywhere else.
         val item = focusedItem ?: return@enter false
+        if (item == MoreItem.SETTINGS) { onOpenSettings(null, false); return@enter true }
         if (item == selected) return@enter enterPage()
         choose(item)
         // The new page is composed on the next frame; its entry is only known after that.
@@ -139,7 +142,8 @@ fun MoreScreen(
         if (!restoreFocus) return@LaunchedEffect
         withFrameNanos { }
         withFrameNanos { }
-        if (!enterPage()) runCatching { itemFocus.getValue(selected).requestFocus() }
+        // Back from Settings lands on its item in the sheet.
+        runCatching { itemFocus.getValue(MoreItem.SETTINGS).requestFocus() }
         onRestored()
     }
     // Composed before the page, so a page's own Back (a step popup, a dialog) still wins over it.
@@ -181,7 +185,7 @@ fun MoreScreen(
                 StageGroupItem(
                     text = label, icon = icon, value = value, warn = warn,
                     selected = selected == it,
-                    onClick = { choose(it) },
+                    onClick = { if (it == MoreItem.SETTINGS) onOpenSettings(null, false) else choose(it) },
                     modifier = Modifier.focusRequester(itemFocus.getValue(it))
                         .onFocusChanged { f -> if (f.hasFocus) focusedItem = it else if (focusedItem == it) focusedItem = null },
                 )
@@ -222,10 +226,10 @@ fun MoreScreen(
         ) {
             val setEntry: (() -> Boolean) -> Unit = { pageEntry = it }
             when (selected) {
-                MoreItem.SETTINGS -> SettingsPage(
-                    entry = pageTarget, pinned = pinned.size,
-                    onOpenGroup = { onOpenSettings(it, false) },
-                    onSearch = { onOpenSettings(null, true) },
+                // Opens Settings itself (see the sheet's item); a page restored from before shows Favourites.
+                MoreItem.SETTINGS -> FavouritesPage(
+                    vm = vm, setEntry = setEntry,
+                    onPlayChannel = onPlayChannel, onPlayMovie = { onPlayMovie(it, 0L) }, onOpenSeries = onOpenSeries,
                 )
                 MoreItem.FAVORITES -> FavouritesPage(
                     vm = vm, setEntry = setEntry,
