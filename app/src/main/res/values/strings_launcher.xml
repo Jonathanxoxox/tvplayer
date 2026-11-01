@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mayo TV as the TV's start screen: the Apps row, other apps' channels, the Apps section, Settings › Home screen. -->
+<resources>
+    <string name="launcher_row_apps">Apps</string>
+    <string name="launcher_all_apps">All apps</string>
+    <string name="launcher_row_continue">Continue watching</string>
+    <string name="launcher_apps_title">Apps</string>
+    <plurals name="launcher_apps_line">
+        <item quantity="one">%1$d app · hold OK to move, add to Home or hide</item>
+        <item quantity="other">%1$d apps · hold OK to move, add to Home or hide</item>
+    </plurals>
+    <string name="launcher_apps_moving">Move with ◀ ▶ ▲ ▼, then OK</string>
+    <string name="launcher_menu_open">Open</string>
+    <string name="launcher_menu_move">Move</string>
+    <string name="launcher_menu_add_row">Add to the Apps row on Home</string>
+    <string name="launcher_menu_remove_row">Remove from the Apps row</string>
+    <string name="launcher_menu_hide">Hide</string>
+    <string name="launcher_menu_show">Show again</string>
+    <string name="launcher_menu_info">App info</string>
+    <string name="launcher_menu_left">Move left</string>
+    <string name="launcher_menu_right">Move right</string>
+    <string name="launcher_show_hidden">Hidden apps (%1$d)</string>
+    <string name="launcher_settings_card">Home button, Apps row, other apps’ channels</string>
+    <string name="launcher_settings_group">Home screen</string>
+    <string name="launcher_heading_button">Home button</string>
+    <string name="launcher_heading_home">Home</string>
+    <string name="launcher_as_start">Mayo TV as start screen</string>
+    <string name="launcher_as_start_line">The Home button and power-on lead to Mayo TV</string>
+    <string name="launcher_as_start_help">Mayo TV then opens after power-on and comes back on the Home button. On boxes that keep their own start screen, the Home guard below takes care of the Home button. Without the guard you can switch the TV’s own start screen off once over adb: %1$s</string>
+    <string name="launcher_guard">Home guard</string>
+    <string name="launcher_guard_line">Opens Mayo TV when the TV’s own start screen appears; Projectivy and Button Mapper stay on</string>
+    <string name="launcher_guard_help">The guard is an accessibility service. Mayo TV only adds itself to the list of switched-on services and never takes another one away. To switch it on from here, grant once over adb: %1$s — or switch it on yourself in the TV’s accessibility settings.</string>
+    <string name="launcher_guard_needs_setup">Set up</string>
+    <string name="launcher_boot">Open at power-on</string>
+    <string name="launcher_boot_line">Home, Live TV or an app</string>
+    <string name="launcher_boot_home">Home</string>
+    <string name="launcher_boot_live">Live TV</string>
+    <string name="launcher_boot_off">Nothing</string>
+    <string name="launcher_apps_row">Apps row</string>
+    <string name="launcher_apps_row_line">Right under the big picture</string>
+    <string name="launcher_row_apps_setting">Apps in the row</string>
+    <string name="launcher_row_apps_setting_line">Hold OK on an app in the row to move it</string>
+    <string name="launcher_app_channels">Other apps’ channels</string>
+    <string name="launcher_app_channels_line">At the end of Home; each one on or off</string>
+    <string name="launcher_app_channels_count">%1$d of %2$d on</string>
+    <string name="launcher_app_channels_none">No channels yet</string>
+    <string name="launcher_app_channels_allow">Allow</string>
+    <string name="launcher_app_channels_help">Apps like Nuvio and TizenTube put rows on the TV’s start screen. Mayo TV shows them at the end of Home once Android lets it read them. If asking does not help, grant once over adb: %1$s</string>
+    <string name="launcher_apps_menu">Apps in the menu</string>
+    <string name="launcher_apps_menu_line">Every app in a grid</string>
+    <string name="launcher_guard_service_label">Mayo TV Home guard</string>
+    <string name="launcher_guard_service_description">Opens Mayo TV when the TV’s own start screen comes to the front. It sees only which app is in front, nothing that is shown.</string>
+</resources>

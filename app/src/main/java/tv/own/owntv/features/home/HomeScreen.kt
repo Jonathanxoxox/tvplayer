@@ -156,6 +156,8 @@ fun HomeScreen(
     onEntryHook: (((() -> Boolean)?) -> Unit)? = null,
     /** Sports Hub: ▶ on a Live sports card opens its match page. */
     onOpenMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = {},
+    /** The Apps row's All apps card: the Apps section. */
+    onOpenApps: () -> Unit = {},
     modifier: Modifier = Modifier,
     sportsVm: tv.own.owntv.features.sports.SportsViewModel = org.koin.androidx.compose.koinViewModel(),
 ) {
@@ -199,6 +201,8 @@ fun HomeScreen(
     val showHeroFallback = heroVisible && state.heroItems.isEmpty() && !hasNonHeroContent
     val renderRows = orderedRows.filter { rowCanRender(it, state, showHeroFallback, sportsCards.size) }
     val firstDataRow = renderRows.firstOrNull { it != HomeRow.HERO && rowHasData(it, state, sportsCards.size) }
+    val launcherConfig = tv.own.owntv.launcher.apps.rememberLauncherConfig()
+    val showAppsRow = launcherConfig.appsRow && renderRows.isNotEmpty()
     val showAllHiddenState = orderedRows.isEmpty()
     val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty()
     val fullBleed = renderRows.firstOrNull() == HomeRow.TRENDING &&
@@ -290,7 +294,8 @@ fun HomeScreen(
             restoreFocus -> firstDataRow
             else -> null
         }
-        val targetIndex = targetRow?.let { renderRows.indexOf(it) } ?: 0
+        // The Apps row sits at position 1 when shown, so every row after the first moves down one.
+        val targetIndex = (targetRow?.let { renderRows.indexOf(it) } ?: 0).let { if (showAppsRow && it >= 1) it + 1 else it }
         runCatching { listState.scrollToItem(targetIndex.coerceAtLeast(0)) }
 
         // Only pull focus INTO the Home content when returning from the player (restoreFocus). On a cold
@@ -345,7 +350,7 @@ fun HomeScreen(
         ?.takeIf { posterHero && state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS }
     // ▲ from the row right under a folded hero unfolds it and lands on Play — there is nothing focusable
     // in the one-line form for focus search to find.
-    val firstRowUnderHero = renderRows.getOrNull(1).takeIf { fullBleed }
+    val firstRowUnderHero = renderRows.getOrNull(1).takeIf { fullBleed && !showAppsRow }
     val unfoldOnUp = Modifier.onPreviewKeyEvent { e ->
         if (e.type == KeyEventType.KeyDown && e.key == Key.DirectionUp) {
             inRows = false
@@ -374,7 +379,7 @@ fun HomeScreen(
                 contentPadding = PaddingValues(top = if (fullBleed || posterItem != null) 0.dp else NoHeroTop, bottom = 48.mpx),
                 verticalArrangement = Arrangement.spacedBy(RowGap),
             ) {
-                itemsIndexed(renderRows, key = { _, row -> row.name }) { _, row ->
+                val rowContent: @Composable (HomeRow) -> Unit = { row ->
                     val firstItemFocusRequester = rowFocusRequester(row)
                     val rowModifier = if (row == firstRowUnderHero) unfoldOnUp else Modifier
                     when (row) {
@@ -591,6 +596,23 @@ fun HomeScreen(
                             modifier = rowModifier,
                         )
                     }
+                }
+                itemsIndexed(renderRows.take(1), key = { _, row -> row.name }) { _, row -> rowContent(row) }
+                // Mayo TV as start screen: the Apps row right under the big picture (Jonathan, 1 Nov 2026).
+                if (showAppsRow) item(key = "launcher_apps") {
+                    tv.own.owntv.launcher.apps.HomeAppsRow(
+                        start = contentStart,
+                        onFocus = onNonHeroFocused,
+                        onAllApps = onOpenApps,
+                        firstFocusRequester = null,
+                        track = track,
+                        modifier = if (fullBleed) unfoldOnUp else Modifier,
+                    )
+                }
+                itemsIndexed(renderRows.drop(1), key = { _, row -> row.name }) { _, row -> rowContent(row) }
+                // …and the other apps' channels at the very end.
+                if (launcherConfig.appChannels) item(key = "launcher_channels") {
+                    tv.own.owntv.launcher.apps.AppChannelRows(start = contentStart, onFocus = onNonHeroFocused, track = track)
                 }
             }
         }

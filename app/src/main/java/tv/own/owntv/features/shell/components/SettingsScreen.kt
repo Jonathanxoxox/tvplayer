@@ -767,6 +767,8 @@ fun SettingsScreen(
         ),
         // About and the error log live in More. A page of facts and a log are
         // not preferences; both are More rows now, opening the very same dialogs.
+        // Mayo TV as the TV's start screen: its rows are drawn by LauncherSettingsRows (SettingsGroup.HOMESCREEN).
+        RootGroup("group_homescreen", stringResource(R.string.launcher_settings_group), OwnTVIcon.HOME, ""),
     )
 
     // --- Two-pane root: the flat list above is still the single source of truth for order, tone,
@@ -1098,6 +1100,9 @@ fun SettingsScreen(
             val all = n + if (group == SettingsGroup.WATCHING) 4 else 0
             pluralStringResource(R.plurals.settings_setting_count, all, all)
         }
+        group == SettingsGroup.HOMESCREEN -> pluralStringResource(
+            R.plurals.settings_setting_count, tv.own.owntv.features.settings.LAUNCHER_SETTING_COUNT, tv.own.owntv.features.settings.LAUNCHER_SETTING_COUNT,
+        )
         group == SettingsGroup.PROFILE -> tv.own.owntv.features.settings.profileCount().let { n ->
             pluralStringResource(R.plurals.settings_profile_count, n, n)
         }
@@ -1145,6 +1150,7 @@ fun SettingsScreen(
                     if (group == SettingsGroup.WATCHING) tv.own.owntv.features.settings.RecordingSettingsRows(pageScroll)
                 }
                 group == SettingsGroup.PROFILE -> tv.own.owntv.features.settings.ProfileSettingsRows()
+                group == SettingsGroup.HOMESCREEN -> tv.own.owntv.features.settings.LauncherSettingsRows()
                 // Only Quick can be empty, and only because the user emptied it.
                 selectedRows.isEmpty() -> StageSettingsNote(stringResource(R.string.settings_quick_empty_title), stringResource(R.string.settings_quick_empty_hint))
                 else -> {
