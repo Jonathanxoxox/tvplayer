@@ -31,9 +31,8 @@
     <string name="launcher_guard_help">The guard is an accessibility service. Mayo TV only adds itself to the list of switched-on services and never takes another one away. To switch it on from here, grant once over adb: %1$s — or switch it on yourself in the TV’s accessibility settings.</string>
     <string name="launcher_guard_needs_setup">Set up</string>
     <string name="launcher_boot">Open at power-on</string>
-    <string name="launcher_boot_line">Home, Live TV or an app</string>
-    <string name="launcher_boot_home">Home</string>
-    <string name="launcher_boot_live">Live TV</string>
+    <string name="launcher_boot_line">Mayo TV (as App start says), another app or nothing</string>
+    <string name="launcher_boot_home">Mayo TV</string>
     <string name="launcher_boot_off">Nothing</string>
     <string name="launcher_apps_row">Apps row</string>
     <string name="launcher_apps_row_line">Right under the big picture</string>

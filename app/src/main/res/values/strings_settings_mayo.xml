@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mayo TV's own order of Settings (1 Nov 2026): ten groups instead of thirteen, scattered rows gathered on one page. -->
+<resources>
+    <string name="settings_mayo_group_sources">Playlists &amp; EPG</string>
+    <string name="settings_mayo_group_live">Live TV &amp; sport</string>
+    <string name="settings_mayo_group_playback">Playback</string>
+    <string name="settings_mayo_group_picture_sound">Picture &amp; sound</string>
+    <string name="settings_mayo_group_language">Language &amp; subtitles</string>
+    <string name="settings_mayo_heading_guide">TV guide</string>
+    <string name="settings_mayo_heading_contents">Contents</string>
+    <string name="settings_mayo_heading_catchup_sport">Catch-up &amp; sport</string>
+    <string name="settings_mayo_heading_size">Size &amp; font</string>
+    <string name="settings_mayo_heading_layout">Layout</string>
+    <string name="settings_mayo_heading_updates">Updates</string>
+    <string name="settings_mayo_heading_saved">Remembered settings</string>
+    <string name="settings_mayo_per_playlist">Per playlist</string>
+    <string name="settings_mayo_per_playlist_line">Player, latency, pre-buffer, give-up time and catch-up time zone for single playlists</string>
+    <string name="settings_mayo_resets">Reset remembered settings</string>
+    <string name="settings_mayo_resets_line">Player choice, zoom, volume and audio sync remembered per channel or film</string>
+    <string name="settings_mayo_home_rows">Rows on Home</string>
+</resources>

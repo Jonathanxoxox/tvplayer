@@ -286,8 +286,8 @@ RAIL = re.compile(r"^(Suche|Live-TV|Programmübersicht|Sport|Filme|Serien|Downlo
 # Menüpunkte liegen ganz links; der Guide-Titel heißt ebenfalls „Live-TV“.
 RAIL_XMAX = 160
 SETTINGS_CARDS = [
-    "Schnellzugriff", "Profil", "Quellen und Programm", "Darstellung", "Layout", "Startbildschirm",
-    "Inhalte und Metadaten", "Player", "Bild", "Ton und Untertitel", "Live-TV", "Wiedergabe und Aufnahme", "App",
+    "Schnellzugriff", "Profil", "Playlists & EPG", "Live TV & Sport", "Wiedergabe", "Bild & Ton",
+    "Sprache & Untertitel", "Darstellung", "Startbildschirm", "App",
 ]
 
 # Die Kategorien der Einstellungen stehen als Liste links (Mayo TV, 1. Nov. 2026): bis hier reicht sie.
@@ -649,7 +649,7 @@ def settings_tour():
         key("DPAD_DOWN", n=10, wait=0.4)
         shot(f"einst-{slug(card)}-ende")
         # Die Tastenbelegung ist die letzte Zeile von Layout
-        if card == "Layout" and goto(r"^Fernbedienungs-Kurzbefehle"):
+        if card == "Darstellung" and goto(r"^Fernbedienungs-Kurzbefehle"):
             time.sleep(1.5)
             shot("einst-tasten")
             key("DPAD_DOWN", wait=0.6)
@@ -659,6 +659,15 @@ def settings_tour():
             key("BACK", wait=1.0)
             key("DPAD_DOWN", n=12, wait=0.4)
             shot("einst-tasten-unten")
+            key("BACK", wait=1.5)
+        # Die Sammelseiten: Pro Playlist und Gemerktes zurücksetzen.
+        if card == "Playlists & EPG" and goto(r"^Pro Playlist$"):
+            time.sleep(1.5)
+            shot("einst-pro-playlist")
+            key("BACK", wait=1.5)
+        if card == "App" and goto(r"^Gemerkte Einstellungen zurücksetzen$"):
+            time.sleep(1.5)
+            shot("einst-zuruecksetzen")
             key("BACK", wait=1.5)
         # Eine Auswahl kommt als Blatt von rechts.
         if card == "Startbildschirm" and goto(r"^Beim Einschalten öffnen$"):
@@ -899,7 +908,7 @@ def flicker_tour():
                 record(f"mehr-zurueck-menue-{i}", "BACK")
                 dismiss_exit(dump())
             # Unterseite (Fernbedienungs-Kurzbefehle) › Zurück › Einstellungsseite › Zurück › Mehr
-            if open_settings_card("Layout") and goto(r"^Fernbedienungs-Kurzbefehle"):
+            if open_settings_card("Darstellung") and goto(r"^Fernbedienungs-Kurzbefehle"):
                 time.sleep(2)
                 record(f"unterseite-zurueck-{i}", "BACK")
                 record(f"layout-zurueck-mehr-{i}", "BACK")

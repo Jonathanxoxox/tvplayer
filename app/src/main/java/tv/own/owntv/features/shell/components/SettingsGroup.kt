@@ -4,24 +4,22 @@ import tv.own.owntv.R
 import tv.own.owntv.features.settings.VideoGroup
 
 /**
- * The twelve Settings groups, in the order of More › Settings' cards — a card's index is the
- * group it opens. [video] marks the five groups whose rows are the Video player's.
+ * The Settings groups, in the order of the category list on the left (Mayo TV, 1 Nov 2026: ten instead of
+ * thirteen). A group's position is also where its rows start in the root list (a RootGroup marker each).
+ * [video] adds a group's Video player rows; [rootFirst] puts its own rows above them instead of below.
  */
-internal enum class SettingsGroup(val titleRes: Int, val video: VideoGroup? = null) {
+internal enum class SettingsGroup(val titleRes: Int, val video: VideoGroup? = null, val rootFirst: Boolean = false) {
     QUICK(R.string.settings_group_quick),
     PROFILE(R.string.settings_group_profile),
-    SOURCES(R.string.settings_group_sources),
+    SOURCES(R.string.settings_mayo_group_sources),
+    LIVE(R.string.settings_mayo_group_live, VideoGroup.LIVE),
+    PLAYBACK(R.string.settings_mayo_group_playback, VideoGroup.PLAYBACK),
+    PICTURE_SOUND(R.string.settings_mayo_group_picture_sound, VideoGroup.PICTURE_SOUND),
+    LANGUAGE(R.string.settings_mayo_group_language, VideoGroup.LANGUAGES, rootFirst = true),
     APPEARANCE(R.string.settings_group_appearance),
-    LAYOUT(R.string.settings_group_layout),
-    CONTENT(R.string.settings_group_content_metadata),
-    PLAYER(R.string.settings_vp_cat_player, VideoGroup.PLAYER),
-    PICTURE(R.string.settings_vp_cat_picture, VideoGroup.PICTURE),
-    SOUND(R.string.settings_group_sound_subtitles, VideoGroup.SOUND),
-    LIVE(R.string.settings_live_tv, VideoGroup.LIVE),
-    WATCHING(R.string.settings_group_watching_recording, VideoGroup.WATCHING),
-    APP(R.string.settings_group_app),
-    /** Mayo TV as the TV's start screen. Last, so every group before it keeps its position (More opens groups by it). */
+    /** Mayo TV as the TV's start screen, and Mayo TV's own Home rows. */
     HOMESCREEN(R.string.launcher_settings_group),
+    APP(R.string.settings_group_app, VideoGroup.DIAGNOSTICS, rootFirst = true),
     ;
 
     companion object {

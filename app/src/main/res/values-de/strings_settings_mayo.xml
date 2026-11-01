@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_mayo_group_sources">Playlists &amp; EPG</string>
+    <string name="settings_mayo_group_live">Live TV &amp; Sport</string>
+    <string name="settings_mayo_group_playback">Wiedergabe</string>
+    <string name="settings_mayo_group_picture_sound">Bild &amp; Ton</string>
+    <string name="settings_mayo_group_language">Sprache &amp; Untertitel</string>
+    <string name="settings_mayo_heading_guide">Programmführer</string>
+    <string name="settings_mayo_heading_contents">Inhalte</string>
+    <string name="settings_mayo_heading_catchup_sport">Catch-up &amp; Sport</string>
+    <string name="settings_mayo_heading_size">Größe &amp; Schrift</string>
+    <string name="settings_mayo_heading_layout">Layout</string>
+    <string name="settings_mayo_heading_updates">Updates</string>
+    <string name="settings_mayo_heading_saved">Gemerktes</string>
+    <string name="settings_mayo_per_playlist">Pro Playlist</string>
+    <string name="settings_mayo_per_playlist_line">Player, Latenz, Vorpuffer, Aufgeben nach und Catch-up-Zeitzone für einzelne Playlists</string>
+    <string name="settings_mayo_resets">Gemerkte Einstellungen zurücksetzen</string>
+    <string name="settings_mayo_resets_line">Player-Wahl, Zoom, Lautstärke und Audio-Sync, die pro Sender oder Film gemerkt wurden</string>
+    <string name="settings_mayo_home_rows">Reihen der Startseite</string>
+</resources>
