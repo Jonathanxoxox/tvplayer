@@ -31,6 +31,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
@@ -437,6 +439,8 @@ internal fun LiveCategories(
     searchLeavesRight: Boolean = false,
     /** Between the search field and the first row; null = the usual 14 (sheet) / 16 (column). */
     searchGap: androidx.compose.ui.unit.Dp? = null,
+    /** Where the first row's middle really is on screen (px from the top): the guide lines it up with its first channel. */
+    onFirstRowCentre: ((Float) -> Unit)? = null,
 ) {
     var localQuery by remember { mutableStateOf("") }
     val query = if (showSearch) searchQuery ?: localQuery else ""
@@ -575,6 +579,11 @@ internal fun LiveCategories(
                 item(key = entry.item.key.toString()) {
                     val rowModifier = Modifier.focusRequester(rowFocusers[pos]).then(rightKey)
                         .onFocusChanged { if (it.hasFocus) { focusedPos = pos; onRowFocus(index) } }
+                        .then(
+                            if (pos == 0 && onFirstRowCentre != null) {
+                                Modifier.onGloballyPositioned { c -> onFirstRowCentre(c.boundsInRoot().center.y) }
+                            } else Modifier,
+                        )
                     val selected = index == selectedIndex
                     if (sheet) {
                         StageSheetItem(
