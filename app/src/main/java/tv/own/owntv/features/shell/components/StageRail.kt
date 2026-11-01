@@ -96,6 +96,10 @@ fun StageRail(
     selected: MainSection,
     visibleSections: Set<MainSection>,
     onSelect: (MainSection) -> Unit,
+    /** Mayo TV as start screen: an Apps item after the sections, opening the grid of every app. */
+    appsShown: Boolean = false,
+    appsActive: Boolean = false,
+    onOpenApps: () -> Unit = {},
     profileName: String,
     profileLine: String,
     onSwitchProfile: () -> Unit,
@@ -121,6 +125,7 @@ fun StageRail(
     var hasFocus by remember { mutableStateOf(false) }
     // Search, Settings and More all land on a rail item: Search has its own, Settings lives behind More.
     val focusSection = when {
+        appsActive && appsShown -> null
         selected == MainSection.SETTINGS || selected == MainSection.MORE -> MainSection.MORE
         selected == MainSection.SEARCH || selected in visibleSections -> selected
         else -> StageRailOrder.firstOrNull { it in visibleSections } ?: MainSection.MORE
@@ -214,9 +219,20 @@ fun StageRail(
                     icon = section.stageIcon,
                     label = stringResource(section.labelRes),
                     expanded = drawnOpen,
-                    active = section == selected,
+                    active = section == selected && !(appsActive && appsShown),
                     onClick = { onSelect(section) },
                     modifier = (if (section == focusSection) Modifier.focusRequester(selectedItemFocusRequester) else Modifier)
+                        .focusProperties { canFocus = itemsFocusable() },
+                )
+            }
+            if (appsShown) {
+                RailItem(
+                    icon = OwnTVIcon.GRID,
+                    label = stringResource(R.string.launcher_apps_title),
+                    expanded = drawnOpen,
+                    active = appsActive,
+                    onClick = onOpenApps,
+                    modifier = (if (appsActive) Modifier.focusRequester(selectedItemFocusRequester) else Modifier)
                         .focusProperties { canFocus = itemsFocusable() },
                 )
             }

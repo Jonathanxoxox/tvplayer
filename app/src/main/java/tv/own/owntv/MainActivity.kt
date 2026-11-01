@@ -139,6 +139,7 @@ open class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        tv.own.owntv.launcher.apps.LauncherSystem.onIntent(intent)
         pendingDeepLink = deepLinkOf(intent.data)
         Log.d(TAG, "onNewIntent deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}")
     }
@@ -192,6 +193,7 @@ open class MainActivity : ComponentActivity() {
         StartupGate.activityStarted()
         val splashDeadline = SystemClock.uptimeMillis() + SPLASH_TIMEOUT_MS
         splash.setKeepOnScreenCondition { !contentReady && SystemClock.uptimeMillis() < splashDeadline }
+        tv.own.owntv.launcher.apps.LauncherSystem.onIntent(intent)
         pendingDeepLink = deepLinkOf(intent.data)
         startedByLink = pendingDeepLink != null || sportsPlayback.launcherMatch.value != null
         Log.d(TAG, "onCreate deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}")

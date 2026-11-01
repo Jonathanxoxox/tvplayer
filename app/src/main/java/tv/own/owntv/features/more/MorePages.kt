@@ -218,6 +218,7 @@ private val SettingsCards = listOf(
     SettingsGroupCard(OwnTVIcon.LIVE_TV, R.string.settings_live_tv, R.string.settings_card_live, 12),
     SettingsGroupCard(OwnTVIcon.REC, R.string.settings_group_watching_recording, R.string.settings_card_watching, 11),
     SettingsGroupCard(OwnTVIcon.INFO, R.string.settings_group_app, R.string.settings_card_app, 10),
+    SettingsGroupCard(OwnTVIcon.HOME, R.string.launcher_settings_group, R.string.launcher_settings_card, tv.own.owntv.features.settings.LAUNCHER_SETTING_COUNT),
 )
 
 /** The card last opened, so Back from its group lands on it again rather than on the search field. */
@@ -244,7 +245,10 @@ internal fun SettingsPage(entry: FocusRequester, pinned: Int, onOpenGroup: (Int)
             }
         }
         Column(Modifier.padding(top = 22.mpx), verticalArrangement = Arrangement.spacedBy(20.mpx)) {
-            SettingsCards.chunked(3).forEach { row ->
+            // Three to a row; a single card left over joins the row above (the Home screen card, the 13th).
+            SettingsCards.chunked(3).let { rows ->
+                if (rows.size > 1 && rows.last().size == 1) rows.dropLast(2) + listOf(rows[rows.size - 2] + rows.last()) else rows
+            }.forEach { row ->
                 // 150 at the default font; a larger app font grows the row rather than cutting the
                 // summary, and the row's cards keep one height.
                 Row(Modifier.height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(20.mpx)) {

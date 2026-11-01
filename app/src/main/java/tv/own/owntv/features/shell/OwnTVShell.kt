@@ -157,6 +157,12 @@ fun OwnTVShell(
     // "Quit?" without the user having been on the rail.
     var railTrulyFocused by remember { mutableStateOf(false) }
     var showExit by remember { mutableStateOf(false) }
+    // The Apps section (all apps in a grid): not one of core's sections, so it is drawn over the selected
+    // one and closes again when any section is picked in the menu.
+    var appsOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    var appsEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    var appsTakeFocus by remember { mutableStateOf(false) }
+    val launcherConfig = tv.own.owntv.launcher.apps.rememberLauncherConfig()
     var showAvatarPicker by remember { mutableStateOf(false) }
     var showAvatarChooser by remember { mutableStateOf(false) }
     var showPlaylistPicker by remember { mutableStateOf(false) }
@@ -680,6 +686,14 @@ fun OwnTVShell(
     val exitBack: () -> Unit = exit@{
         if (guideHandover) return@exit
         exitToList()
+    }
+    // The Home button (Mayo TV as start screen): out of the player and the Apps grid, onto Home.
+    val homePress by tv.own.owntv.launcher.apps.LauncherSystem.homePress.collectAsStateWithLifecycle()
+    LaunchedEffect(homePress) {
+        if (!tv.own.owntv.launcher.apps.LauncherSystem.consumeHomePress(homePress)) return@LaunchedEffect
+        if (playerMode != PlayerMode.NONE) exitPlayer()
+        appsOpen = false
+        onSelectSection(MainSection.HOME)
     }
     // A one-stream playlist that a download was using: core paused the download; this asks what next.
     tv.own.owntv.features.downloads.DownloadWatchPrompt(onClosePlayer = { if (playerMode != PlayerMode.NONE) exitPlayer() })
@@ -1211,6 +1225,7 @@ fun OwnTVShell(
                   trendingSearchActive = false
                   restoreTrendingSearchFocus = false
               }
+              appsOpen = false
               onSelectSection(section)
           }
           Box(Modifier.weight(1f).fillMaxWidth()) {
@@ -1273,6 +1288,15 @@ fun OwnTVShell(
                         ),
                 ) {
                     when {
+                        appsOpen -> tv.own.owntv.launcher.apps.AppsScreen(
+                            onChildFocused = { focusedLayer = ShellLayer.CONTENT },
+                            onEntryHook = { appsEntry = it },
+                            takeFocus = appsTakeFocus,
+                            onFocusTaken = { appsTakeFocus = false },
+                            contentStart = 40.mpx,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+
                         // More — the hub the rail's last item opens. Settings is a row in it.
                         selectedSection == MainSection.MORE -> tv.own.owntv.features.more.MoreScreen(
                             profileName = profileName.ifBlank { stringResource(R.string.common_own_tv_user) },
@@ -1376,6 +1400,7 @@ fun OwnTVShell(
                                 sportsMatchRequests.pendingMatch.value = m to null
                                 onSelectSection(MainSection.SPORTS)
                             },
+                            onOpenApps = { appsTakeFocus = true; appsOpen = true },
                             contentStart = 40.mpx,
                             modifier = Modifier.fillMaxSize(),
                         )
@@ -1518,6 +1543,9 @@ fun OwnTVShell(
                 selected = selectedSection,
                 visibleSections = visibleSections,
                 onSelect = selectFromNav,
+                appsShown = launcherConfig.appsInMenu,
+                appsActive = appsOpen,
+                onOpenApps = { appsOpen = true },
                 profileName = profileName.ifBlank { stringResource(R.string.common_own_tv_user) },
                 profileLine = stringResource(R.string.shell_rail_profile_line, playlistLabel),
                 onSwitchProfile = onSwitchProfile,
@@ -1526,7 +1554,7 @@ fun OwnTVShell(
                 avatarPath = avatarPath,
                 selectedItemFocusRequester = sidebarFocus,
                 contentFocusRequester = contentAreaFocus,
-                enterContent = when (selectedSection) {
+                enterContent = if (appsOpen) appsEntry else when (selectedSection) {
                     MainSection.HOME -> homeEntry
                     MainSection.LIVE_TV -> guideEntry
                     MainSection.MOVIES, MainSection.SERIES -> vodEntry

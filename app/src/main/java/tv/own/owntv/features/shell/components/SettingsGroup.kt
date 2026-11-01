@@ -20,6 +20,8 @@ internal enum class SettingsGroup(val titleRes: Int, val video: VideoGroup? = nu
     LIVE(R.string.settings_live_tv, VideoGroup.LIVE),
     WATCHING(R.string.settings_group_watching_recording, VideoGroup.WATCHING),
     APP(R.string.settings_group_app),
+    /** Mayo TV as the TV's start screen. Last, so every group before it keeps its position (More opens groups by it). */
+    HOMESCREEN(R.string.launcher_settings_group),
     ;
 
     companion object {
