@@ -41,6 +41,8 @@
     <string name="launcher_app_channels_line">Am Ende der Startseite; einzeln ein- und ausblenden</string>
     <string name="launcher_app_channels_count">%1$d von %2$d an</string>
     <string name="launcher_app_channels_none">Noch keine Kanäle</string>
+    <string name="launcher_app_channels_allow_title">Kanäle anderer Apps anzeigen</string>
+    <string name="launcher_app_channels_allow_line">OK drücken, damit Mayo TV die Reihen von Apps wie Nuvio und TizenTube lesen darf.</string>
     <string name="launcher_app_channels_allow">Erlauben</string>
     <string name="launcher_app_channels_help">Apps wie Nuvio und TizenTube legen Reihen auf dem Startbildschirm des Fernsehers an. Mayo TV zeigt sie am Ende der Startseite, sobald Android das Lesen erlaubt. Hilft das Nachfragen nicht, einmal per ADB erlauben: %1$s</string>
     <string name="launcher_apps_menu">Seitenleiste: „Apps“</string>

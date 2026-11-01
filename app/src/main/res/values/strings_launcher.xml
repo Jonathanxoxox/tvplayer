@@ -42,6 +42,8 @@
     <string name="launcher_app_channels_line">At the end of Home; each one on or off</string>
     <string name="launcher_app_channels_count">%1$d of %2$d on</string>
     <string name="launcher_app_channels_none">No channels yet</string>
+    <string name="launcher_app_channels_allow_title">Show other apps’ channels</string>
+    <string name="launcher_app_channels_allow_line">Press OK to let Mayo TV read the rows that apps like Nuvio and TizenTube put on the TV.</string>
     <string name="launcher_app_channels_allow">Allow</string>
     <string name="launcher_app_channels_help">Apps like Nuvio and TizenTube put rows on the TV’s start screen. Mayo TV shows them at the end of Home once Android lets it read them. If asking does not help, grant once over adb: %1$s</string>
     <string name="launcher_apps_menu">Apps in the menu</string>
