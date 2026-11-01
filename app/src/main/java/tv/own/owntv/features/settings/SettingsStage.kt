@@ -151,6 +151,9 @@ class SettingsPanelState {
 
 val LocalSettingsPanel = staticCompositionLocalOf<SettingsPanelState?> { null }
 
+/** The Settings root (no panel): the focused row explains itself in full under its name. */
+val LocalInlineHelp = staticCompositionLocalOf { false }
+
 /**
  * The panel text for the row [key]: its long explanation from [SETTING_HELP] (falling back to the
  * row's own line), the choices, and key hints from what the row does.
@@ -260,15 +263,21 @@ fun StageSettingsPage(
     val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val from = ((if (settingsRoot) listOf(stringResource(R.string.common_nav_settings)) else emptyList()) + parents).lastOrNull()
     val eyebrow = (if (from != null) stringResource(R.string.settings_breadcrumb_eyebrow, from, group) else group).uppercase(locale)
-    CompositionLocalProvider(LocalSettingsPanel provides panel, tv.own.owntv.ui.stage.LocalPopupEyebrow provides eyebrow) {
+    CompositionLocalProvider(
+        LocalSettingsPanel provides panel,
+        tv.own.owntv.ui.stage.LocalPopupEyebrow provides eyebrow,
+        LocalInlineHelp provides (sidebar != null),
+    ) {
         BoxWithConstraints(modifier.fillMaxSize()) {
             // The 1920 px design frame as fractions of the real width, so other zooms reflow.
             val w = maxWidth / 1920f
             val withSidebar = sidebar != null
             // Mayo TV: no help column any more (the focused row explains itself), so the rows take its room.
-            val previewWidth = if (panelTop != null) w * 520 else 0.mpx
+            // Pages under Settings keep their panel on the right: many put their actions there (Import, Move,
+            // Delete …), so only the root, with its categories, does without it.
+            val previewWidth = if (panelTop != null && withSidebar) w * 520 else 0.mpx
             val rowsStart = if (withSidebar) w * 534 else w * 50
-            val rowsWidth = (if (withSidebar) w * 1322 else w * 1320) - (if (panelTop != null) previewWidth + w * 40 else 0.mpx)
+            val rowsWidth = if (withSidebar) w * 1322 - (if (panelTop != null) previewWidth + w * 40 else 0.mpx) else w * 1060
             Row(
                 if (withSidebar) Modifier.padding(start = w * 64, top = 44.mpx).width(w * 1100).height(60.mpx)
                 else Modifier.fillMaxWidth().padding(start = w * 64, end = w * 64, top = 128.mpx).height(60.mpx),
@@ -349,8 +358,23 @@ fun StageSettingsPage(
             }
             val help = panel.help
             val editor = panel.editor
-            // A page's own picture (Appearance's live preview, Popup size's sample) beside the rows.
-            if (panelTop != null) {
+            if (!withSidebar && (help != null || panelTop != null)) {
+                // The panel as before: the focused row's explanation, its choices, its actions.
+                Column(
+                    Modifier
+                        .padding(start = w * 1160, top = 240.mpx)
+                        .width(w * 696)
+                        .heightIn(max = maxHeight - 280.mpx)
+                        .stageGlass(30.mpx)
+                        .padding(26.mpx),
+                ) {
+                    // A row that brings its own picture (Popup size's sample) shows it in place of the page's.
+                    if (panelTop != null && help?.extra == null) panelTop()
+                    if (help != null) SettingPanelBody(help)
+                }
+            }
+            // The root: a page's own picture (Appearance's live preview) beside the rows.
+            if (withSidebar && panelTop != null) {
                 Column(
                     Modifier
                         .padding(start = rowsStart + rowsWidth + w * 40, top = rowsTop)
@@ -390,6 +414,32 @@ private val SheetBackground: Color @Composable get() = stageTone(Color(0xFF0F505
 @Composable
 fun SettingPanelHeading(text: String, modifier: Modifier = Modifier) {
     Text(text.uppercase(), style = stageText(13, 800, 0.13.em), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = modifier.padding(bottom = 8.mpx))
+}
+
+@Composable
+private fun SettingPanelBody(help: SettingHelp) {
+    if (help.title.isNotEmpty()) SettingPanelHeading(help.title)
+    Text(help.text, style = stageText(17, 500).copy(lineHeight = 27.mpxSpLine()), color = PanelText)
+    help.extra?.invoke()
+    if (help.choices.isNotEmpty()) {
+        Box(Modifier.padding(top = 22.mpx, bottom = 16.mpx).fillMaxWidth().height(1.mpx).background(StageColors.Ink.copy(alpha = 0.1f)))
+        SettingPanelHeading(stringResource(R.string.settings_panel_choices))
+        val a = stageAccent
+        help.choices.forEachIndexed { i, label ->
+            val on = i == help.chosen
+            Row(Modifier.height(44.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx), verticalAlignment = Alignment.CenterVertically) {
+                StageRadio(on)
+                Text(label, style = stageText(18, 600), color = if (on) StageColors.Text else StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    // A long choice gives way to the RECOMMENDED tag, never the other way round.
+                    modifier = Modifier.weight(1f, fill = false))
+                if (i == help.recommended) {
+                    Box(Modifier.padding(start = 6.mpx)) { StageTag(stringResource(R.string.settings_panel_recommended).uppercase()) }
+                }
+            }
+        }
+    }
+    if (help.hints.isNotEmpty()) StageKeyHints(help.hints, Modifier.padding(top = 20.mpx), textSize = 15)
+    help.footer?.invoke()
 }
 
 /**
@@ -699,7 +749,8 @@ fun StageSettingRow(
         if ((focused || keepPanel) && panel != null) androidx.compose.runtime.SideEffect { panel.help = help }
         // Mayo TV (1 Nov 2026): a row is its name and its value, as the menu's lists are. Only the focused row
         // says more: its explanation (the old help column's text), up to three lines under the name.
-        val explain = if (focused) (help?.text?.takeIf { it.isNotBlank() } ?: desc)?.takeIf { it.isNotBlank() } else null
+        // Pages with the panel show the long text there; the row then says its short line.
+        val explain = if (focused) (help?.text?.takeIf { LocalInlineHelp.current && it.isNotBlank() } ?: desc)?.takeIf { it.isNotBlank() } else null
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 24.mpx, vertical = if (explain != null) 14.mpx else 0.mpx),
             horizontalArrangement = Arrangement.spacedBy(20.mpx),
