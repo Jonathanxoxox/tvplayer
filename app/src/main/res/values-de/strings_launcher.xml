@@ -19,7 +19,6 @@
     <string name="launcher_menu_left">Nach links</string>
     <string name="launcher_menu_right">Nach rechts</string>
     <string name="launcher_show_hidden">Ausgeblendete Apps (%1$d)</string>
-    <string name="launcher_settings_card">Home-Taste, Reihe „Apps“, Kanäle anderer Apps</string>
     <string name="launcher_settings_group">Startbildschirm</string>
     <string name="launcher_heading_button">Home-Taste</string>
     <string name="launcher_heading_home">Startseite</string>

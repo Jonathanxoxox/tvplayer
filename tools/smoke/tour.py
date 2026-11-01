@@ -286,9 +286,12 @@ RAIL = re.compile(r"^(Suche|Live-TV|Programmübersicht|Sport|Filme|Serien|Downlo
 # Menüpunkte liegen ganz links; der Guide-Titel heißt ebenfalls „Live-TV“.
 RAIL_XMAX = 160
 SETTINGS_CARDS = [
-    "Schnellzugriff", "Profil", "Quellen und Programm", "Darstellung", "Layout", "Inhalte und Metadaten",
-    "Player", "Bild", "Ton und Untertitel", "Live-TV", "Wiedergabe und Aufnahme", "App",
+    "Schnellzugriff", "Profil", "Quellen und Programm", "Darstellung", "Layout", "Startbildschirm",
+    "Inhalte und Metadaten", "Player", "Bild", "Ton und Untertitel", "Live-TV", "Wiedergabe und Aufnahme", "App",
 ]
+
+# Die Kategorien der Einstellungen stehen als Liste links (Mayo TV, 1. Nov. 2026): bis hier reicht sie.
+SIDEBAR_XMAX = 700
 
 
 def slug(text):
@@ -626,6 +629,7 @@ def vod_tour():
 
 
 def settings_tour():
+    """Mehr › Einstellungen: links die Kategorien (die offene folgt dem Fokus), rechts ihre Zeilen."""
     if not open_section("Mehr"):
         return
     key("DPAD_RIGHT", wait=0.8)
@@ -633,15 +637,13 @@ def settings_tour():
         return
     time.sleep(2)
     shot("einstellungen")
-    # Von der Leiste aus: ▶ landet in der Suchzeile, ▼ auf der ersten Kachel
-    key("DPAD_RIGHT", wait=0.8)
-    key("DPAD_DOWN", wait=0.8)
-    shot("einstellungen-raster")
     for card in SETTINGS_CARDS:
-        if not goto("^" + re.escape(card) + "$", xmin=600):
+        if not goto("^" + re.escape(card) + "$", press=False, xmax=SIDEBAR_XMAX):
             continue
         time.sleep(1.5)
         shot(f"einst-{slug(card)}")
+        key("DPAD_RIGHT", wait=1.0)
+        shot(f"einst-{slug(card)}-zeile")
         key("DPAD_DOWN", n=6, wait=0.4)
         shot(f"einst-{slug(card)}-mitte")
         key("DPAD_DOWN", n=10, wait=0.4)
@@ -658,10 +660,21 @@ def settings_tour():
             key("DPAD_DOWN", n=12, wait=0.4)
             shot("einst-tasten-unten")
             key("BACK", wait=1.5)
-        key("BACK", wait=1.5)
-        root = dump()
-        if dismiss_exit(root) or find(root, r"^Alle Einstellungen durchsuchen") is None:
+        # Eine Auswahl kommt als Blatt von rechts.
+        if card == "Startbildschirm" and goto(r"^Beim Einschalten öffnen$"):
+            time.sleep(1.5)
+            shot("einst-auswahl-blatt")
             key("BACK", wait=1.5)
+        # Zurück aus den Zeilen landet wieder auf der Kategorie.
+        key("BACK", wait=1.5)
+        shot(f"einst-{slug(card)}-zurueck")
+    # Die Suche steht über den Kategorien.
+    if goto(r"^Alle Einstellungen durchsuchen|^Einstellungen durchsuchen|^Suchen", xmax=SIDEBAR_XMAX):
+        time.sleep(1.5)
+        shot("einst-suche")
+        key("BACK", wait=1.5)
+    key("BACK", wait=1.5)
+    dismiss_exit(dump())
 
 
 SCENES = ["Basalt", "Taupe", "Salbei", "Pflaume", "Neon", "Abendrot", "Flutlicht", "Gletscher"]
@@ -675,11 +688,10 @@ def open_scene_row():
     if not goto(r"^Einstellungen$"):
         return False
     time.sleep(2)
-    key("DPAD_RIGHT", wait=0.8)
-    key("DPAD_DOWN", wait=0.8)
-    if not goto(r"^Darstellung$", xmin=600):
+    if not goto(r"^Darstellung$", press=False, xmax=SIDEBAR_XMAX):
         return False
     time.sleep(1.5)
+    key("DPAD_RIGHT", wait=1.0)
     if not goto(r"^Glas & Hintergrund$"):
         return False
     time.sleep(1.5)
@@ -753,18 +765,16 @@ def nav_tour():
             probe("mehr-favoriten-rechts", "DPAD_RIGHT")
             probe("mehr-favoriten-zurueck", "BACK")
         dismiss_exit(dump())
-    # Einstellungen: Kachel auf, Zurück auf die Kachel, Zurück nach Mehr.
+    # Einstellungen: Kategorie, hinein in die Zeilen, Zurück auf die Kategorie, Zurück nach Mehr.
     if open_section("Mehr"):
         key("DPAD_RIGHT", wait=0.8)
         if goto(r"^Einstellungen$"):
             time.sleep(2)
             probe("einst-geoeffnet")
-            key("DPAD_RIGHT", wait=0.8)
-            key("DPAD_DOWN", wait=0.8)
-            probe("einst-kachel")
-            probe("einst-kachel-ok", "DPAD_CENTER", wait=2)
-            probe("einst-kachel-runter", "DPAD_DOWN", "DPAD_DOWN")
-            probe("einst-kachel-zurueck", "BACK", wait=2)
+            probe("einst-kategorie-runter", "DPAD_DOWN", "DPAD_DOWN")
+            probe("einst-zeilen", "DPAD_RIGHT", wait=1.5)
+            probe("einst-zeilen-runter", "DPAD_DOWN", "DPAD_DOWN")
+            probe("einst-zurueck-kategorie", "BACK", wait=2)
             probe("einst-zurueck-mehr", "BACK", wait=2)
             probe("einst-zurueck-menue", "BACK", wait=2)
             dismiss_exit(dump())
@@ -842,11 +852,10 @@ def open_settings_card(card):
     if not goto(r"^Einstellungen$"):
         return False
     time.sleep(2)
-    key("DPAD_RIGHT", wait=0.8)
-    key("DPAD_DOWN", wait=0.8)
-    if not goto("^" + re.escape(card) + "$", xmin=600):
+    if not goto("^" + re.escape(card) + "$", press=False, xmax=SIDEBAR_XMAX):
         return False
-    time.sleep(2)
+    time.sleep(1.5)
+    key("DPAD_RIGHT", wait=1.0)
     return True
 
 
