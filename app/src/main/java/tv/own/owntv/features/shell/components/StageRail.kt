@@ -243,7 +243,8 @@ fun StageRail(
                 label = stringResource(MainSection.MORE.labelRes),
                 expanded = drawnOpen,
                 active = selected == MainSection.MORE || selected == MainSection.SETTINGS,
-                onClick = { onSelect(MainSection.MORE) },
+                // Mayo TV: the gear opens Settings, which holds More's places too (no hub in between).
+                onClick = { onSelect(MainSection.SETTINGS) },
                 modifier = (if (focusSection == MainSection.MORE) Modifier.focusRequester(selectedItemFocusRequester) else Modifier)
                     .focusProperties { canFocus = itemsFocusable() },
             )

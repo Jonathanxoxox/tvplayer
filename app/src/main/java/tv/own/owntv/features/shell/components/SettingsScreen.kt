@@ -162,6 +162,8 @@ fun SettingsScreen(
     /** More › Settings: open at a root group, or with search open. */
     start: SettingsStart? = null,
     onStartConsumed: () -> Unit = {},
+    /** Mayo TV: More's profile, places and pages in the list on the left (More and Settings are one screen). */
+    more: tv.own.owntv.features.settings.SettingsMoreHost? = null,
 ) {
     // A cross-script language change recreates the Activity so Android can apply the new script's
     // shaping and font fallback. Keep the open settings sub-screen across that configuration change
@@ -452,53 +454,6 @@ fun SettingsScreen(
     // composing 40 rows, and it is what lets the list below stay lazy while both focus restores can
     // still find a row that is scrolled out of view.
     val rootItems: List<RootItem> = listOfNotNull(
-        // The most-used toggles, pinned above the nine real groups and separated from them by a
-        // hairline. They are ordinary rows that flip in place — the header strip they replace could
-        // only ever show whatever six the app chose, and it cost the root a fifth of its height.
-        RootGroup("group_quick", stringResource(R.string.settings_group_quick), OwnTVIcon.SPARKLE, stringResource(R.string.settings_group_summary_quick)),
-        RootRow(
-            "quick_live_preview", TileTone.PRIMARY, OwnTVIcon.LIVE_TV,
-            title = stringResource(R.string.settings_quick_live_preview),
-            chip = stringResource(if (livePreview) R.string.common_on else R.string.common_off),
-            chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY,
-            focus = livePreviewQuickFocus,
-            onClick = { toggleLivePreview(livePreviewQuickFocus) },
-        ),
-        RootRow(
-            "quick_preview_sound", TileTone.SECONDARY, OwnTVIcon.AUDIO,
-            title = stringResource(R.string.settings_quick_preview_sound),
-            chip = stringResource(if (previewAudio) R.string.common_on else R.string.common_off),
-            chipTone = if (previewAudio) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setLivePreviewAudio(!previewAudio) },
-        ),
-        RootRow(
-            "quick_channel_numbers", TileTone.SECONDARY, OwnTVIcon.LIVE_TV,
-            title = stringResource(R.string.settings_quick_channel_numbers),
-            chip = stringResource(if (channelNumbers) R.string.common_on else R.string.common_off),
-            chipTone = if (channelNumbers) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setDirectTune(!channelNumbers) },
-        ),
-        RootRow(
-            "quick_hdr", TileTone.SECONDARY, OwnTVIcon.VIDEO,
-            title = stringResource(R.string.settings_quick_prefer_sdr),
-            chip = stringResource(if (hdr) R.string.common_on else R.string.common_off),
-            chipTone = if (hdr) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setPreferSdr(!hdr) },
-        ),
-        RootRow(
-            "quick_autoplay", TileTone.SECONDARY, OwnTVIcon.AUTOPLAY_NEXT,
-            title = stringResource(R.string.settings_quick_autoplay),
-            chip = stringResource(if (autoPlayNext) R.string.common_on else R.string.common_off),
-            chipTone = if (autoPlayNext) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setAutoPlayNext(!autoPlayNext) },
-        ),
-        RootRow(
-            "quick_check_update", TileTone.SECONDARY, OwnTVIcon.DOWNLOADS,
-            title = stringResource(R.string.settings_quick_check_update),
-            chip = stringResource(if (updateCheckOnStart) R.string.common_on else R.string.common_off),
-            chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
-        ),
         RootGroup("group_profile", stringResource(R.string.settings_profile_group), OwnTVIcon.PERSON, stringResource(R.string.settings_group_summary_profile)),
         RootGroup("group_sources", stringResource(R.string.settings_mayo_group_sources), OwnTVIcon.PLAYLIST, stringResource(R.string.settings_group_summary_sources)),
         RootRow(
@@ -1116,7 +1071,8 @@ fun SettingsScreen(
         if (searchFromMore) { searchFromMore = false; onBack?.invoke() }
     }
     val group = SettingsGroup.entries[selectedGroup.coerceIn(0, SettingsGroup.entries.size - 1)]
-    val inQuick = group == SettingsGroup.QUICK
+    // Mayo TV (1 Nov 2026): no Quick group any more — its rows all live in their own groups too.
+    val inQuick = false
     val pageCount = when {
         searching && searchQuery.isBlank() -> ""
         searching -> pluralStringResource(R.plurals.settings_match_count, searchResults.size, searchResults.size)
@@ -1157,12 +1113,14 @@ fun SettingsScreen(
             searchAutoEdit = searchAutoEdit,
             panelTop = if (group == SettingsGroup.APPEARANCE && !searching) ({ tv.own.owntv.features.settings.SettingsLivePreview() }) else null,
             showSearch = searching,
+            pageInstead = side.more?.let { key -> more?.let { host -> { m -> host.page(key, m, side.moreFocus) { side.more = null; side.fromSidebar = false; selectedGroup = SettingsGroup.LANGUAGE.ordinal } } } },
             sidebar = { m ->
                 SettingsSidebarHost(
-                    categories, selectedGroup, searching, settingsVm, side, m,
-                    onSelect = { side.fromSidebar = true; searchQuery = ""; searchMode = false; selectedGroup = it },
-                    onEnterRows = { runCatching { (if (searching) searchFieldFocus else rowsFocus).requestFocus() } },
-                    onSearch = { searchQuery = ""; searchMode = true; searchAutoEdit = true; side.pendingSearch = true },
+                    categories, selectedGroup, searching, settingsVm, side, m, more,
+                    onSelect = { side.fromSidebar = true; side.more = null; searchQuery = ""; searchMode = false; selectedGroup = it },
+                    onEnterRows = { if (side.more != null) side.moreFocus.enter() else runCatching { (if (searching) searchFieldFocus else rowsFocus).requestFocus() } },
+                    onSearch = { side.more = null; searchQuery = ""; searchMode = true; searchAutoEdit = true; side.pendingSearch = true },
+                    onExtra = { searchQuery = ""; searchMode = false },
                     searchField = searchFieldFocus,
                 )
             },
@@ -1174,7 +1132,7 @@ fun SettingsScreen(
                     pinned = !inQuick && row.key in quickPinned,
                     inQuick = inQuick,
                     extra = extras[row.key],
-                    onLongClick = { menuRow = row },
+                    onLongClick = null,
                     focus = if (row.key == menuReturnKey) menuReturnFocus else null,
                 )
             }
@@ -2377,7 +2335,8 @@ private fun tabRowKey(tab: SettingsTab) = "tab_${tab.name}"
 private fun RootRowStage(
     item: RootRow,
     pinned: Boolean,
-    onLongClick: () -> Unit,
+    /** Null: a held OK does nothing (no pinning since Quick is gone). */
+    onLongClick: (() -> Unit)?,
     /** Takes precedence over the row's own requester: used to give focus back after its menu closes. */
     focus: FocusRequester? = null,
     /** On Quick: the panel still explains the focused row; its hold-OK hint says Unpin. */
@@ -2407,7 +2366,7 @@ private fun RootRowStage(
         onLongClick = onLongClick,
         onStep = extra?.onStep ?: item.onStep,
         pinned = pinned,
-        help = settingHelp(item.key, words.title, item.desc, value, extra?.choices ?: item.choices, chosen = extra?.chosen ?: -1, recommended = extra?.recommended ?: item.recommended).let { h ->
+        help = settingHelp(item.key, words.title, item.desc, value, extra?.choices ?: item.choices, chosen = extra?.chosen ?: -1, recommended = extra?.recommended ?: item.recommended, pinnable = false).let { h ->
             val hints = (extra?.hints ?: h.hints).map { if (inQuick && it.second == pin) it.first to unpin else it }
             h.copy(text = extra?.help ?: h.text, hints = hints, extra = extra?.extra)
         },
@@ -2693,6 +2652,9 @@ private class SidebarState {
     var fromSidebar = false
     /** Search was picked in the list: its field takes focus once it is on screen. */
     var pendingSearch by mutableStateOf(false)
+    /** One of More's places is open beside the list instead of a settings group (its key), and how to enter it. */
+    var more by mutableStateOf<String?>(null)
+    val moreFocus = tv.own.owntv.features.settings.MorePageFocus()
 
     /** Back: from the rows to the open category; from the list, out of Settings. */
     fun back(onBack: () -> Unit) {
@@ -2712,9 +2674,11 @@ private fun SettingsSidebarHost(
     settingsVm: SettingsViewModel,
     side: SidebarState,
     modifier: Modifier,
+    more: tv.own.owntv.features.settings.SettingsMoreHost?,
     onSelect: (Int) -> Unit,
     onEnterRows: () -> Unit,
     onSearch: () -> Unit,
+    onExtra: () -> Unit,
     searchField: FocusRequester,
 ) {
     // Search picked in the list: the field appears above the rows, then takes focus with the keyboard up.
@@ -2739,9 +2703,13 @@ private fun SettingsSidebarHost(
     }
     tv.own.owntv.features.settings.SettingsSidebar(
         categories = items,
+        extras = more?.extras.orEmpty(),
         selected = selected,
+        selectedExtra = side.more,
         searching = searching,
         onSelect = onSelect,
+        onSelectExtra = { e -> side.more = e.key; onExtra() },
+        header = more?.header,
         onEnterRows = onEnterRows,
         onSearch = onSearch,
         selectedFocus = side.focus,
@@ -2769,7 +2737,7 @@ private fun CatchupPerPlaylistRow(settingsVm: SettingsViewModel) {
         chipTone = if (overrides > 0) TileTone.PRIMARY else TileTone.SECONDARY,
         onClick = { pickSource = true },
     )
-    RootRowStage(row, pinned = false, onLongClick = {})
+    RootRowStage(row, pinned = false, onLongClick = null)
     if (pickSource) {
         CatchupSourcesHost(sources, editing, onPick = { picked ->
             editing = picked

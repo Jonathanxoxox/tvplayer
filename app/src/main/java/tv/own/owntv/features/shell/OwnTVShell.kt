@@ -1024,7 +1024,7 @@ fun OwnTVShell(
             // the first press: the fallback below simply moved focus to the rail and nothing else
             // happened. Handled here as well so the answer is the same whichever handler fires; a
             // sub-screen of Settings still wins, because its handler is composed deeper than this.
-            selectedSection == MainSection.SETTINGS -> { parkForScreenChange(); restoreFocus = true; onSelectSection(MainSection.MORE) }
+            selectedSection == MainSection.SETTINGS && focusedLayer != ShellLayer.SIDEBAR -> focusRail()
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
             focusedLayer == ShellLayer.SIDEBAR && railTrulyFocused -> showExit = true
@@ -1332,9 +1332,33 @@ fun OwnTVShell(
                             fontCustomization = fontCustomization,
                             onSetFontCustomization = onSetFontCustomization,
                             onOpenPlaylist = {},
-                            // Settings is reached through More now, so Back out of its root goes
-                            // back there rather than to the rail — one level out, not two.
-                            onBack = { parkForScreenChange(); restoreFocus = true; onSelectSection(MainSection.MORE) },
+                            // Mayo TV (1 Nov 2026): More and Settings are one screen, opened by the gear; Back
+                            // out of its list goes to the menu.
+                            onBack = { focusRail() },
+                            more = tv.own.owntv.features.settings.SettingsMoreHost(
+                                header = {
+                                    tv.own.owntv.features.more.MoreProfileHeader(
+                                        profileName = profileName.ifBlank { stringResource(R.string.common_own_tv_user) },
+                                        playlistLabel = playlistLabel,
+                                        avatarId = avatarId,
+                                        avatarPath = avatarPath,
+                                        onSwitchProfile = onSwitchProfile,
+                                        onPickAvatar = { showAvatarPicker = true },
+                                    )
+                                },
+                                extras = tv.own.owntv.features.more.moreSidebarExtras(),
+                                page = { key, m, focus, onOpenLanguage ->
+                                    tv.own.owntv.features.more.MorePlacePage(
+                                        key = key, focus = focus, onOpenLanguage = onOpenLanguage,
+                                        // The same paths Home uses, so the engine ladder, resume and Continue all apply.
+                                        onPlayChannel = { id -> playLiveById(id, emptyList()) },
+                                        onPlayMovie = playMovieById,
+                                        onPlayEpisode = playEpisodeById,
+                                        onOpenSeries = { id -> seriesVm.openSeriesById(id); restoreFocus = true; onSelectSection(MainSection.SERIES) },
+                                        modifier = m,
+                                    )
+                                },
+                            ),
                             openEpgAdd = openEpgAdd,
                             onEpgAddConsumed = { openEpgAdd = false },
                             start = settingsStart,

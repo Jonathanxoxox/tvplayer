@@ -255,6 +255,8 @@ fun StageSettingsPage(
      * rows take the rest of the width.
      */
     sidebar: (@Composable (Modifier) -> Unit)? = null,
+    /** With [sidebar]: a More page (Favourites, Backup …) drawn beside the list instead of the band and rows. */
+    pageInstead: (@Composable (Modifier) -> Unit)? = null,
     rows: @Composable ColumnScope.() -> Unit = {},
 ) {
     val searching = searchQuery.isNotBlank()
@@ -275,11 +277,17 @@ fun StageSettingsPage(
             // Mayo TV: no help column any more (the focused row explains itself), so the rows take its room.
             // Pages under Settings keep their panel on the right: many put their actions there (Import, Move,
             // Delete …), so only the root, with its categories, does without it.
-            val previewWidth = if (panelTop != null && withSidebar) w * 520 else 0.mpx
-            val rowsStart = if (withSidebar) w * 534 else w * 50
-            val rowsWidth = if (withSidebar) w * 1322 - (if (panelTop != null) previewWidth + w * 40 else 0.mpx) else w * 1060
+            // With the list on the left (More's sheet, 440 wide), the page starts where More's pages do (504).
+            val previewWidth = if (panelTop != null && withSidebar) 560.mpx else 0.mpx
+            val rowsStart = if (withSidebar) 504.mpx else w * 50
+            val rowsWidth = if (withSidebar) maxWidth - 504.mpx - 64.mpx - (if (panelTop != null) previewWidth + 40.mpx else 0.mpx) else w * 1060
+            sidebar?.invoke(Modifier)
+            if (pageInstead != null) {
+                pageInstead(Modifier.padding(start = 504.mpx, top = 128.mpx, end = 64.mpx).fillMaxSize())
+                return@BoxWithConstraints
+            }
             Row(
-                if (withSidebar) Modifier.padding(start = w * 64, top = 44.mpx).width(w * 1100).height(60.mpx)
+                if (withSidebar) Modifier.padding(start = rowsStart, top = 128.mpx).width(rowsWidth).height(60.mpx)
                 else Modifier.fillMaxWidth().padding(start = w * 64, end = w * 64, top = 128.mpx).height(60.mpx),
                 horizontalArrangement = Arrangement.spacedBy(16.mpx),
                 verticalAlignment = Alignment.CenterVertically,
@@ -314,14 +322,13 @@ fun StageSettingsPage(
                     onActivate = onSearchActivate,
                 )
             }
-            sidebar?.invoke(Modifier.padding(start = w * 64, top = 130.mpx, bottom = 56.mpx).width(w * 430).fillMaxHeight())
             // With the categories on the left, the search field opens above the rows while searching.
             val sidebarSearch = withSidebar && showSearch
             if (sidebarSearch) StageSearchField(
                 query = searchQuery,
                 onQueryChange = onSearchQuery,
                 placeholder = stringResource(R.string.more_settings_search),
-                modifier = Modifier.padding(start = rowsStart, top = 130.mpx).width(rowsWidth).focusRequester(searchFocus),
+                modifier = Modifier.padding(start = rowsStart, top = 210.mpx).width(rowsWidth).focusRequester(searchFocus),
                 height = 60.mpx,
                 radius = 12.mpx,
                 horizontalPadding = 20.mpx,
@@ -329,7 +336,7 @@ fun StageSettingsPage(
                 onActivate = onSearchActivate,
             )
             val rowsTop = when {
-                withSidebar -> if (sidebarSearch) 206.mpx else 130.mpx
+                withSidebar -> if (sidebarSearch) 286.mpx else 210.mpx
                 toolbar != null -> 300.mpx
                 else -> 210.mpx
             }
@@ -395,7 +402,7 @@ fun StageSettingsPage(
                         .align(Alignment.TopEnd)
                         .width(660.mpx)
                         .fillMaxHeight()
-                        .background(SheetBackground)
+                        .background(LocalStagePalette.current.glassTint)
                         .drawBehind { drawRect(Color.White.copy(alpha = 0.07f), size = androidx.compose.ui.geometry.Size(1.mpx.toPx(), size.height)) }
                         .padding(start = 36.mpx, end = 36.mpx, top = 130.mpx, bottom = 40.mpx),
                 ) {
@@ -407,8 +414,6 @@ fun StageSettingsPage(
     }
 }
 
-/** The sheet a row's choices open in: the menu's panel colour (the page in the light theme). */
-private val SheetBackground: Color @Composable get() = stageTone(Color(0xFF0F5056), LocalStagePalette.current.page)
 
 /** `.helpc h5`: 13/800 caps, +0.13em, dim. */
 @Composable

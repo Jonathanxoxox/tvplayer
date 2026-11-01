@@ -286,7 +286,7 @@ RAIL = re.compile(r"^(Suche|Live-TV|Programmübersicht|Sport|Filme|Serien|Downlo
 # Menüpunkte liegen ganz links; der Guide-Titel heißt ebenfalls „Live-TV“.
 RAIL_XMAX = 160
 SETTINGS_CARDS = [
-    "Schnellzugriff", "Profil", "Playlists & EPG", "Live TV & Sport", "Wiedergabe", "Bild & Ton",
+    "Profil", "Playlists & EPG", "Live TV & Sport", "Wiedergabe", "Bild & Ton",
     "Sprache & Untertitel", "Darstellung", "Startbildschirm", "App",
 ]
 
@@ -355,10 +355,12 @@ def more_tour():
             return
         if item == "Favoriten":
             shot("mehr")
-        key("DPAD_RIGHT", wait=0.8)
-        if goto("^" + re.escape(item)):
+        # Die Orte von Mehr stehen in der Liste links; die offene Seite folgt dem Fokus, ▶ geht hinein.
+        if goto("^" + re.escape(item), press=False, xmax=SIDEBAR_XMAX):
             time.sleep(1.5)
             shot(f"mehr-{slug(item)}")
+            key("DPAD_RIGHT", wait=1.0)
+            shot(f"mehr-{slug(item)}-drin")
             key("BACK", wait=1.2)
 
 
@@ -630,13 +632,15 @@ def vod_tour():
 
 def settings_tour():
     """Mehr › Einstellungen: links die Kategorien (die offene folgt dem Fokus), rechts ihre Zeilen."""
+    # Das Zahnrad öffnet Mehr und Einstellungen als einen Bildschirm (Mayo TV, 1. Nov. 2026).
     if not open_section("Mehr"):
-        return
-    key("DPAD_RIGHT", wait=0.8)
-    if not goto(r"^Einstellungen$"):
         return
     time.sleep(2)
     shot("einstellungen")
+    for place in ["Favoriten", "Wiedergabeverlauf", "Sicherung", "Über"]:
+        if goto("^" + re.escape(place) + "$", press=False, xmax=SIDEBAR_XMAX):
+            time.sleep(1.5)
+            shot(f"mehr-{slug(place)}")
     for card in SETTINGS_CARDS:
         if not goto("^" + re.escape(card) + "$", press=False, xmax=SIDEBAR_XMAX):
             continue
@@ -692,9 +696,6 @@ SCENES = ["Basalt", "Taupe", "Salbei", "Pflaume", "Neon", "Abendrot", "Flutlicht
 def open_scene_row():
     """Mehr › Einstellungen › Darstellung › Glas & Hintergrund, Fokus auf die Zeile „Farbthema“."""
     if not open_section("Mehr"):
-        return False
-    key("DPAD_RIGHT", wait=0.8)
-    if not goto(r"^Einstellungen$"):
         return False
     time.sleep(2)
     if not goto(r"^Darstellung$", press=False, xmax=SIDEBAR_XMAX):
@@ -776,8 +777,7 @@ def nav_tour():
         dismiss_exit(dump())
     # Einstellungen: Kategorie, hinein in die Zeilen, Zurück auf die Kategorie, Zurück nach Mehr.
     if open_section("Mehr"):
-        key("DPAD_RIGHT", wait=0.8)
-        if goto(r"^Einstellungen$"):
+        if True:
             time.sleep(2)
             probe("einst-geoeffnet")
             probe("einst-kategorie-runter", "DPAD_DOWN", "DPAD_DOWN")
@@ -856,9 +856,6 @@ def record(name, *keys_, seconds=5, wait=0.4):
 def open_settings_card(card):
     """Mehr › Einstellungen › [card]: die Seite der Gruppe, Fokus auf ihrer ersten Zeile."""
     if not open_section("Mehr"):
-        return False
-    key("DPAD_RIGHT", wait=0.8)
-    if not goto(r"^Einstellungen$"):
         return False
     time.sleep(2)
     if not goto("^" + re.escape(card) + "$", press=False, xmax=SIDEBAR_XMAX):

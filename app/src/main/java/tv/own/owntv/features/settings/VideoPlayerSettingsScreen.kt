@@ -2071,10 +2071,11 @@ internal fun KeyedSettingRow(
         desc = words.line,
         value = value,
         onClick = onClick,
-        onLongClick = pin?.let { p -> { p.onHold(quickKey!!) } },
+        // No pinning since Quick is gone (Mayo TV, 1 Nov 2026); the scope still brings a searched row into focus.
+        onLongClick = null,
         onStep = onStep,
-        help = settingHelp(key, words.title, desc, value, choices, chosen, recommended, pinnable = pin != null),
-        pinned = pin != null && quickKey in pin.pinned,
+        help = settingHelp(key, words.title, desc, value, choices, chosen, recommended, pinnable = false),
+        pinned = false,
         modifier = modifier.then(if (pin != null && pin.focusKey == quickKey) Modifier.focusRequester(pin.focusRequester) else Modifier),
     )
 }
