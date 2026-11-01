@@ -36,14 +36,19 @@ import tv.own.owntv.ui.stage.StagePopupOption
 import tv.own.owntv.ui.theme.mpx
 
 /** How many rows Settings › Home screen has, for the page's count. */
-internal const val LAUNCHER_SETTING_COUNT = 7
+internal const val LAUNCHER_SETTING_COUNT = 9
 
 /**
  * Settings › Home screen: Mayo TV as the TV's start screen (Home button, guard, power-on), then what
  * Home shows besides Mayo TV's own rows (the Apps row, other apps' channels) and the Apps section.
  */
 @Composable
-internal fun LauncherSettingsRows() {
+internal fun LauncherSettingsRows(
+    /** Mayo TV's own App start row (what it opens with), right under Open at power-on. */
+    afterBoot: @Composable () -> Unit = {},
+    /** Mayo TV's Home rows page, first under the Home heading. */
+    homeRows: @Composable () -> Unit = {},
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val config = rememberLauncherConfig()
@@ -74,7 +79,7 @@ internal fun LauncherSettingsRows() {
     var pickChannels by remember { mutableStateOf(false) }
     fun update(change: (LauncherConfig) -> LauncherConfig) = LauncherPrefs.update(context, change)
 
-    StageSettingsHeading(stringResource(R.string.launcher_heading_button), 3, first = true)
+    StageSettingsHeading(stringResource(R.string.launcher_heading_button), 4, first = true)
     StageSettingRow(
         icon = OwnTVIcon.HOME,
         title = stringResource(R.string.launcher_as_start),
@@ -110,8 +115,7 @@ internal fun LauncherSettingsRows() {
         ),
     )
     val bootLabel = when (config.boot) {
-        LauncherConfig.BOOT_HOME -> stringResource(R.string.launcher_boot_home)
-        LauncherConfig.BOOT_LIVE -> stringResource(R.string.launcher_boot_live)
+        LauncherConfig.BOOT_HOME, LauncherConfig.BOOT_LIVE -> stringResource(R.string.launcher_boot_home)
         LauncherConfig.BOOT_OFF -> stringResource(R.string.launcher_boot_off)
         else -> apps.firstOrNull { it.pkg == config.boot }?.label ?: config.boot
     }
@@ -124,7 +128,10 @@ internal fun LauncherSettingsRows() {
         onClick = { pickBoot = true },
     )
 
-    StageSettingsHeading(stringResource(R.string.launcher_heading_home), 4)
+    afterBoot()
+
+    StageSettingsHeading(stringResource(R.string.launcher_heading_home), 5)
+    homeRows()
     StageSettingRow(
         icon = OwnTVIcon.TILES,
         title = stringResource(R.string.launcher_apps_row),
@@ -172,8 +179,8 @@ internal fun LauncherSettingsRows() {
 
     if (pickBoot) {
         val fixed = listOf(
+            // Mayo TV opens with what App start (the row below) says; Live TV is one of its choices.
             LauncherConfig.BOOT_HOME to stringResource(R.string.launcher_boot_home),
-            LauncherConfig.BOOT_LIVE to stringResource(R.string.launcher_boot_live),
             LauncherConfig.BOOT_OFF to stringResource(R.string.launcher_boot_off),
         )
         PickerDialog(
@@ -224,5 +231,34 @@ internal fun LauncherSettingsRows() {
                 }
             }
         }
+    }
+}
+
+/**
+ * A page that gathers Video player rows from several places: Per playlist, Reset remembered settings. Only the
+ * rows in [keys] are drawn (from [group]'s sections, with their own dialogs), then [extraRows].
+ */
+@Composable
+internal fun VideoGatherPage(
+    group: VideoGroup,
+    keys: Set<String>,
+    parent: String,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    extraRows: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = {},
+) {
+    val scroll = androidx.compose.foundation.rememberScrollState()
+    StageFullPage(
+        parents = listOf(parent),
+        title = stringResource(group.titleRes),
+        count = "",
+        onBack = onBack,
+        modifier = modifier,
+        scroll = scroll,
+    ) {
+        androidx.compose.runtime.CompositionLocalProvider(LocalVideoRowFilter provides { it in keys }) {
+            VideoPlayerGroupRows(group, scroll)
+        }
+        extraRows()
     }
 }

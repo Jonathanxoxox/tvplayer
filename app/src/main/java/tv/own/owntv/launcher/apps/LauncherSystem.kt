@@ -146,8 +146,8 @@ object LauncherSystem {
         if (!config.launcher || config.boot == LauncherConfig.BOOT_OFF) return
         startedForBoot = bootAt
         when (config.boot) {
-            LauncherConfig.BOOT_HOME -> openHome(context)
-            LauncherConfig.BOOT_LIVE -> openHome(context, live = true)
+            // Mayo TV starts as App start says (Home, Live TV, the last channel …), not forced onto Home.
+            LauncherConfig.BOOT_HOME, LauncherConfig.BOOT_LIVE -> openHome(context, live = true)
             else -> {
                 val pm = context.packageManager
                 val app = pm.getLeanbackLaunchIntentForPackage(config.boot) ?: pm.getLaunchIntentForPackage(config.boot)

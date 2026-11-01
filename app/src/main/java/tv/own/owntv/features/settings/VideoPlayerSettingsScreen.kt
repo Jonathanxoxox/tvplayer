@@ -73,13 +73,33 @@ private const val SECTION_DIAGNOSTICS = 11
  * listed under it. App adds Diagnostics under its own rows; Watching & recording adds Recording after.
  */
 internal enum class VideoGroup(val titleRes: Int, val parts: List<Pair<Int, List<Int>>>) {
-    PLAYER(R.string.settings_vp_cat_player, listOf(R.string.settings_vp_cat_player to listOf(SECTION_PLAYER), R.string.settings_vp_cat_streaming to listOf(SECTION_STREAMING))),
-    PICTURE(R.string.settings_vp_cat_picture, listOf(R.string.settings_vp_cat_picture to listOf(SECTION_PICTURE), R.string.settings_vp_cat_frame_rate to listOf(SECTION_FRAME_RATE))),
-    SOUND(R.string.settings_group_sound_subtitles, listOf(R.string.settings_vp_section_sound to listOf(SECTION_SOUND), R.string.settings_vp_cat_languages to listOf(SECTION_LANGUAGES))),
-    LIVE(R.string.settings_live_tv, listOf(R.string.settings_live_tv to listOf(SECTION_LIVE), R.string.settings_vp_cat_live_tuning to listOf(SECTION_LIVE_TUNING))),
-    WATCHING(R.string.settings_group_watching_recording, listOf(R.string.settings_vp_cat_controls_resume to listOf(SECTION_CONTROLS, SECTION_RESUME), R.string.settings_vp_cat_multiview to listOf(SECTION_MULTIVIEW))),
+    // Mayo TV (1 Nov 2026): the Video player's rows by what they are about, not by the old player tabs.
+    LIVE(R.string.settings_mayo_group_live, listOf(R.string.settings_live_tv to listOf(SECTION_LIVE), R.string.settings_vp_cat_live_tuning to listOf(SECTION_LIVE_TUNING), R.string.settings_vp_cat_multiview to listOf(SECTION_MULTIVIEW))),
+    PLAYBACK(R.string.settings_mayo_group_playback, listOf(R.string.settings_vp_cat_player to listOf(SECTION_PLAYER), R.string.settings_vp_cat_controls_resume to listOf(SECTION_CONTROLS, SECTION_RESUME), R.string.settings_vp_cat_streaming to listOf(SECTION_STREAMING))),
+    PICTURE_SOUND(R.string.settings_mayo_group_picture_sound, listOf(R.string.settings_vp_cat_picture to listOf(SECTION_PICTURE), R.string.settings_vp_cat_frame_rate to listOf(SECTION_FRAME_RATE), R.string.settings_vp_section_sound to listOf(SECTION_SOUND))),
+    LANGUAGES(R.string.settings_mayo_group_language, listOf(R.string.settings_vp_cat_languages to listOf(SECTION_LANGUAGES))),
     DIAGNOSTICS(R.string.settings_group_app, listOf(R.string.settings_diagnostics to listOf(SECTION_DIAGNOSTICS))),
+    // The two gathering pages: only their rows are shown on them ([LocalVideoRowFilter]), and only there.
+    // Last, so a row's own group (videoGroupOf) is always one of the above.
+    PER_PLAYLIST(R.string.settings_mayo_per_playlist, listOf(R.string.settings_vp_cat_player to listOf(SECTION_PLAYER), R.string.settings_vp_cat_live_tuning to listOf(SECTION_LIVE_TUNING))),
+    RESETS(R.string.settings_mayo_resets, listOf(R.string.settings_vp_cat_player to listOf(SECTION_PLAYER), R.string.settings_vp_cat_picture to listOf(SECTION_PICTURE), R.string.settings_vp_section_sound to listOf(SECTION_SOUND))),
 }
+
+/** The per-playlist overrides, gathered on Settings › Playlists & EPG › Per playlist. */
+internal val PER_PLAYLIST_KEYS = setOf(
+    "vp_live_engine_sources", "vp_vod_engine_sources", "vp_latency_sources", "vp_preroll_sources", "vp_tune_timeout_sources",
+)
+
+/** The "reset what was remembered" rows, gathered on Settings › App › Reset remembered settings. */
+internal val RESET_KEYS = setOf(
+    "vp_reset_live_pins", "vp_reset_pins", "vp_reset_zoom", "vp_reset_volume", "vp_reset_audio_delay",
+)
+
+/**
+ * Which Video player rows a page shows. Null (every group page): all but [PER_PLAYLIST_KEYS] and [RESET_KEYS],
+ * which live on their own pages; there the page names its own rows, and the section headings are left out.
+ */
+internal val LocalVideoRowFilter = androidx.compose.runtime.compositionLocalOf<((String) -> Boolean)?> { null }
 
 /** Which group a Video player row lives in, for a Quick pin or search result that jumps to it. */
 internal fun videoGroupOf(section: Int): VideoGroup = VideoGroup.entries.first { g -> g.parts.any { section in it.second } }
@@ -98,21 +118,20 @@ internal fun videoRowPath(key: String): String {
 /** How many rows each section shows right now — rows that appear only with a switch on count only then. */
 @Composable
 internal fun videoSectionCounts(vm: SettingsViewModel): List<Int> {
-    val sources by vm.sources.collectAsStateWithLifecycle()
     val livePreview by vm.livePreviewEnabled.collectAsStateWithLifecycle()
     val timeshift by vm.timeshiftEnabled.collectAsStateWithLifecycle()
     val multiview by vm.multiviewEnabled.collectAsStateWithLifecycle()
-    val perPlaylist = sources.isNotEmpty()
+    // Without the per-playlist and reset rows, which have pages of their own now.
     return listOf(
-        5 + (if (perPlaylist) 2 else 0),
-        5 + (if (vm.tunnelingSupported) 1 else 0),
+        3,
+        4 + (if (vm.tunnelingSupported) 1 else 0),
         3,
         3,
         4 + (if (livePreview) 1 else 0) + (if (timeshift) 1 else 0),
-        3 + (if (perPlaylist) 3 else 0),
+        3,
         2,
         2 + (if (multiview) 1 else 0),
-        9, 3, 2, 2,
+        7, 3, 2, 2,
     )
 }
 
@@ -726,8 +745,9 @@ internal fun VideoPlayerGroupRows(
             focusRequester = rowReturnFocus,
         ),
     ) {
+        val rowFilter = LocalVideoRowFilter.current
         group.parts.forEachIndexed { partIndex, (headingRes, sections) ->
-            StageSettingsHeading(stringResource(headingRes), sections.sumOf { counts[it] }, first = firstHeading && partIndex == 0)
+            if (rowFilter == null) StageSettingsHeading(stringResource(headingRes), sections.sumOf { counts[it] }, first = firstHeading && partIndex == 0)
             sections.forEach { section ->
                 when (section) {
                     SECTION_PLAYER -> {
@@ -2041,6 +2061,9 @@ internal fun KeyedSettingRow(
 ) {
     val pin = if (quickKey != null) LocalQuickPin.current else null
     val key = helpKey ?: quickKey
+    // A row with a page of its own shows only there (see [LocalVideoRowFilter]).
+    val rowFilter = LocalVideoRowFilter.current
+    if (rowFilter?.invoke(key.orEmpty()) == false || (rowFilter == null && (key in PER_PLAYLIST_KEYS || key in RESET_KEYS))) return
     val words = settingWords(key, title, desc)
     StageSettingRow(
         icon = icon,
