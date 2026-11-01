@@ -94,6 +94,9 @@ data class HomeUiState(
     val config: HomeConfig = HomeConfig(),
     val recentGuide: GuideSliceState = GuideSliceState(),
     val favoriteGuide: GuideSliceState = GuideSliceState(),
+    /** Mayo TV: what is on now per channel for the rows in Cards mode too (core fills the guide only for On now). */
+    val recentOnNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> = emptyMap(),
+    val favoriteOnNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> = emptyMap(),
     /**
      * True until the first [HomeViewModel.loadHomeData] completes. Home's queries are profile-scoped and
      * already indexed, but on a cold boot their first reads come off slow eMMC (pages not yet in the OS
@@ -139,6 +142,8 @@ class HomeViewModel(
     private val trendingDao: TrendingDao,
     private val favoriteDao: tv.own.owntv.core.database.dao.FavoriteDao,
     private val userDataWriter: tv.own.owntv.core.backup.UserDataWriter,
+    private val guideReader: tv.own.owntv.core.live.GuideReader,
+    private val customize: tv.own.owntv.core.customize.CustomizationStore,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -379,6 +384,21 @@ class HomeViewModel(
         reloadRequests.tryEmit(profileId?.takeIf { it >= 0 })
     }
 
+    /** The programme on now for each of [channels], as More › Favourites reads it. */
+    private suspend fun onNowFor(profileId: Long, channels: List<ChannelEntity>): Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> {
+        if (channels.isEmpty()) return emptyMap()
+        return runCatching {
+            guideReader.onNow(
+                channels = channels,
+                cust = customize.observe(profileId, tv.own.owntv.core.model.MediaType.LIVE).first(),
+                globalShiftMinutes = settings.epgOffsetMinutes.first(),
+                atMs = System.currentTimeMillis(),
+                // A real window: an empty one (now..now) finds no programme at all.
+                lookAheadMs = 60 * 60_000L,
+            ).mapNotNull { (id, slot) -> slot.now?.let { id to it } }.toMap()
+        }.getOrDefault(emptyMap())
+    }
+
     /**
      * The rails themselves are core's — the phone app builds the same feed from the same reader. What
      * stays here is what only a television does with it: the caches keyed to the previous pass, and the
@@ -409,6 +429,13 @@ class HomeViewModel(
             isLoading = false,
         )
         tv.own.owntv.perf.StartLog.stamp("home-data")
+        // The channel cards show what is on now under the logo in either mode (Jonathan, 1 Nov 2026).
+        val cards = tv.own.owntv.core.model.HomeLiveRowMode.CARDS
+        val recentNow = if (data.config.recentLiveMode == cards) onNowFor(profileId, data.recentLive) else emptyMap()
+        val favoriteNow = if (data.config.favoriteLiveMode == cards) onNowFor(profileId, data.favoriteLive) else emptyMap()
+        if (recentNow.isNotEmpty() || favoriteNow.isNotEmpty()) {
+            _uiState.value = _uiState.value.copy(recentOnNow = recentNow, favoriteOnNow = favoriteNow)
+        }
         _uiState.value.trendingItems.getOrNull(_uiState.value.activeTrendingIndex)?.let(::resolveTrendingExtras)
         // Keep watching shows every card as a still, so each needs its artwork up front, not on focus.
         _uiState.value.heroItems.indices.forEach { resolveHeroMetadata(it) }
