@@ -1,0 +1,248 @@
+--------- beginning of main
+--------- beginning of system
+--------- beginning of kernel
+11-01 12:03:47.078 D/OwnTVPerf( 7172): process-begin @0ms
+11-01 12:03:47.405 D/OwnTVPerf( 7172): koin-started @328ms
+11-01 12:03:47.533 D/OwnTVPerf( 7172): db-open(sqlite=3.50.1, journal=wal, heal=clean) @456ms
+11-01 12:03:47.538 D/OwnTVPerf( 7172): db-probed @460ms
+11-01 12:03:47.611 D/OwnTVPerf( 7172): first-composition @533ms
+11-01 12:03:47.852 D/OwnTVPerf( 7172): profile-id-loaded @775ms
+11-01 12:03:47.905 D/OwnTVPerf( 7172): profiles-loaded @828ms
+11-01 12:03:47.905 D/OwnTVPerf( 7172): destination-ready @828ms
+11-01 12:03:51.907 D/OwnTVPerf( 7172): startup-first-frame @4829ms
+11-01 12:03:52.789 I/MayoJank( 7172): screen=start frames=1 jank=1 worstMs=4894
+11-01 12:03:52.789 D/OwnTVPerf( 7172): slow-frame 4894 ms start @5712ms
+11-01 12:03:53.154 D/OwnTVPerf( 7172): profile=error(262144) @6077ms
+11-01 12:03:53.908 D/OwnTVPerf( 7172): startup-settled @6830ms
+11-01 12:03:57.906 D/OwnTVPerf( 7172): jank frames=1 janky=1 worstMs=4894 @10828ms
+11-01 12:04:09.673 I/MayoJank( 7172): screen=start frames=1 jank=1 worstMs=61
+11-01 12:04:12.315 D/OwnTVPerf( 7172): slow-frame 470 ms start @25238ms
+11-01 12:04:22.771 I/MayoJank( 7172): screen=start frames=6 jank=6 worstMs=470
+11-01 12:04:36.136 I/MayoJank( 7172): screen=start frames=6 jank=6 worstMs=74
+11-01 12:04:36.752 D/OwnTVPerf( 7172): slow-frame 590 ms start @49675ms
+11-01 12:04:36.808 D/OwnTVPerf( 7172): slow-frame 629 ms start @49730ms
+11-01 12:04:42.962 D/OwnTVPerf( 7172): slow-frame 867 ms start @55885ms
+11-01 12:04:43.043 D/OwnTVPerf( 7172): slow-frame 914 ms start @55965ms
+11-01 12:04:43.125 D/OwnTVPerf( 7172): slow-frame 863 ms start @56048ms
+11-01 12:04:43.187 D/OwnTVPerf( 7172): slow-frame 209 ms start @56109ms
+11-01 12:04:47.380 I/MayoJank( 7172): screen=start frames=8 jank=8 worstMs=914
+11-01 12:05:00.599 I/MayoJank( 7172): screen=start frames=26 jank=26 worstMs=256
+11-01 12:05:10.627 I/MayoJank( 7172): screen=start frames=10 jank=10 worstMs=158
+11-01 12:05:21.365 I/MayoJank( 7172): screen=start frames=5 jank=5 worstMs=89
+11-01 12:05:32.283 I/MayoJank( 7172): screen=start frames=10 jank=10 worstMs=391
+11-01 12:05:50.436 I/MayoJank( 7172): screen=start frames=33 jank=24 worstMs=120
+11-01 12:08:13.882 I/MayoJank( 7172): screen=start frames=13 jank=13 worstMs=156
+11-01 12:09:22.594 D/OwnTVPerf( 7172): launcher-refresh-start @335516ms
+11-01 12:09:22.603 D/OwnTVPerf( 7172): autorefresh-check @335526ms
+11-01 12:09:22.626 D/OwnTVPerf( 7172): shell-composed @335548ms
+11-01 12:09:22.646 D/OwnTVPerf( 7172): start-mode @335569ms
+11-01 12:09:22.825 I/MayoJank( 7172): screen=start frames=4 jank=4 worstMs=152
+11-01 12:09:22.825 I/MayoJank( 7172): screen=HOME:NONE frames=1 jank=1 worstMs=330
+11-01 12:09:22.883 D/OwnTVPerf( 7172): launcher-refresh-end @335805ms
+11-01 12:09:22.934 D/OwnTVPerf( 7172): last-channel @335856ms
+11-01 12:09:22.974 D/OwnTVPerf( 7172): guide-base @335897ms
+11-01 12:09:22.978 D/OwnTVPerf( 7172): home-data @335900ms
+11-01 12:09:37.671 I/MayoJank( 7172): screen=HOME:NONE frames=58 jank=57 worstMs=303
+11-01 12:09:47.890 I/MayoJank( 7172): screen=HOME:NONE frames=5 jank=5 worstMs=528
+11-01 12:09:58.941 I/MayoJank( 7172): screen=HOME:NONE frames=6 jank=6 worstMs=1088
+11-01 12:10:12.499 I/MayoJank( 7172): screen=SEARCH:NONE frames=8 jank=8 worstMs=177
+11-01 12:10:22.669 I/MayoJank( 7172): screen=SEARCH:NONE frames=4 jank=3 worstMs=83
+11-01 12:10:28.995 D/OwnTVPerf( 7172): guide-rows @401917ms
+11-01 12:10:35.772 I/MayoJank( 7172): screen=SEARCH:NONE frames=2 jank=2 worstMs=33
+11-01 12:10:35.772 I/MayoJank( 7172): screen=LIVE_TV:NONE frames=6 jank=6 worstMs=355
+11-01 12:10:47.229 I/MayoJank( 7172): screen=LIVE_TV:NONE frames=25 jank=24 worstMs=119
+11-01 12:11:00.859 I/MayoJank( 7172): screen=LIVE_TV:NONE frames=4 jank=3 worstMs=85
+11-01 12:11:00.859 I/MayoJank( 7172): screen=SPORTS:NONE frames=15 jank=15 worstMs=244
+11-01 12:11:12.478 I/MayoJank( 7172): screen=SPORTS:NONE frames=10 jank=10 worstMs=106
+11-01 12:11:22.667 I/MayoJank( 7172): screen=SPORTS:NONE frames=3 jank=3 worstMs=97
+11-01 12:11:22.667 I/MayoJank( 7172): screen=MOVIES:NONE frames=23 jank=23 worstMs=794
+11-01 12:11:32.868 I/MayoJank( 7172): screen=MOVIES:NONE frames=9 jank=9 worstMs=134
+11-01 12:11:45.205 I/MayoJank( 7172): screen=MOVIES:NONE frames=6 jank=6 worstMs=96
+11-01 12:11:45.205 I/MayoJank( 7172): screen=SERIES:NONE frames=1 jank=1 worstMs=93
+11-01 12:11:56.454 I/MayoJank( 7172): screen=SERIES:NONE frames=35 jank=35 worstMs=215
+11-01 12:12:07.675 I/MayoJank( 7172): screen=SERIES:NONE frames=8 jank=8 worstMs=99
+11-01 12:12:21.604 I/MayoJank( 7172): screen=SERIES:NONE frames=2 jank=2 worstMs=52
+11-01 12:12:21.604 I/MayoJank( 7172): screen=DOWNLOADS:NONE frames=9 jank=9 worstMs=618
+11-01 12:12:35.723 I/MayoJank( 7172): screen=DOWNLOADS:NONE frames=6 jank=6 worstMs=88
+11-01 12:12:49.078 I/MayoJank( 7172): screen=DOWNLOADS:NONE frames=3 jank=3 worstMs=42
+11-01 12:12:49.078 I/MayoJank( 7172): screen=SETTINGS:NONE frames=7 jank=7 worstMs=109
+11-01 12:13:02.415 I/MayoJank( 7172): screen=SETTINGS:NONE frames=4 jank=4 worstMs=99
+11-01 12:13:15.651 I/MayoJank( 7172): screen=SETTINGS:NONE frames=5 jank=4 worstMs=69
+11-01 12:13:28.037 I/MayoJank( 7172): screen=SETTINGS:NONE frames=7 jank=4 worstMs=38
+11-01 12:13:39.643 I/MayoJank( 7172): screen=SETTINGS:NONE frames=7 jank=7 worstMs=88
+11-01 12:13:52.667 I/MayoJank( 7172): screen=SETTINGS:NONE frames=5 jank=4 worstMs=61
+11-01 12:14:07.671 I/MayoJank( 7172): screen=SETTINGS:NONE frames=1 jank=1 worstMs=26
+11-01 12:14:22.670 I/MayoJank( 7172): screen=SETTINGS:NONE frames=1 jank=1 worstMs=25
+11-01 12:14:37.678 I/MayoJank( 7172): screen=SETTINGS:NONE frames=1 jank=1 worstMs=33
+11-01 12:14:49.838 I/MayoJank( 7172): screen=SETTINGS:NONE frames=5 jank=4 worstMs=30
+11-01 12:15:07.680 I/MayoJank( 7172): screen=SETTINGS:NONE frames=9 jank=8 worstMs=105
+11-01 12:15:19.332 I/MayoJank( 7172): screen=SETTINGS:NONE frames=3 jank=3 worstMs=54
+11-01 12:15:30.171 I/MayoJank( 7172): screen=SETTINGS:NONE frames=4 jank=3 worstMs=67
+11-01 12:15:50.033 I/MayoJank( 7172): screen=SETTINGS:NONE frames=2 jank=2 worstMs=41
+11-01 12:16:02.969 I/MayoJank( 7172): screen=SETTINGS:NONE frames=3 jank=2 worstMs=65
+11-01 12:16:15.273 I/MayoJank( 7172): screen=SETTINGS:NONE frames=15 jank=15 worstMs=70
+11-01 12:16:28.588 I/MayoJank( 7172): screen=SETTINGS:NONE frames=5 jank=4 worstMs=65
+11-01 12:16:41.007 I/MayoJank( 7172): screen=SETTINGS:NONE frames=11 jank=11 worstMs=66
+11-01 12:16:51.407 I/MayoJank( 7172): screen=SETTINGS:NONE frames=12 jank=12 worstMs=81
+11-01 12:17:04.310 I/MayoJank( 7172): screen=SETTINGS:NONE frames=5 jank=4 worstMs=75
+11-01 12:17:16.625 I/MayoJank( 7172): screen=SETTINGS:NONE frames=15 jank=15 worstMs=74
+11-01 12:17:28.332 I/MayoJank( 7172): screen=SETTINGS:NONE frames=9 jank=9 worstMs=66
+11-01 12:17:41.215 I/MayoJank( 7172): screen=SETTINGS:NONE frames=4 jank=3 worstMs=88
+11-01 12:17:52.699 I/MayoJank( 7172): screen=SETTINGS:NONE frames=14 jank=14 worstMs=76
+11-01 12:18:05.317 I/MayoJank( 7172): screen=SETTINGS:NONE frames=15 jank=15 worstMs=56
+11-01 12:18:18.329 I/MayoJank( 7172): screen=SETTINGS:NONE frames=4 jank=4 worstMs=89
+11-01 12:18:30.619 I/MayoJank( 7172): screen=SETTINGS:NONE frames=15 jank=14 worstMs=88
+11-01 12:18:42.371 I/MayoJank( 7172): screen=SETTINGS:NONE frames=19 jank=18 worstMs=76
+11-01 12:18:52.686 I/MayoJank( 7172): screen=SETTINGS:NONE frames=2 jank=1 worstMs=70
+11-01 12:19:07.697 I/MayoJank( 7172): screen=SETTINGS:NONE frames=11 jank=11 worstMs=66
+11-01 12:19:19.260 I/MayoJank( 7172): screen=SETTINGS:NONE frames=1 jank=1 worstMs=31
+11-01 12:19:32.256 I/MayoJank( 7172): screen=SETTINGS:NONE frames=3 jank=3 worstMs=289
+11-01 12:19:44.696 I/MayoJank( 7172): screen=SETTINGS:NONE frames=16 jank=16 worstMs=122
+11-01 12:19:58.071 I/MayoJank( 7172): screen=SETTINGS:NONE frames=17 jank=17 worstMs=92
+11-01 12:20:12.356 I/MayoJank( 7172): screen=SETTINGS:NONE frames=12 jank=12 worstMs=111
+11-01 12:20:22.721 I/MayoJank( 7172): screen=SETTINGS:NONE frames=34 jank=34 worstMs=92
+11-01 12:20:35.731 I/MayoJank( 7172): screen=SETTINGS:NONE frames=13 jank=13 worstMs=117
+11-01 12:20:46.608 I/MayoJank( 7172): screen=SETTINGS:NONE frames=5 jank=5 worstMs=84
+11-01 12:21:07.748 I/MayoJank( 7172): screen=SETTINGS:NONE frames=13 jank=12 worstMs=62
+11-01 12:21:18.046 I/MayoJank( 7172): screen=SETTINGS:NONE frames=8 jank=8 worstMs=57
+11-01 12:21:30.407 I/MayoJank( 7172): screen=SETTINGS:NONE frames=11 jank=10 worstMs=64
+11-01 12:21:42.806 I/MayoJank( 7172): screen=SETTINGS:NONE frames=11 jank=11 worstMs=51
+11-01 12:21:52.817 I/MayoJank( 7172): screen=SETTINGS:NONE frames=10 jank=10 worstMs=72
+11-01 12:22:05.211 I/MayoJank( 7172): screen=SETTINGS:NONE frames=9 jank=9 worstMs=58
+11-01 12:22:19.096 I/MayoJank( 7172): screen=SETTINGS:NONE frames=6 jank=5 worstMs=64
+11-01 12:22:37.749 I/MayoJank( 7172): screen=SETTINGS:NONE frames=15 jank=15 worstMs=70
+11-01 12:22:49.879 I/MayoJank( 7172): screen=SETTINGS:NONE frames=5 jank=5 worstMs=58
+11-01 12:23:04.079 I/MayoJank( 7172): screen=SETTINGS:NONE frames=13 jank=11 worstMs=78
+11-01 12:23:16.513 I/MayoJank( 7172): screen=SETTINGS:NONE frames=7 jank=7 worstMs=68
+11-01 12:23:28.956 I/MayoJank( 7172): screen=SETTINGS:NONE frames=6 jank=6 worstMs=49
+11-01 12:23:39.248 I/MayoJank( 7172): screen=SETTINGS:NONE frames=25 jank=13 worstMs=78
+11-01 12:23:47.965 D/OwnTVPerf(19522): process-begin @0ms
+11-01 12:23:48.061 D/OwnTVPerf(19522): koin-started @96ms
+11-01 12:23:48.088 D/OwnTVPerf(19522): db-open(sqlite=3.50.1, journal=wal, heal=clean) @123ms
+11-01 12:23:48.108 D/OwnTVPerf(19522): db-probed @143ms
+11-01 12:23:48.157 D/OwnTVPerf(19522): first-composition @192ms
+11-01 12:23:48.247 D/OwnTVPerf(19522): profiles-loaded @282ms
+11-01 12:23:48.338 D/OwnTVPerf(19522): profile-id-loaded @374ms
+11-01 12:23:48.338 D/OwnTVPerf(19522): destination-ready @374ms
+11-01 12:23:48.343 D/OwnTVPerf(19522): shell-composed @379ms
+11-01 12:23:48.378 D/OwnTVPerf(19522): start-mode @413ms
+11-01 12:23:50.330 I/MayoJank(19522): screen=HOME:NONE frames=1 jank=1 worstMs=2067
+11-01 12:23:50.330 D/OwnTVPerf(19522): slow-frame 2067 ms HOME:NONE @2365ms
+11-01 12:23:50.879 D/OwnTVPerf(19522): slow-frame 2484 ms HOME:NONE @2915ms
+11-01 12:23:50.906 D/OwnTVPerf(19522): last-channel @2942ms
+11-01 12:23:50.949 D/OwnTVPerf(19522): home-data @2984ms
+11-01 12:23:50.987 D/OwnTVPerf(19522): slow-frame 592 ms HOME:NONE @3023ms
+11-01 12:23:51.598 D/OwnTVPerf(19522): slow-frame 200 ms HOME:NONE @3634ms
+11-01 12:23:51.628 D/OwnTVPerf(19522): slow-frame 214 ms HOME:NONE @3663ms
+11-01 12:23:51.833 D/OwnTVPerf(19522): slow-frame 219 ms HOME:NONE @3868ms
+11-01 12:23:51.868 D/OwnTVPerf(19522): slow-frame 239 ms HOME:NONE @3903ms
+11-01 12:23:51.978 D/OwnTVPerf(19522): slow-frame 299 ms HOME:NONE @4013ms
+11-01 12:23:51.989 D/OwnTVPerf(19522): startup-first-frame @4024ms
+11-01 12:23:53.804 D/OwnTVPerf(19522): profile=error(262144) @5839ms
+11-01 12:23:53.991 D/OwnTVPerf(19522): startup-settled @6026ms
+11-01 12:23:53.991 D/OwnTVPerf(19522): autorefresh-check @6027ms
+11-01 12:23:53.992 D/OwnTVPerf(19522): launcher-refresh-start @6028ms
+11-01 12:23:54.000 D/OwnTVPerf(19522): launcher-refresh-end @6036ms
+11-01 12:23:58.339 D/OwnTVPerf(19522): jank frames=20 janky=20 worstMs=2484 @10375ms
+11-01 12:24:00.510 D/OwnTVPerf(19612): process-begin @0ms
+11-01 12:24:00.629 D/OwnTVPerf(19612): koin-started @119ms
+11-01 12:24:00.696 D/OwnTVPerf(19612): db-open(sqlite=3.50.1, journal=wal, heal=clean) @186ms
+11-01 12:24:00.718 D/OwnTVPerf(19612): db-probed @209ms
+11-01 12:24:00.758 D/OwnTVPerf(19612): first-composition @249ms
+11-01 12:24:00.910 D/OwnTVPerf(19612): profile-id-loaded @400ms
+11-01 12:24:01.017 D/OwnTVPerf(19612): profiles-loaded @508ms
+11-01 12:24:01.017 D/OwnTVPerf(19612): destination-ready @508ms
+11-01 12:24:01.022 D/OwnTVPerf(19612): shell-composed @512ms
+11-01 12:24:01.035 D/OwnTVPerf(19612): start-mode @526ms
+11-01 12:24:03.205 I/MayoJank(19612): screen=HOME:NONE frames=1 jank=1 worstMs=2210
+11-01 12:24:03.206 D/OwnTVPerf(19612): slow-frame 2210 ms HOME:NONE @2696ms
+11-01 12:24:03.893 D/OwnTVPerf(19612): slow-frame 2848 ms HOME:NONE @3384ms
+11-01 12:24:04.036 D/OwnTVPerf(19612): slow-frame 741 ms HOME:NONE @3526ms
+11-01 12:24:04.040 D/OwnTVPerf(19612): last-channel @3531ms
+11-01 12:24:04.072 D/OwnTVPerf(19612): slow-frame 711 ms HOME:NONE @3563ms
+11-01 12:24:04.086 D/OwnTVPerf(19612): home-data @3577ms
+11-01 12:24:04.328 D/OwnTVPerf(19612): slow-frame 216 ms HOME:NONE @3818ms
+11-01 12:24:05.018 D/OwnTVPerf(19612): startup-first-frame @4508ms
+11-01 12:24:06.383 D/OwnTVPerf(19612): profile=error(262144) @5873ms
+11-01 12:24:07.019 D/OwnTVPerf(19612): launcher-refresh-start @6509ms
+11-01 12:24:07.020 D/OwnTVPerf(19612): autorefresh-check @6511ms
+11-01 12:24:07.021 D/OwnTVPerf(19612): startup-settled @6511ms
+11-01 12:24:07.024 D/OwnTVPerf(19612): launcher-refresh-end @6515ms
+11-01 12:24:11.019 D/OwnTVPerf(19612): jank frames=17 janky=17 worstMs=2848 @10509ms
+11-01 12:24:13.422 D/OwnTVPerf(19717): process-begin @0ms
+11-01 12:24:13.504 D/OwnTVPerf(19717): koin-started @81ms
+11-01 12:24:13.557 D/OwnTVPerf(19717): db-open(sqlite=3.50.1, journal=wal, heal=clean) @135ms
+11-01 12:24:13.568 D/OwnTVPerf(19717): db-probed @146ms
+11-01 12:24:13.613 D/OwnTVPerf(19717): first-composition @191ms
+11-01 12:24:13.726 D/OwnTVPerf(19717): profiles-loaded @304ms
+11-01 12:24:13.839 D/OwnTVPerf(19717): profile-id-loaded @416ms
+11-01 12:24:13.839 D/OwnTVPerf(19717): destination-ready @416ms
+11-01 12:24:13.854 D/OwnTVPerf(19717): shell-composed @432ms
+11-01 12:24:13.878 D/OwnTVPerf(19717): start-mode @455ms
+11-01 12:24:15.885 I/MayoJank(19717): screen=HOME:NONE frames=1 jank=1 worstMs=2122
+11-01 12:24:15.885 D/OwnTVPerf(19717): slow-frame 2122 ms HOME:NONE @2463ms
+11-01 12:24:16.047 D/OwnTVPerf(19717): last-channel @2624ms
+11-01 12:24:16.060 D/OwnTVPerf(19717): home-data @2637ms
+11-01 12:24:16.720 D/OwnTVPerf(19717): slow-frame 2824 ms HOME:NONE @3298ms
+11-01 12:24:16.768 D/OwnTVPerf(19717): slow-frame 706 ms HOME:NONE @3345ms
+11-01 12:24:16.819 D/OwnTVPerf(19717): slow-frame 740 ms HOME:NONE @3396ms
+11-01 12:24:17.088 D/OwnTVPerf(19717): startup-first-frame @3666ms
+11-01 12:24:17.128 D/OwnTVPerf(19717): slow-frame 215 ms HOME:NONE @3705ms
+11-01 12:24:18.767 D/OwnTVPerf(19717): profile=error(262144) @5344ms
+11-01 12:24:19.091 D/OwnTVPerf(19717): startup-settled @5669ms
+11-01 12:24:19.091 D/OwnTVPerf(19717): launcher-refresh-start @5669ms
+11-01 12:24:19.092 D/OwnTVPerf(19717): autorefresh-check @5669ms
+11-01 12:24:19.098 D/OwnTVPerf(19717): launcher-refresh-end @5676ms
+11-01 12:24:23.840 D/OwnTVPerf(19717): jank frames=19 janky=19 worstMs=2824 @10417ms
+11-01 12:24:26.054 D/OwnTVPerf(19801): process-begin @0ms
+11-01 12:24:26.149 D/OwnTVPerf(19801): koin-started @96ms
+11-01 12:24:26.219 D/OwnTVPerf(19801): db-open(sqlite=3.50.1, journal=wal, heal=clean) @165ms
+11-01 12:24:26.253 D/OwnTVPerf(19801): db-probed @199ms
+11-01 12:24:26.310 D/OwnTVPerf(19801): first-composition @257ms
+11-01 12:24:26.414 D/OwnTVPerf(19801): profiles-loaded @360ms
+11-01 12:24:26.524 D/OwnTVPerf(19801): profile-id-loaded @471ms
+11-01 12:24:26.524 D/OwnTVPerf(19801): destination-ready @471ms
+11-01 12:24:26.536 D/OwnTVPerf(19801): shell-composed @482ms
+11-01 12:24:26.554 D/OwnTVPerf(19801): start-mode @500ms
+11-01 12:24:28.522 I/MayoJank(19801): screen=HOME:NONE frames=1 jank=1 worstMs=2093
+11-01 12:24:28.526 D/OwnTVPerf(19801): slow-frame 2093 ms HOME:NONE @2472ms
+11-01 12:24:29.455 D/OwnTVPerf(19801): slow-frame 2893 ms HOME:NONE @3401ms
+11-01 12:24:29.486 D/OwnTVPerf(19801): slow-frame 873 ms HOME:NONE @3432ms
+11-01 12:24:29.517 D/OwnTVPerf(19801): last-channel @3463ms
+11-01 12:24:29.542 D/OwnTVPerf(19801): home-data @3488ms
+11-01 12:24:30.208 D/OwnTVPerf(19801): slow-frame 213 ms HOME:NONE @4154ms
+11-01 12:24:30.265 D/OwnTVPerf(19801): slow-frame 239 ms HOME:NONE @4211ms
+11-01 12:24:30.521 D/OwnTVPerf(19801): startup-first-frame @4467ms
+11-01 12:24:31.879 D/OwnTVPerf(19801): profile=error(262144) @5826ms
+11-01 12:24:32.522 D/OwnTVPerf(19801): autorefresh-check @6469ms
+11-01 12:24:32.524 D/OwnTVPerf(19801): startup-settled @6470ms
+11-01 12:24:32.524 D/OwnTVPerf(19801): launcher-refresh-start @6471ms
+11-01 12:24:32.530 D/OwnTVPerf(19801): launcher-refresh-end @6476ms
+11-01 12:24:36.525 D/OwnTVPerf(19801): jank frames=21 janky=21 worstMs=2893 @10471ms
+11-01 12:24:38.742 D/OwnTVPerf(19890): process-begin @0ms
+11-01 12:24:38.858 D/OwnTVPerf(19890): koin-started @116ms
+11-01 12:24:38.898 D/OwnTVPerf(19890): db-open(sqlite=3.50.1, journal=wal, heal=clean) @155ms
+11-01 12:24:38.929 D/OwnTVPerf(19890): db-probed @186ms
+11-01 12:24:38.971 D/OwnTVPerf(19890): first-composition @228ms
+11-01 12:24:39.133 D/OwnTVPerf(19890): profile-id-loaded @390ms
+11-01 12:24:39.247 D/OwnTVPerf(19890): profiles-loaded @504ms
+11-01 12:24:39.247 D/OwnTVPerf(19890): destination-ready @504ms
+11-01 12:24:39.251 D/OwnTVPerf(19890): shell-composed @508ms
+11-01 12:24:39.265 D/OwnTVPerf(19890): start-mode @522ms
+11-01 12:24:41.371 I/MayoJank(19890): screen=HOME:NONE frames=1 jank=1 worstMs=2136
+11-01 12:24:41.373 D/OwnTVPerf(19890): slow-frame 2136 ms HOME:NONE @2631ms
+11-01 12:24:41.472 D/OwnTVPerf(19890): last-channel @2730ms
+11-01 12:24:42.001 D/OwnTVPerf(19890): slow-frame 2722 ms HOME:NONE @3258ms
+11-01 12:24:42.016 D/OwnTVPerf(19890): home-data @3274ms
+11-01 12:24:42.162 D/OwnTVPerf(19890): slow-frame 656 ms HOME:NONE @3419ms
+11-01 12:24:42.210 D/OwnTVPerf(19890): slow-frame 664 ms HOME:NONE @3467ms
+11-01 12:24:42.483 D/OwnTVPerf(19890): startup-first-frame @3740ms
+11-01 12:24:42.535 D/OwnTVPerf(19890): slow-frame 223 ms HOME:NONE @3792ms
+11-01 12:24:42.741 D/OwnTVPerf(19890): slow-frame 212 ms HOME:NONE @3998ms
+11-01 12:24:42.847 D/OwnTVPerf(19890): slow-frame 302 ms HOME:NONE @4104ms
+11-01 12:24:44.486 D/OwnTVPerf(19890): startup-settled @5743ms
+11-01 12:24:44.486 D/OwnTVPerf(19890): launcher-refresh-start @5744ms
+11-01 12:24:44.487 D/OwnTVPerf(19890): autorefresh-check @5744ms
+11-01 12:24:44.498 D/OwnTVPerf(19890): launcher-refresh-end @5755ms
+11-01 12:24:44.651 D/OwnTVPerf(19890): profile=error(262144) @5909ms
+11-01 12:24:49.248 D/OwnTVPerf(19890): jank frames=14 janky=14 worstMs=2722 @10505ms
