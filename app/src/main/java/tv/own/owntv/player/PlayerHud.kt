@@ -1299,7 +1299,7 @@ private fun HudControlPanel(
     // The band opens on a moment; the line and the minutes left are read from it, as on the zap band.
     val nowMs = remember(info?.guide) { System.currentTimeMillis() }
     PlayerCard(modifier) {
-        LiveCardBody(player, info, nowMs)
+        LiveCardBody(player, info, nowMs, description = true)
         CardMenu(start, emptyList(), focus, onActivity, divider = tools.size)
     }
 }

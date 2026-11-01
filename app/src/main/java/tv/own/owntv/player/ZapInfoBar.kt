@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
@@ -15,11 +17,13 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.live.EpgNowNext
 import tv.own.owntv.ui.format.rememberSystemTimeFormatter
@@ -72,7 +76,13 @@ internal fun panelChips(chips: List<String>): List<String> = chips.filterNot { i
  * channel's own name, number and logo, and no badges, since those still describe the stream before.
  */
 @Composable
-internal fun LiveCardBody(player: PlaybackEngine, info: ZapInfo?, nowMs: Long) {
+internal fun LiveCardBody(
+    player: PlaybackEngine,
+    info: ZapInfo?,
+    nowMs: Long,
+    /** The programme's own description under its title: in the panel OK and Info open, not on the zap band. */
+    description: Boolean = false,
+) {
     val engineMeta by player.currentMeta.collectAsStateWithLifecycle()
     val chips by player.streamChips.collectAsStateWithLifecycle()
     val picked = info?.channel
@@ -102,6 +112,21 @@ internal fun LiveCardBody(player: PlaybackEngine, info: ZapInfo?, nowMs: Long) {
         nextLabel = next?.let { stringResource(R.string.tvplayer_next_at, formatTime(it.startMs)) },
         nextValue = next?.title,
     )
+    // What the programme is about, as the guide's block shows it, without leaving the channel (Jonathan,
+    // 31 Oct 2026). Under the title, beside the logo, three lines at most; the band after a channel change
+    // stays short and leaves it out.
+    val about = now?.description?.trim()?.takeIf { description && it.isNotEmpty() }
+    if (about != null) {
+        val u = rememberScreenUnits()
+        Text(
+            about,
+            style = u.cardText(20, 400),
+            color = Color.White.copy(alpha = 0.74f),
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(start = u.dp(96 + 28), top = u.dp(18)).widthIn(max = u.dp(1180)),
+        )
+    }
     // Without a programme the room stays, so the band does not change height when the guide arrives.
     val span = now?.let { (it.stopMs - it.startMs).toFloat() } ?: 0f
     CardLine(
