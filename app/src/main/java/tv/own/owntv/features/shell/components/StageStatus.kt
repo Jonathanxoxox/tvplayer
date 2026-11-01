@@ -93,7 +93,8 @@ fun StageStatusCluster(
                     modifier = Modifier.focusProperties { canFocus = pillsFocusable },
                 )
             }
-            StagePill(
+            // Mayo TV (1 Nov 2026): only where it does something — with one playlist the pill just said its name.
+            if (playlistInteractive) StagePill(
                 text = playlistLabel,
                 icon = OwnTVIcon.LAYERS,
                 trailingIcon = if (playlistInteractive) OwnTVIcon.CHEVRON_DOWN else null,
