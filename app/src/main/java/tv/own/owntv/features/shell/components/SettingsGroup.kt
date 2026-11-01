@@ -4,12 +4,11 @@ import tv.own.owntv.R
 import tv.own.owntv.features.settings.VideoGroup
 
 /**
- * The Settings groups, in the order of the category list on the left (Mayo TV, 1 Nov 2026: ten instead of
- * thirteen). A group's position is also where its rows start in the root list (a RootGroup marker each).
+ * The Settings groups, in the order of the category list on the left (Mayo TV, 1 Nov 2026: nine instead of
+ * thirteen; Quick is gone, its rows all live in their groups). A group's position is also where its rows start in the root list (a RootGroup marker each).
  * [video] adds a group's Video player rows; [rootFirst] puts its own rows above them instead of below.
  */
 internal enum class SettingsGroup(val titleRes: Int, val video: VideoGroup? = null, val rootFirst: Boolean = false) {
-    QUICK(R.string.settings_group_quick),
     PROFILE(R.string.settings_group_profile),
     SOURCES(R.string.settings_mayo_group_sources),
     LIVE(R.string.settings_mayo_group_live, VideoGroup.LIVE),

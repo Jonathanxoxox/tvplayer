@@ -522,6 +522,7 @@ fun HomeScreen(
 
                         HomeRow.RECENT_CHANNELS -> HomeLiveRow(
                             title = row.displayTitle(),
+                            cardsNow = state.recentOnNow,
                             mode = state.config.recentLiveMode,
                             channels = state.recentLive,
                             guide = state.recentGuide,
@@ -535,6 +536,7 @@ fun HomeScreen(
 
                         HomeRow.FAVORITE_CHANNELS -> HomeLiveRow(
                             title = row.displayTitle(),
+                            cardsNow = state.favoriteOnNow,
                             mode = state.config.favoriteLiveMode,
                             channels = state.favoriteLive,
                             guide = state.favoriteGuide,

@@ -62,6 +62,8 @@ fun HomeLiveRow(
     start: Dp,
     track: (FocusRequester) -> Unit,
     modifier: Modifier = Modifier,
+    /** What is on now in Cards mode (the guide slice is filled only for On now). */
+    cardsNow: Map<Long, EpgProgrammeEntity> = emptyMap(),
 ) {
     val onNow = mode == HomeLiveRowMode.ON_NOW
     val shown = if (onNow) guide.channels else channels
@@ -74,15 +76,56 @@ fun HomeLiveRow(
             modifier = Modifier.focusRestorer().focusGroup(),
         ) {
             itemsIndexed(shown, key = { _, c -> c.id }) { index, channel ->
-                OnNowCard(
+                // Mayo TV (1 Nov 2026): the logo large, what is on now under it — the old card left most of
+                // its face empty.
+                LogoChannelCard(
                     channel = channel,
-                    programme = if (onNow) currentProgramme(guide.programmes[channel.id].orEmpty(), guide.now) else null,
-                    now = guide.now,
+                    programme = if (onNow) currentProgramme(guide.programmes[channel.id].orEmpty(), guide.now) else cardsNow[channel.id],
+                    now = if (onNow) guide.now else System.currentTimeMillis(),
                     onClick = { onChannelClick(channel.id, shown) },
                     modifier = Modifier
                         .then(if (index == 0 && firstItemFocusRequester != null) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
                         .tracked(track = track)
                         .onFocusChanged { if (it.hasFocus) onFocus() },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * A channel on Home: its logo large on a 16:9 plate, then what is on now and the time left, with the
+ * programme's progress along the plate's foot. Without a guide entry, the channel's name.
+ */
+@Composable
+private fun LogoChannelCard(
+    channel: ChannelEntity,
+    programme: EpgProgrammeEntity?,
+    now: Long,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val left = programme?.let { timeLeftText(((it.stopMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L) }
+    tv.own.owntv.ui.stage.StageStill(
+        title = programme?.title ?: channel.name,
+        line = if (programme != null) left else null,
+        onClick = onClick,
+        width = 300.mpx,
+        height = 169.mpx,
+        titleSize = 18,
+        lineSize = 15,
+        progress = programme?.let { programmeProgress(it, now) },
+        modifier = modifier,
+    ) {
+        Box(Modifier.fillMaxSize().background(StageColors.ControlFill), contentAlignment = Alignment.Center) {
+            ChannelLogoTile(
+                logoUrl = channel.displayLogoUrl,
+                modifier = Modifier.fillMaxSize().padding(horizontal = 40.mpx, vertical = 28.mpx),
+                fill = androidx.compose.ui.graphics.Color.Transparent,
+            ) {
+                Text(
+                    channel.number?.toString() ?: channel.name.take(2).uppercase(),
+                    style = stageText(40, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
         }

@@ -12,6 +12,7 @@
     <string name="settings_mayo_heading_size">Size &amp; font</string>
     <string name="settings_mayo_heading_layout">Layout</string>
     <string name="settings_mayo_heading_updates">Updates</string>
+    <string name="settings_mayo_heading_info">About</string>
     <string name="settings_mayo_heading_saved">Remembered settings</string>
     <string name="settings_mayo_per_playlist">Per playlist</string>
     <string name="settings_mayo_per_playlist_line">Player, latency, pre-buffer, give-up time and catch-up time zone for single playlists</string>

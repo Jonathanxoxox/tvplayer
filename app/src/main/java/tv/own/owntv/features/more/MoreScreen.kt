@@ -297,3 +297,81 @@ private fun relativeShort(at: Long): String =
     android.text.format.DateUtils.getRelativeTimeSpanString(
         at, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS,
     ).toString()
+
+// ---------------------------------------------------------------------------------------------
+// Mayo TV (1 Nov 2026): More and Settings are one screen. Settings' list on the left carries More's
+// profile and places; these draw them there.
+// ---------------------------------------------------------------------------------------------
+
+/** More's places for Settings' list: your things first, then keeping it safe, then the app. */
+@Composable
+fun moreSidebarExtras(vm: MoreCountsViewModel = koinViewModel()): List<tv.own.owntv.features.settings.SidebarExtra> {
+    val favorites by vm.favorites.collectAsStateWithLifecycle()
+    val history by vm.history.collectAsStateWithLifecycle()
+    val sync by vm.sync.collectAsStateWithLifecycle()
+    val lastBackup by vm.lastBackup.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val logCount by produceState(0) { value = withContext(Dispatchers.IO) { PlaybackErrorLog.read(context).size } }
+    return listOf(
+        tv.own.owntv.features.settings.SidebarExtra(MoreItem.FAVORITES.name, 0, OwnTVIcon.FAVORITE, stringResource(R.string.content_category_favorites), favorites.total.toString()),
+        tv.own.owntv.features.settings.SidebarExtra(MoreItem.HISTORY.name, 0, OwnTVIcon.HISTORY, stringResource(R.string.content_category_history), history.total.toString()),
+        tv.own.owntv.features.settings.SidebarExtra(
+            MoreItem.BACKUP.name, 1, OwnTVIcon.DOWNLOADS, stringResource(R.string.tvplayer_more_backup),
+            lastBackup?.let { relativeShort(it.at) } ?: stringResource(R.string.common_never), warn = lastBackup == null,
+        ),
+        tv.own.owntv.features.settings.SidebarExtra(MoreItem.LOCAL_SYNC.name, 1, OwnTVIcon.PHONE, stringResource(R.string.local_sync_title), stringResource(if (sync.listening) R.string.common_on else R.string.common_off)),
+        tv.own.owntv.features.settings.SidebarExtra(MoreItem.ERROR_LOG.name, 2, OwnTVIcon.WARNING, stringResource(R.string.settings_playback_error_log), logCount.toString()),
+        tv.own.owntv.features.settings.SidebarExtra(MoreItem.ABOUT.name, 2, OwnTVIcon.INFO, stringResource(R.string.settings_about), BuildConfig.VERSION_NAME),
+    )
+}
+
+/** The profile at the top of Settings' list: avatar (OK changes it), name, playlists and Switch. */
+@Composable
+fun MoreProfileHeader(
+    profileName: String,
+    playlistLabel: String,
+    avatarId: Int,
+    avatarPath: String,
+    onSwitchProfile: () -> Unit,
+    onPickAvatar: () -> Unit,
+    vm: MoreCountsViewModel = koinViewModel(),
+) {
+    val playlists by vm.playlistCount.collectAsStateWithLifecycle()
+    ProfileRow(profileName, playlistLabel, playlists, avatarId, avatarPath, onSwitchProfile, onPickAvatar)
+}
+
+/** One of More's pages beside Settings' list, by the key of its [tv.own.owntv.features.settings.SidebarExtra]. */
+@Composable
+fun MorePlacePage(
+    key: String,
+    focus: tv.own.owntv.features.settings.MorePageFocus,
+    onOpenLanguage: () -> Unit,
+    onPlayChannel: (Long) -> Unit,
+    onPlayMovie: (Long, Long) -> Unit,
+    onPlayEpisode: (seriesId: Long, episodeId: Long, positionMs: Long) -> Unit,
+    onOpenSeries: (Long) -> Unit,
+    modifier: Modifier = Modifier,
+    vm: MoreCountsViewModel = koinViewModel(),
+    settingsVm: SettingsViewModel = koinViewModel(),
+) {
+    // A page hands over its own way in; a new page starts without one.
+    DisposableEffect(key) { onDispose { focus.entry = null } }
+    val setEntry: (() -> Boolean) -> Unit = { focus.entry = it }
+    Box(modifier) {
+        when (key) {
+            MoreItem.FAVORITES.name -> FavouritesPage(
+                vm = vm, setEntry = setEntry,
+                onPlayChannel = onPlayChannel, onPlayMovie = { onPlayMovie(it, 0L) }, onOpenSeries = onOpenSeries,
+            )
+            MoreItem.HISTORY.name -> HistoryPage(
+                vm = vm, setEntry = setEntry,
+                onClearHistory = { settingsVm.clearWatchHistory(it) },
+                onPlayChannel = onPlayChannel, onPlayMovie = onPlayMovie, onPlayEpisode = onPlayEpisode, onOpenSeries = onOpenSeries,
+            )
+            MoreItem.BACKUP.name -> BackupScreen(entry = focus.target, modifier = Modifier.fillMaxSize())
+            MoreItem.LOCAL_SYNC.name -> LocalSyncScreen(entry = focus.target, modifier = Modifier.fillMaxSize())
+            MoreItem.ERROR_LOG.name -> ErrorLogPage(setEntry = setEntry, onCountChanged = {})
+            MoreItem.ABOUT.name -> AboutPage(vm = vm, entry = focus.target, onOpenLanguage = onOpenLanguage)
+        }
+    }
+}

@@ -11,6 +11,7 @@
     <string name="settings_mayo_heading_size">Größe &amp; Schrift</string>
     <string name="settings_mayo_heading_layout">Layout</string>
     <string name="settings_mayo_heading_updates">Updates</string>
+    <string name="settings_mayo_heading_info">Info</string>
     <string name="settings_mayo_heading_saved">Gemerktes</string>
     <string name="settings_mayo_per_playlist">Pro Playlist</string>
     <string name="settings_mayo_per_playlist_line">Player, Latenz, Vorpuffer, Aufgeben nach und Catch-up-Zeitzone für einzelne Playlists</string>
