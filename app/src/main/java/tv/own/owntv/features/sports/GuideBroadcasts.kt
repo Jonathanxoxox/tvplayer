@@ -196,22 +196,48 @@ internal object GuideBroadcasts {
         val watched = watchedOrder()
         // The likeliest first, so the first rows come in a second or two: favourites, the channels the user
         // watches (most recent first), the big sports channels, then the rest in playlist order.
-        val channels = FootballScan.channels(channelDao, sources, favorites).all
+        val visible = FootballScan.channels(channelDao, sources, favorites).all
             .filter { CustomizeKeys.channel(it) !in custom.hiddenItems }
-            .sortedWith(
-                compareBy(
-                    { ch -> if (ch.id in favoriteIds) 0 else if (watched.rank(ch) != Int.MAX_VALUE) 1 else if (FootballMatcher.fold(ch.name).let { n -> FIRST.any { n.contains(it) } }) 2 else 3 },
-                    { ch -> watched.rank(ch) },
-                ),
-            )
+        // Each key once per channel: compareBy's selectors run on every comparison, and rank() normalises the
+        // name with regexes, which made this sort 18 % of the start's background CPU on a Nokia 8010.
+        val channels = visible
+            .map { ch -> watched.rank(ch).let { rank -> Triple(ch, tier(ch, favoriteIds, rank), rank) } }
+            .sortedWith(compareBy({ it.second }, { it.third }))
+            .map { it.first }
         val guides = FootballScan.guides(channels, onProgress = { partial.value = Snapshot(profileId, now, channels, it) }) { ch ->
             runCatching { epgReader.nowNext(ch, custom, offset) }.getOrNull()
         }
         return Snapshot(profileId, now, channels, guides).also { snapshot = it }
     }
 
-    /** Channel-name words read first: where German football mostly is. */
-    private val FIRST = listOf("sky", "dazn", "sport1", "sport 1", "magenta", "zdf", "das erste")
+    /**
+     * Where [read] puts [ch]: 0 a favourite, 1 a channel the user watches, 2 a big sports channel by name,
+     * 3 the rest. [rank] is the channel's [WatchedOrder.rank], passed in because it costs a name
+     * normalisation (regexes) and the caller needs it for the order within a tier anyway.
+     */
+    private fun tier(ch: ChannelEntity, favoriteIds: Set<Long>, rank: Int): Int = when {
+        ch.id in favoriteIds -> 0
+        rank != Int.MAX_VALUE -> 1
+        FootballMatcher.fold(ch.name).let { n -> FIRST.any { n.contains(it) } } -> 2
+        else -> 3
+    }
+
+    /**
+     * Channel-name words read first: where the football Jonathan follows mostly is. Matched against the
+     * folded name ([FootballMatcher.fold]: lower case, no accents, anything but letters and digits as one
+     * space), so entries are written that way: "sky sport austria", not "Sky Sport Austria".
+     */
+    private val FIRST = listOf(
+        "sky", "dazn", "sport1", "sport 1", "magenta", "zdf", "das erste",
+        // Champions League in German: Amazon's Tuesday match comes through the event channels.
+        "amazon event",
+        // Austria ("AT: ORF Sport+ HD" folds to "at orf sport hd").
+        "orf 1", "orf sport", "servus tv", "puls 4", "laola1",
+        // Switzerland.
+        "blue sport", "mysports", "srf 2",
+        // Denmark: Superliga and Champions League.
+        "tv3", "canal 9", "6 eren", "tv 2 sport",
+    )
 
     /** A guide read is reused this long; a short-EPG read asks the provider. */
     private const val MAX_AGE_MS = 10 * 60_000L
