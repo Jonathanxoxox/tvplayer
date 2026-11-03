@@ -81,6 +81,12 @@
         android:usesCleartextTraffic="true"
         tools:targetApi="26">
 
+        <!-- Lets `simpleperf` from the adb shell sample the release build on a real box (tools/box).
+             No cost at runtime; unlike debuggable it keeps R8, AOT and the JIT as shipped. -->
+        <profileable
+            android:shell="true"
+            tools:targetApi="29" />
+
         <!-- Exposes the downloaded update APK to the system installer. -->
         <provider
             android:name="androidx.core.content.FileProvider"
