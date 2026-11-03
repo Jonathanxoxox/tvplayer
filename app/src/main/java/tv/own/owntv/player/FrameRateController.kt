@@ -61,6 +61,8 @@ object FrameRateController {
     /** Refresh rates within this many Hz of an exact multiple count as a match (panels report 59.94 etc). */
     private const val TOLERANCE_HZ = 0.35f
     private const val MAX_MULTIPLE = 3
+    /** How close the current refresh rate must be to a multiple for [chooseMode] to keep it without a switch. */
+    private const val STAY_TOLERANCE_HZ = 0.05f
     /** Grace period before a release actually lands — see [reset]. */
     private const val RESET_DELAY_MS = 1_500L
 
@@ -221,6 +223,8 @@ object FrameRateController {
      * The best mode for [fps] (already snapped), or null when nothing matches. Pure, so it is unit-tested.
      *
      * Ordering, highest priority first:
+     *  0. **No switch**: the current mode, when it is at the base resolution and already a clean multiple
+     *     of [fps] (and no resolution matching was asked for).
      *  1. **Seamless** switches (API 31+). A mode listed in the current mode's `alternativeRefreshRates`
      *     — at the current resolution, since only a refresh-rate change can be seamless — is one the
      *     panel can move to without re-handshaking HDMI, i.e. without the black gap that makes a live
@@ -246,6 +250,15 @@ object FrameRateController {
         fps: Float,
         video: Pair<Int, Int>?,
     ): Chosen? {
+        // Already on a clean multiple at the base resolution: stay. Every switch re-syncs HDMI and blacks the
+        // panel, on the way into the player and again on the way back to the menus; 25p shown twice on a
+        // 50 Hz panel is as smooth as 25 Hz, and the menus over it keep 50 frames a second. With the box's
+        // own mode at 50 Hz, German live TV and 25p series then never switch at all.
+        // Tighter than [TOLERANCE_HZ]: 60p on a 59.94 Hz panel would drop a frame every 17 seconds.
+        val exactMultiple = (1..MAX_MULTIPLE).any { abs(current.hz - it * fps) <= STAY_TOLERANCE_HZ }
+        if (video == null && current.width == baseWidth && current.height == baseHeight && exactMultiple) {
+            return Chosen(current, seamless = true)
+        }
         fun isSeamless(mode: ModeSpec) = mode.width == current.width && mode.height == current.height &&
             seamlessRates.any { abs(it - mode.hz) <= TOLERANCE_HZ }
         // Staying on the current mode needs no switch at all, but Android lists only the OTHER rates as
