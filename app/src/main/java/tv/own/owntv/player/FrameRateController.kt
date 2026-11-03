@@ -340,6 +340,9 @@ object FrameRateController {
      * A reading that is nowhere near a standard rate is returned untouched — better to let [multipleOf]
      * find no match and leave the display alone than to invent a rate the content isn't at.
      */
+    /** Whether [fps] is (close to) a rate content is really made at — see [snapFps]. */
+    internal fun isStandardRate(fps: Float): Boolean = STANDARD_FPS.any { abs(it - fps) <= SNAP_MAX_DELTA_HZ }
+
     private fun snapFps(fps: Float): Float {
         val nearest = STANDARD_FPS.minByOrNull { abs(it - fps) } ?: return fps
         return if (abs(nearest - fps) <= SNAP_MAX_DELTA_HZ) nearest else fps
