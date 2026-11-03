@@ -879,12 +879,25 @@
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	snow
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	sunny
 1	technical	app/src/main/java/tv/own/owntv/features/shell/components/WeatherConditionIcon.kt	thunder
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	6 eren
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	amazon event
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	blue sport
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	canal 9
 1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	das erste
 1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	dazn
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	laola1
 1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	magenta
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	mysports
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	orf 1
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	orf sport
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	puls 4
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	servus tv
 1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	sky
 1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	sport 1
 1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	sport1
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	srf 2
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	tv 2 sport
+1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	tv3
 1	technical	app/src/main/java/tv/own/owntv/features/sports/GuideBroadcasts.kt	zdf
 1	empty	app/src/main/java/tv/own/owntv/features/sports/SportsHubScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/sports/SportsHubScreen.kt	${scoreText(m.sport, home.score)} – ${scoreText(m.sport, away.score)}
