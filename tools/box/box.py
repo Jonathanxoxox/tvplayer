@@ -33,7 +33,7 @@ import time
 PKG = "io.github.jonathanxoxox.tvplayer"
 REPO = "Jonathanxoxox/tvplayer"
 BOX = os.environ.get("BOX", "192.168.0.145:5555")
-OUT = os.environ.get("BOX_OUT", os.path.join(os.path.dirname(__file__), "..", "..", "..", "box-results"))
+OUT = os.environ.get("BOX_OUT", os.path.join(os.getcwd(), "box-results"))
 LOG_TAGS = ["OwnTVPerf:V", "FrameRate:V", "LiveZapList:V", "MediaCodec:E", "CCodec:E", "AndroidRuntime:E", "*:S"]
 
 
@@ -100,6 +100,9 @@ def box_state():
     wake = re.search(r"mWakefulness=(\w+)", power)
     if not wake or wake.group(1) == "Asleep":
         return "asleep"
+    # Bildschirmschoner: startet nur ohne Wiedergabe und ohne Eingabe, es sieht also niemand fern.
+    if wake.group(1) == "Dreaming" or "DreamActivity" in sh("dumpsys activity activities | grep -m1 topResumedActivity"):
+        return "idle"
     # Letzte Eingabe (uptimeMillis). "Jetzt" in derselben Uhr liefert mLastWakeTime=X (Y ms ago).
     last = re.search(r"mLastUserActivityTime\S*=(\d+)", power)
     ref = re.search(r"mLastWakeTime=(\d+) \((\d+) ms ago\)", power)
@@ -132,6 +135,9 @@ SETTINGS = [
     "settings put global window_animation_scale 0.5",
     "settings put global transition_animation_scale 0.5",
     "settings put global animator_duration_scale 0.5",
+    # Bildwiederholrate anpassen: Immer. Ab Werk "nur nahtlos" – 60→50 Hz ist nie nahtlos, Mayos AFR
+    # hält sich an die Systemeinstellung und schaltet dann nie auf 50 Hz.
+    "settings put secure match_content_frame_rate 2",
 ]
 
 
@@ -204,6 +210,11 @@ def cmd_install(a):
     print(f"{before} -> {version()}")
     # Nach dem Update wieder Startbildschirm, sonst steht die Box im Einstellungs-Fallback.
     sh(f"cmd package set-home-activity --user 0 {PKG}/tv.own.owntv.MainActivity")
+    # adb install kompiliert nur "verify"; der In-App-Updater liefert das Startprofil (.dm) mit, und der
+    # Hintergrund-Dexopt kommt später nach. Einmal starten (profileinstaller legt das Profil ab) und
+    # gleich mit speed-profile kompilieren, sonst misst der Vergleich die Kompilierung statt der Änderung.
+    key("HOME", wait=12)
+    print(sh(f"cmd package compile -m speed-profile -f {PKG}", timeout=300).strip())
     return 0 if "Success" in out else 1
 
 
@@ -251,17 +262,32 @@ def active_codecs():
 
 
 def cold_start(runs):
-    comp = sh(f"cmd package resolve-activity --brief -c android.intent.category.LAUNCHER {PKG}").strip().splitlines()[-1]
-    out = []
+    """Prozess beenden; als Startbildschirm startet das System Mayo sofort neu (kalt). `am start -W`
+    liefert für die Home-Activity keine Zeit, gemessen wird über Mayos eigene Stempel (start_times)."""
     for _ in range(runs):
         sh(f"am force-stop {PKG}")
-        time.sleep(3)
-        res = sh(f"am start -S -W -n {comp}", timeout=90)
-        t = re.search(r"TotalTime: (\d+)", res)
-        st = re.search(r"LaunchState: (\w+)", res)
-        out.append({"ms": int(t.group(1)) if t else None, "state": st.group(1) if st else "?"})
-        time.sleep(12)
-    return out
+        time.sleep(1)
+        key("HOME", wait=14)
+
+
+def start_times(lines):
+    """Pro Prozess: ms bis zum ersten Bild und bis 'settled', aus den OwnTVPerf-Stempeln."""
+    runs = {}
+    for l in lines:
+        m = re.search(r"OwnTVPerf\(\s*(\d+)\): (startup-first-frame|startup-settled) @(\d+)ms", l)
+        if m:
+            runs.setdefault(m.group(1), {})[m.group(2)] = int(m.group(3))
+    return list(runs.values())
+
+
+def open_live():
+    """Startseite → Live-TV (Seitenleiste) → erste Gruppe → erster Sender."""
+    key("HOME", wait=3)
+    key("DPAD_DOWN", wait=1)
+    key("DPAD_CENTER", wait=3)
+    key("DPAD_RIGHT", wait=1)
+    key("DPAD_RIGHT", wait=2)
+    key("DPAD_CENTER", wait=10)
 
 
 def logcat_start():
@@ -299,11 +325,7 @@ def cmd_bench(a):
            "box": BOX, "display_idle": display_mode()}
     log = logcat_start()
     try:
-        res["cold_start"] = cold_start(a.runs)
-        ms = [r["ms"] for r in res["cold_start"] if r["ms"]]
-        res["cold_start_median_ms"] = int(statistics.median(ms)) if ms else None
-
-        key("HOME", wait=4)
+        cold_start(a.runs)
         gfx_reset()
         for k in ["DOWN"] * 6 + ["UP"] * 6 + ["RIGHT"] * 8 + ["LEFT"] * 8:
             key(k, wait=0.35)
@@ -311,8 +333,7 @@ def cmd_bench(a):
         res["home_nav"] = gfx_read()
         res["mem_home"] = meminfo()
 
-        sh(f"am start -a android.intent.action.VIEW -d owntv://open {PKG}")
-        time.sleep(10)
+        open_live()
         res["display_live"] = display_mode()
         res["codecs_live"] = active_codecs()
         gfx_reset()
@@ -333,6 +354,10 @@ def cmd_bench(a):
             sh("am start -n com.android.systemui/.Somnambulator 2>/dev/null || input keyevent KEYCODE_SLEEP")
         if quiet:
             sh(f"settings put global hdmi_control_enabled {cec if cec not in ('', 'null') else 1}")
+    res["cold_start"] = start_times(lines)
+    ff = [r["startup-first-frame"] for r in res["cold_start"] if "startup-first-frame" in r]
+    res["cold_start_median_ms"] = int(statistics.median(ff)) if ff else None
+    res["slow_frames_start"] = [int(m.group(1)) for l in lines for m in [re.search(r"slow-frame (\d+) ms", l)] if m]
     res["perf_stamps"] = [l for l in lines if "OwnTVPerf" in l][-60:]
     res["framerate_log"] = [l for l in lines if "FrameRate" in l][-30:]
     res["errors"] = [l for l in lines if re.search(r" [EF]/", l)][-40:]
