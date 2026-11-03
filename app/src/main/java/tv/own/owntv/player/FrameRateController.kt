@@ -63,6 +63,8 @@ object FrameRateController {
     private const val MAX_MULTIPLE = 3
     /** How close the current refresh rate must be to a multiple for [chooseMode] to keep it without a switch. */
     private const val STAY_TOLERANCE_HZ = 0.05f
+    /** The lowest refresh rate the menus are left on after playback — see [keepOnStop]. */
+    private const val MENU_MIN_HZ = 47.5f
     /** Grace period before a release actually lands — see [reset]. */
     private const val RESET_DELAY_MS = 1_500L
 
@@ -334,7 +336,8 @@ object FrameRateController {
     }
 
     /**
-     * Hand the display back to the system default (mode id 0) — called when playback stops.
+     * Hand the display back to the system default (mode id 0) — called when playback stops. A mode the
+     * menus can stay on ([keepOnStop]) is kept instead, unless [release] (Auto frame rate turned off).
      *
      * Deferred by [RESET_DELAY_MS] and cancelled by any [apply] in the meantime. The video surface is
      * disposed and remounted on ordinary events (the mpv<->ExoPlayer engine swap, the Realtek fresh-
@@ -342,21 +345,29 @@ object FrameRateController {
      * HDMI twice for no reason — a visible black flash on many panels. A real stop still releases, just
      * a moment later.
      */
-    fun reset(activity: Activity) {
+    fun reset(activity: Activity, release: Boolean = false) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
         cancelPendingReset()
         // A deferred switch must not outlive the playback that asked for it — otherwise stopping during
         // the cooldown still blanks the panel a moment later, for a stream that is already gone.
         cancelPendingApply()
-        val task = Runnable { resetNow(activity) }
+        val task = Runnable { resetNow(activity, release) }
         pendingReset = task
         handler.postDelayed(task, RESET_DELAY_MS)
     }
 
-    private fun resetNow(activity: Activity) {
+    private fun resetNow(activity: Activity, release: Boolean) {
         pendingReset = null
         runCatching {
-            if (activity.window.attributes.preferredDisplayModeId == 0) return
+            val requested = activity.window.attributes.preferredDisplayModeId
+            if (requested == 0) return
+            val mode = displayOf(activity)?.supportedModes?.firstOrNull { it.modeId == requested }
+            if (!release && mode != null && keepOnStop(mode.refreshRate, mode.physicalWidth, mode.physicalHeight, baseWidth, baseHeight)) {
+                // The next tune is not a "burst": it may switch at once.
+                lastChangeAtMs = 0L
+                Log.i(TAG, "AFR: display mode ${mode.modeId} (${mode.refreshRate}Hz) kept for the menus")
+                return
+            }
             activity.window.attributes = activity.window.attributes.apply { preferredDisplayModeId = 0 }
             baseWidth = 0
             baseHeight = 0
@@ -366,6 +377,17 @@ object FrameRateController {
             Log.i(TAG, "AFR: display mode released")
         }.onFailure { Log.w(TAG, "AFR reset failed: ${it.message}") }
     }
+
+    /**
+     * Whether a stopped playback leaves the display on its mode instead of handing it back to the system
+     * default. Going back would black the panel a second time (HDMI re-sync) right as the menus appear —
+     * it read as a bug — and the next channel most likely has the same rate again (a 60p football stream
+     * after another, 50 Hz German TV after another). Kept only at the base resolution and at 48 Hz or
+     * more, where the menus still move smoothly; a film's 24 Hz or a resolution-matched 1080p goes back.
+     * Pure, so it is unit-tested.
+     */
+    internal fun keepOnStop(hz: Float, width: Int, height: Int, baseWidth: Int, baseHeight: Int): Boolean =
+        hz >= MENU_MIN_HZ && width == baseWidth && height == baseHeight
 
     /** 1..MAX_MULTIPLE if [refreshRate] is (about) that many times [fps], else null. */
     private fun multipleOf(refreshRate: Float, fps: Float): Int? =
@@ -431,7 +453,7 @@ fun AutoFrameRateEffect(
         if (enabled) {
             FrameRateController.apply(activity, fps ?: 0f, sizeForMatch, matchResolution = sizeForMatch != null)
         } else {
-            FrameRateController.reset(activity)
+            FrameRateController.reset(activity, release = true)
         }
     }
     DisposableEffect(activity) {

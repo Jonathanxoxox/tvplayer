@@ -94,6 +94,16 @@ class FrameRateChooseModeTest {
     }
 
     @Test
+    fun `stopping keeps a menu-friendly mode and releases a film's`() {
+        // 60p football or 50 Hz TV: the menus stay on it, no second black gap on the way back.
+        assertTrue(FrameRateController.keepOnStop(60f, 3840, 2160, baseWidth = 3840, baseHeight = 2160))
+        assertTrue(FrameRateController.keepOnStop(50f, 3840, 2160, baseWidth = 3840, baseHeight = 2160))
+        // 24 Hz would make the menus judder; a resolution-matched 1080p is not where the menus belong.
+        assertFalse(FrameRateController.keepOnStop(23.976f, 3840, 2160, baseWidth = 3840, baseHeight = 2160))
+        assertFalse(FrameRateController.keepOnStop(50f, 1920, 1080, baseWidth = 3840, baseHeight = 2160))
+    }
+
+    @Test
     fun `resolution matching still switches although the rate already fits`() {
         assertEquals(fhd24, choose(24f, video = 1920 to 1080, current = uhd24, base = uhd24)?.mode)
     }
