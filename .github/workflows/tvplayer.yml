@@ -117,6 +117,13 @@ jobs:
           path: dist/MayoTV.apk
           if-no-files-found: error
 
+      # R8-Zuordnung, um simpleperf-Profile von der Box (tools/box) wieder lesbar zu machen.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: mapping
+          path: app/build/outputs/mapping/standardRelease/mapping.txt
+          if-no-files-found: warn
+
       # Läufe desselben Zweigs können sich überholen; veröffentlicht wird nur, was noch der neueste
       # Stand ist, sonst zeigte "latest" am Ende auf einen älteren Bau.
       - name: Still the newest push?
