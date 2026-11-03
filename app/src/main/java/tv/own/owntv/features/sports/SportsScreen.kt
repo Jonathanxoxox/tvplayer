@@ -45,6 +45,7 @@ fun SportsScreen(
     var lastKey by remember { mutableStateOf<String?>(null) }
     val open: (Match?) -> Unit = { m -> if (m != null) lastKey = m.key; match = m; vm.open(m) }
     val playback = koinInject<SportsPlayback>()
+    LaunchedEffect(Unit) { vm.warmGuides() }
     LaunchedEffect(Unit) {
         if (playback.pendingMatch.value == null) playback.returnToMatch?.let { m ->
             playback.returnToMatch = null

@@ -132,8 +132,13 @@ class SportsViewModel(
     private val liveSources = playlists.map { l -> l.map { it.first } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    init {
-        // Opening Sports reads the football channels' guides ahead, so Find channels on a match is quick.
+    /**
+     * Opening Sports reads the football channels' guides ahead, so Find channels on a match is quick. Called
+     * by [SportsScreen], not from init: Home holds this ViewModel too (its sports row), and from init every
+     * app start sent up to 800 guide reads, many of them short-EPG requests to the provider, into its first
+     * seconds (14 % of the start's background CPU on a Nokia 8010).
+     */
+    fun warmGuides() {
         viewModelScope.launch(Dispatchers.Default) { if (hasPlaylist.first()) GuideBroadcasts.warm() }
     }
 
