@@ -78,6 +78,37 @@ class FrameRateChooseModeTest {
     }
 
     @Test
+    fun `a display already on a clean multiple stays`() {
+        // Box at 50 Hz: a 25p series and a 50p channel need no switch, so no black gap in or out.
+        val stay = choose(25f, current = uhd50, base = uhd50)
+        assertEquals(uhd50, stay?.mode)
+        assertTrue(stay!!.seamless)
+        assertEquals(uhd50, choose(50f, current = uhd50, base = uhd50)?.mode)
+        // 30p on a 60 Hz panel stays at 60 instead of dropping to 30.
+        assertEquals(uhd60, choose(30f, modes = listOf(uhd60, ModeSpec(7, 3840, 2160, 30f)))?.mode)
+        // Not a multiple: a film still gets its own rate.
+        assertEquals(uhd24, choose(24f, current = uhd50, base = uhd50)?.mode)
+        // 59.94 is close to 60 but not close enough to stay: 60p still gets the true 60 Hz.
+        val ntsc = ModeSpec(8, 3840, 2160, 59.94f)
+        assertEquals(uhd60, choose(60f, modes = listOf(ntsc, uhd60), current = ntsc, base = ntsc)?.mode)
+    }
+
+    @Test
+    fun `stopping keeps a menu-friendly mode and releases a film's`() {
+        // 60p football or 50 Hz TV: the menus stay on it, no second black gap on the way back.
+        assertTrue(FrameRateController.keepOnStop(60f, 3840, 2160, baseWidth = 3840, baseHeight = 2160))
+        assertTrue(FrameRateController.keepOnStop(50f, 3840, 2160, baseWidth = 3840, baseHeight = 2160))
+        // 24 Hz would make the menus judder; a resolution-matched 1080p is not where the menus belong.
+        assertFalse(FrameRateController.keepOnStop(23.976f, 3840, 2160, baseWidth = 3840, baseHeight = 2160))
+        assertFalse(FrameRateController.keepOnStop(50f, 1920, 1080, baseWidth = 3840, baseHeight = 2160))
+    }
+
+    @Test
+    fun `resolution matching still switches although the rate already fits`() {
+        assertEquals(fhd24, choose(24f, video = 1920 to 1080, current = uhd24, base = uhd24)?.mode)
+    }
+
+    @Test
     fun `no match after a switched mode goes back to the default`() {
         // A 50p channel after a 30p one on a 60/30 Hz panel: nothing matches, the 30 Hz mode must go.
         assertEquals(0, FrameRateController.nextModeId(chosenId = null, requestedId = 7))

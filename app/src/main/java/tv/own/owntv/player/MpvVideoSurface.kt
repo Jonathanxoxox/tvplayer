@@ -12,6 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -25,6 +28,8 @@ import tv.own.owntv.ui.theme.asAndroidTypeface
 
 private const val SURFACE_LAYOUT_NUDGES = 30
 private const val SURFACE_LAYOUT_NUDGE_MS = 100L
+/** Fresh fps measurements per tune after a reading that is no real frame rate (each takes up to ~10 s). */
+private const val MAX_FPS_REMEASURES = 4
 
 private class MpvSurfaceView(context: Context, private val player: OwnTVPlayer) :
     SurfaceView(context), SurfaceHolder.Callback {
@@ -179,6 +184,20 @@ fun ExoPreviewSurface(
     // Media3 has its own Surface.setFrameRate path, independent of FrameRateController. Keep it off in
     // previews/mini-player and make the full-screen path obey the same AFR setting.
     LaunchedEffect(engine, autoFrameRate) { engine.setAutoFrameRateEnabled(autoFrameRate) }
+    // A reading that is no real frame rate is measured again. The engine publishes its frame counter when the
+    // exact timestamp reading has not come in time, and a stream that stalled while starting counts low: a
+    // 60p football stream read 40.46 fps, matched no mode and then stayed unmeasured for the whole tune.
+    // A few more rounds give the timestamps their chance once the stream runs; a new tune starts at null.
+    var remeasures by remember(engine) { mutableIntStateOf(0) }
+    LaunchedEffect(engine, autoFrameRate, fps) {
+        val f = fps
+        if (f == null) {
+            remeasures = 0
+        } else if (autoFrameRate && !FrameRateController.isStandardRate(f) && remeasures < MAX_FPS_REMEASURES) {
+            remeasures++
+            engine.refreshStreamChips()
+        }
+    }
     AutoFrameRateEffect(fps, autoFrameRate)
     BoxWithConstraints(modifier.background(Color.Black).clipToBounds(), contentAlignment = Alignment.Center) {
         val aspect by engine.videoAspect.collectAsStateWithLifecycle()
