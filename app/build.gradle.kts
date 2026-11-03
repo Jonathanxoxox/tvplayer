@@ -221,6 +221,10 @@ android {
         // the androidComponents variant API below; release deliberately ships neither.
         // Equivalent to `localeFilters += ...` but avoids confusion with the SetProperty variant form.
         localeFilters.addAll(packagedLocaleQualifiers)
+        // Fonts stored, not deflated: Android maps a stored font straight out of the APK, a deflated one is
+        // unpacked into memory on every start (inflate showed up on the main thread of a TV box's cold
+        // start). ~1 MB more APK for the ten font files.
+        noCompress.add("ttf")
     }
 
     lint {
