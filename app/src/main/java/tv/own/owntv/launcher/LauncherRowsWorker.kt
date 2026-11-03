@@ -34,7 +34,9 @@ class LauncherRowsWorker(context: Context, params: WorkerParameters) : Coroutine
         // a forced run is not owed either, since leaving the app queues the next one.
         val atStart = !tv.own.owntv.StartupGate.isSettled
         if (atStart) withTimeoutOrNull(START_WAIT_MS) { tv.own.owntv.StartupGate.awaitSettled() }
-        if (!AppVisibility.foreground || (inputData.getBoolean(KEY_FORCE, false) && !atStart)) {
+        if (!RowsViewer.present(applicationContext)) {
+            Log.d(TAG, "launcher rows skipped: Mayo TV is the home screen")
+        } else if (!AppVisibility.foreground || (inputData.getBoolean(KEY_FORCE, false) && !atStart)) {
             LauncherRows(applicationContext).refresh()
         }
         Result.success()
@@ -74,6 +76,23 @@ class LauncherRowsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
         LauncherRowsWorker.schedule(context)
         LauncherRowsWorker.refreshSoon(context, delaySeconds = 0, force = true)
+    }
+}
+
+/**
+ * Whether a launcher shows the rows at all. With Mayo TV as the home screen nobody does: Mayo's own Home
+ * leaves out its own channels (LauncherApps.loadChannels), and the stock launcher is not on screen. A
+ * refresh then scans up to 20,000 channels and their guide for nothing, each time the app is left (the
+ * screensaver, another app) and every 15 minutes. Switching the home screen back brings the rows with
+ * the next run.
+ */
+object RowsViewer {
+    fun present(context: Context): Boolean {
+        val home = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)
+        val pkg = runCatching {
+            context.packageManager.resolveActivity(home, android.content.pm.PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName
+        }.getOrNull()
+        return pkg != context.packageName
     }
 }
 

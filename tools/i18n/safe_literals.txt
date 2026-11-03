@@ -1355,6 +1355,7 @@
 1	technical	app/src/main/java/tv/own/owntv/launcher/LauncherRowsWorker.kt	LauncherRows
 1	json	app/src/main/java/tv/own/owntv/launcher/LauncherRowsWorker.kt	force
 1	technical	app/src/main/java/tv/own/owntv/launcher/LauncherRowsWorker.kt	launcher rows not refreshed
+1	log	app/src/main/java/tv/own/owntv/launcher/LauncherRowsWorker.kt	launcher rows skipped: Mayo TV is the home screen
 1	technical	app/src/main/java/tv/own/owntv/launcher/LauncherRowsWorker.kt	tvplayer-launcher-rows
 1	technical	app/src/main/java/tv/own/owntv/launcher/LauncherRowsWorker.kt	tvplayer-launcher-rows-now
 1	empty	app/src/main/java/tv/own/owntv/launcher/LauncherTiles.kt	\0

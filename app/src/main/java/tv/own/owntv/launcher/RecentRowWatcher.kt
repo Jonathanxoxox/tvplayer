@@ -40,6 +40,7 @@ object RecentRowWatcher {
                 // Let core finish the whole row first.
                 delay(SETTLE_MS)
                 changes.tryReceive()
+                if (!RowsViewer.present(app)) continue
                 runCatching { LauncherRows(app).decorateRecent(force = false) }
                     .onFailure { Log.w(TAG, "recent row not decorated", it) }
             }
