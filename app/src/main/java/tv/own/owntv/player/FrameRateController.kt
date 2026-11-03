@@ -131,6 +131,16 @@ object FrameRateController {
             // No match keeps nothing from the last item: a 50p channel after a 30p one on a 60/30 Hz
             // panel would otherwise stay at 30 Hz and lose every other frame.
             if (choice != null) cancelPendingReset()
+            // No match on a mode the menus can stay on: leave it. A live reading mid-tune can be nonsense
+            // (39.46 fps on a 60p stream) and going to the default for it blacked the panel for nothing.
+            if (choice == null) {
+                val requested = activity.window.attributes.preferredDisplayModeId
+                val mode = displayOf(activity)?.supportedModes?.firstOrNull { it.modeId == requested }
+                if (mode != null && keepOnStop(mode.refreshRate, mode.physicalWidth, mode.physicalHeight, baseWidth, baseHeight)) {
+                    Log.i(TAG, "AFR: video ${fps}fps matches no mode -> display left on ${mode.refreshRate}Hz")
+                    return
+                }
+            }
             val targetId = nextModeId(choice?.mode?.modeId, activity.window.attributes.preferredDisplayModeId) ?: return
             cancelPendingReset()
             val waitMs = MODE_CHANGE_COOLDOWN_MS - (android.os.SystemClock.uptimeMillis() - lastChangeAtMs)

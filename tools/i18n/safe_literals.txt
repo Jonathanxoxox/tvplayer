@@ -1489,6 +1489,7 @@
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: display mode released
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: video ${fps}fps -> display mode ${target.modeId} (${target.physicalWidth}x${target.physicalHeight} ${target.refreshRate}Hz, seamless=${choice.seamless})
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: video ${fps}fps matches no mode -> display default
+1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: video ${fps}fps matches no mode -> display left on ${mode.refreshRate}Hz
 1	compiler	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	DEPRECATION
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	FrameRate
 1	technical	app/src/main/java/tv/own/owntv/player/PlayerCard.kt	EEEdMMM
