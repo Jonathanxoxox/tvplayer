@@ -31,7 +31,6 @@ import tv.own.owntv.core.di.databaseModule
 import tv.own.owntv.core.di.dataModule
 import tv.own.owntv.di.appModule
 import tv.own.owntv.di.playerModule
-import tv.own.owntv.ui.theme.asComposeFamily
 import tv.own.owntv.ui.theme.subtitleFontResource
 
 class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Configuration.Provider {
@@ -134,20 +133,6 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
         StartLog.stamp("koin-started")
         // Open the database now, in parallel with the Activity's start; MainActivity waits on the result.
         DatabaseProbe.start()
-        // The interface font, ready before Home's first layout. Each weight of a variable font is its own
-        // typeface, built on first use (read the file, instance the weight) on the main thread, in the middle
-        // of the first frame. Built here into Compose's global typeface cache, Home finds them there.
-        appScope.launch {
-            runCatching {
-                val family = if (tv.own.owntv.ui.theme.MayoFont.flow(this@OwnTVApp).value) {
-                    tv.own.owntv.ui.theme.ManropeFamily
-                } else {
-                    GlobalContext.get().get<tv.own.owntv.core.settings.SettingsRepository>()
-                        .fontCustomization.first().mainFamily.asComposeFamily()
-                }
-                androidx.compose.ui.text.font.createFontFamilyResolver(this@OwnTVApp).preload(family)
-            }
-        }
         // A chosen icon colour ("Later", the first-run pick, a restore) reaches the launcher when the app
         // is next in the background, never while it is on screen.
         tv.own.owntv.core.brand.AppIconSwitcher.start(this, GlobalContext.get().get())
