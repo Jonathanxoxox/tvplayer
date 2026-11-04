@@ -792,6 +792,8 @@ fun HomeScreen(
                 catalogMenu = null
                 homeScope.launch {
                     kotlinx.coroutines.delay(60)
+                    // Closed for "Arrange rows": focus belongs to that window, which opens with the row in hand.
+                    if (arrangingRows != null) return@launch
                     // A hidden channel's card is gone: the row's first card then.
                     val back = runCatching { lastFocus?.requestFocus() == true }.getOrDefault(false)
                     if (!back) rowFocusRequester(HomeRow.RECENT_CHANNELS)?.let { runCatching { it.requestFocus() } }
