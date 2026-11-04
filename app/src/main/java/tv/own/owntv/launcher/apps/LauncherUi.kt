@@ -408,7 +408,7 @@ private fun YouTubeFace(height: Dp) {
         Image(painterResource(R.drawable.ic_youtube_mark), contentDescription = null, modifier = Modifier.size(height * 0.42f))
         Text(
             stringResource(R.string.launcher_youtube), style = stageText(30, 800),
-            color = androidx.compose.ui.graphics.Color(0xFF0F0F0F), maxLines = 1, overflow = TextOverflow.Clip,
+            color = androidx.compose.ui.graphics.Color(0xFF0F0F0F), maxLines = 1, overflow = TextOverflow.Ellipsis,
         )
     }
 }

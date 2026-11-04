@@ -85,7 +85,7 @@ internal fun HomeStage(
                             Initials(shown, 18)
                         }
                     }
-                    Text(stringResource(R.string.home_stage_live), style = stageText(17, 800), color = stageAccent.accent, maxLines = 1, overflow = TextOverflow.Clip)
+                    Text(stringResource(R.string.home_stage_live), style = stageText(17, 800), color = stageAccent.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(shown.name, style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Text(
@@ -94,10 +94,10 @@ internal fun HomeStage(
                 )
                 if (programme != null) {
                     Row(horizontalArrangement = Arrangement.spacedBy(18.mpx)) {
-                        Text(timeSpan(programme), style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Clip)
+                        Text(timeSpan(programme), style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         Text(
                             timeLeftText(((programme.stopMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L),
-                            style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Clip,
+                            style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )
                     }
                     Box(Modifier.width(520.mpx).height(6.mpx).clip(RoundedCornerShape(3.mpx)).background(StageColors.ControlFill)) {
@@ -151,7 +151,7 @@ internal fun HomeStage(
 private fun Initials(channel: ChannelEntity, size: Int) {
     Text(
         channel.number?.toString() ?: channel.name.take(2).uppercase(),
-        style = stageText(size, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Clip,
+        style = stageText(size, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
     )
 }
 
