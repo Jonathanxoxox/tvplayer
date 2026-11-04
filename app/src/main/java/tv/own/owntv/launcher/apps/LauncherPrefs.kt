@@ -48,6 +48,8 @@ data class LauncherConfig(
         const val LAYOUT_CLASSIC = "classic"
         /** As classic, with the channel row as a stage: the focused channel's programme large over a strip of logos. */
         const val LAYOUT_STAGE = "stage"
+        /** As Stage, the picture twice as large and playing by itself, muted, where focus rests (layout F). */
+        const val LAYOUT_SPOTLIGHT = "spotlight"
 
         /** TizenTube, YouTube, Nuvio, Spotify and Downloader, as far as they are installed. */
         val DEFAULT_ROW = listOf(

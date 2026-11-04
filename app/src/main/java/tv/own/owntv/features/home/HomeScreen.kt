@@ -212,7 +212,8 @@ fun HomeScreen(
     // their channels (YouTube, Nuvio, Spotify) right after the first row; Stage also draws the channel row
     // as a stage.
     val compactApps = launcherConfig.homeLayout != tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STANDARD
-    val stageLayout = launcherConfig.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE
+    val spotlightLayout = launcherConfig.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_SPOTLIGHT
+    val stageLayout = launcherConfig.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE || spotlightLayout
     val showAppsRow = launcherConfig.appsRow && renderRows.isNotEmpty() && !compactApps
     val showAppPills = launcherConfig.appsRow && renderRows.isNotEmpty() && compactApps
     val earlyChannels = compactApps && launcherConfig.appChannels
@@ -564,6 +565,7 @@ fun HomeScreen(
                             onPlayFullscreen = onPlayFromStage,
                             active = previewEnabled,
                             modifier = rowModifier,
+                            spotlight = spotlightLayout,
                         ) else
                         // Mayo TV: a category's channels in place of Recently watched, when one is set.
                         HomeLiveRow(

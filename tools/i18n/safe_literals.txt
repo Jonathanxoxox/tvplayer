@@ -1443,6 +1443,7 @@
 1	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	off
 2	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	row_apps
 2	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	row_titles
+1	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	spotlight
 1	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	stage
 1	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	standard
 2	technical	app/src/main/java/tv/own/owntv/launcher/apps/LauncherSystem.kt	:
