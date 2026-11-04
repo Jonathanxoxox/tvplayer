@@ -15,7 +15,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -128,6 +131,9 @@ data class ContinueTarget(
     val positionMs: Long = 0L,
 )
 
+/** Short-guide requests the category row's cards make at once ([HomeViewModel.onNowFor]). */
+private const val PROVIDER_EPG_PARALLEL = 6
+
 class HomeViewModel(
     private val feed: HomeFeedReader,
     private val movieDao: MovieDao,
@@ -147,6 +153,7 @@ class HomeViewModel(
     private val guideReader: tv.own.owntv.core.live.GuideReader,
     private val customize: tv.own.owntv.core.customize.CustomizationStore,
     private val catalog: HomeCatalog,
+    private val liveEpg: tv.own.owntv.core.live.LiveEpgReader,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -405,18 +412,43 @@ class HomeViewModel(
         reloadRequests.tryEmit(profileId?.takeIf { it >= 0 })
     }
 
-    /** The programme on now for each of [channels], as More › Favourites reads it. */
-    private suspend fun onNowFor(profileId: Long, channels: List<ChannelEntity>): Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> {
+    /**
+     * The programme on now for each of [channels], as More › Favourites reads it. With [providerFallback]
+     * the channels the stored guide cannot answer ask the provider's short guide, a few at a time: the
+     * Magenta TV channels of Jonathan's playlist have no stored guide at all, so their cards showed only
+     * the channel's name.
+     */
+    private suspend fun onNowFor(
+        profileId: Long,
+        channels: List<ChannelEntity>,
+        providerFallback: Boolean = false,
+    ): Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> {
         if (channels.isEmpty()) return emptyMap()
         return runCatching {
-            guideReader.onNow(
+            val cust = customize.observe(profileId, tv.own.owntv.core.model.MediaType.LIVE).first()
+            val shift = settings.epgOffsetMinutes.first()
+            val now = System.currentTimeMillis()
+            val stored = guideReader.onNow(
                 channels = channels,
-                cust = customize.observe(profileId, tv.own.owntv.core.model.MediaType.LIVE).first(),
-                globalShiftMinutes = settings.epgOffsetMinutes.first(),
-                atMs = System.currentTimeMillis(),
+                cust = cust,
+                globalShiftMinutes = shift,
+                atMs = now,
                 // A real window: an empty one (now..now) finds no programme at all.
                 lookAheadMs = 60 * 60_000L,
             ).mapNotNull { (id, slot) -> slot.now?.let { id to it } }.toMap()
+            if (!providerFallback) return@runCatching stored
+            val gate = kotlinx.coroutines.sync.Semaphore(PROVIDER_EPG_PARALLEL)
+            val asked = kotlinx.coroutines.coroutineScope {
+                channels.filter { it.id !in stored }.map { ch ->
+                    async {
+                        gate.withPermit {
+                            runCatching { liveEpg.providerProgrammes(ch, cust, shift) }.getOrNull()
+                                ?.firstOrNull { it.startMs <= now && it.stopMs > now }?.let { ch.id to it }
+                        }
+                    }
+                }.awaitAll().filterNotNull()
+            }
+            stored + asked
         }.getOrDefault(emptyMap())
     }
 
@@ -456,7 +488,7 @@ class HomeViewModel(
         val cards = tv.own.owntv.core.model.HomeLiveRowMode.CARDS
         val recentNow = when {
             // The category row is always cards, each with what is on now.
-            catalogRow != null -> onNowFor(profileId, catalogRow.channels)
+            catalogRow != null -> onNowFor(profileId, catalogRow.channels, providerFallback = true)
             data.config.recentLiveMode == cards -> onNowFor(profileId, data.recentLive)
             else -> emptyMap()
         }
