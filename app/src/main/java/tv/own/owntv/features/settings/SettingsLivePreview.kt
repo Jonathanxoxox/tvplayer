@@ -58,7 +58,8 @@ internal fun SettingsLivePreview() {
     val launcher = tv.own.owntv.launcher.apps.rememberLauncherConfig()
     val apps by tv.own.owntv.launcher.apps.LauncherApps.apps.collectAsStateWithLifecycle()
     val compact = launcher.homeLayout != tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STANDARD
-    val stage = launcher.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE
+    val stage = launcher.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE ||
+        launcher.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_SPOTLIGHT
     val titles = launcher.rowTitles
     val channels = (state.catalog?.channels ?: state.recentLive).take(6)
     val onNow = state.recentOnNow

@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import kotlinx.coroutines.delay
 import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
@@ -66,6 +67,10 @@ import tv.own.owntv.ui.theme.stageText
  * It plays as the guide and the Sports match page do: OK plays the channel in the picture, with its sound;
  * OK again on the same channel takes it full screen, and Back from there glides it back into the picture,
  * still playing. The picture is the shell's (see [GuidePreviewSpot]): this only says where it goes.
+ *
+ * [spotlight] is the Spotlight layout (Jonathan, 4 Nov 2026, after the streaming apps): the picture twice as
+ * large, and the focused channel starts in it by itself, muted, once focus rests on its logo; OK then takes
+ * it full screen with its sound straight away.
  */
 @Composable
 internal fun HomeStage(
@@ -82,6 +87,7 @@ internal fun HomeStage(
     /** False while the player is full screen over Home: Back then belongs to the player. */
     active: Boolean,
     modifier: Modifier = Modifier,
+    spotlight: Boolean = false,
 ) {
     val channels = row.channels
     if (channels.isEmpty()) return
@@ -90,10 +96,20 @@ internal fun HomeStage(
     // The channel in the picture: none until one is picked with OK. It stays while the player is full screen
     // over Home (the page is kept behind the picture), so Back lands on it playing.
     var picked by remember(row.category.key) { mutableStateOf<ChannelEntity?>(null) }
+    // Picked with OK it plays with its sound; started by Spotlight on its own, muted.
+    var pickedAudible by remember { mutableStateOf(true) }
+    var stripFocused by remember { mutableStateOf(false) }
     val previewOn by liveVm.livePreviewEnabled.collectAsStateWithLifecycle()
     LaunchedEffect(picked?.id, previewOn) {
         val ch = picked ?: return@LaunchedEffect
-        if (previewOn) liveVm.playPreview(ch, audible = true)
+        if (previewOn) liveVm.playPreview(ch, audible = pickedAudible)
+    }
+    // Spotlight: the channel focus rests on starts by itself; walking the strip opens no stream per logo passed.
+    if (spotlight) LaunchedEffect(shown.id, stripFocused, previewOn) {
+        if (!stripFocused || !previewOn || picked?.id == shown.id) return@LaunchedEffect
+        delay(SPOTLIGHT_DWELL_MS)
+        pickedAudible = false
+        picked = shown
     }
     // Back first ends the picture, then (with nothing playing) goes on to the menu as before.
     BackHandler(enabled = active && picked != null) { liveVm.stopPreview(); picked = null }
@@ -105,7 +121,7 @@ internal fun HomeStage(
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
     Column(modifier.padding(top = 24.mpx)) {
         Row(
-            Modifier.padding(start = start, end = 64.mpx).height(330.mpx),
+            Modifier.padding(start = start, end = 64.mpx).height(if (spotlight) 560.mpx else 330.mpx),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(56.mpx),
         ) {
@@ -120,7 +136,7 @@ internal fun HomeStage(
                     Text(shown.name, style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
                 Text(
-                    programme?.title ?: shown.name, style = stageText(58, 800), color = StageColors.Text,
+                    programme?.title ?: shown.name, style = stageText(if (spotlight) 68 else 58, 800), color = StageColors.Text,
                     maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
                 if (programme != null) {
@@ -137,7 +153,8 @@ internal fun HomeStage(
                 }
             }
             Box(
-                Modifier.size(540.mpx, 304.mpx).clip(RoundedCornerShape(StageRadii.Poster)).background(StageColors.ControlFill),
+                Modifier.size(if (spotlight) 960.mpx else 540.mpx, if (spotlight) 540.mpx else 304.mpx)
+                    .clip(RoundedCornerShape(StageRadii.Poster)).background(StageColors.ControlFill),
                 contentAlignment = Alignment.Center,
             ) {
                 // The picture alone: the shell draws it over this spot with the view full screen uses, so it grows
@@ -163,12 +180,19 @@ internal fun HomeStage(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(18.mpx),
             contentPadding = PaddingValues(start = start, end = 64.mpx, top = 10.mpx, bottom = 10.mpx),
-            modifier = Modifier.focusRestorer().focusGroup(),
+            modifier = Modifier.focusRestorer().focusGroup().onFocusChanged { stripFocused = it.hasFocus },
         ) {
             itemsIndexed(channels, key = { _, c -> c.id }) { index, channel ->
                 StageSurface(
                     // As in the guide: the first OK plays it here, the second takes it full screen.
-                    onClick = { if (previewOn && picked?.id != channel.id) picked = channel else onPlayFullscreen(channel, channels) },
+                    onClick = {
+                        when {
+                            // Spotlight: straight to full screen, growing out of the picture when it is this channel.
+                            spotlight -> onPlayFullscreen(channel, channels)
+                            previewOn && picked?.id != channel.id -> { pickedAudible = true; picked = channel }
+                            else -> onPlayFullscreen(channel, channels)
+                        }
+                    },
                     onLongClick = { onLongClick(channel) },
                     radius = StageRadii.Poster,
                     focusStyle = StageFocus.POSTER,
@@ -190,6 +214,9 @@ internal fun HomeStage(
         }
     }
 }
+
+/** How long focus rests on a logo before Spotlight starts its channel. */
+private const val SPOTLIGHT_DWELL_MS = 900L
 
 /** A logo's stand-in: the channel's number, else the first letters of its name. */
 @Composable

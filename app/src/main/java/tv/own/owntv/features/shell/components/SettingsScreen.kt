@@ -226,6 +226,7 @@ fun SettingsScreen(
         tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STANDARD,
         tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_CLASSIC,
         tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE,
+        tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_SPOTLIGHT,
     )
     val stepHomeLayout: (Int) -> Unit = { step ->
         tv.own.owntv.launcher.apps.LauncherPrefs.update(launcherContext) { c ->
@@ -582,6 +583,7 @@ fun SettingsScreen(
                     stringResource(R.string.home_layout_standard),
                     stringResource(R.string.home_layout_classic),
                     stringResource(R.string.home_layout_stage),
+                    stringResource(R.string.home_layout_spotlight),
                 ),
                 homeLayouts.indexOf(launcherConfig.homeLayout).coerceAtLeast(0),
             ),
@@ -1292,6 +1294,7 @@ fun SettingsScreen(
             tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STANDARD to stringResource(R.string.home_layout_standard),
             tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_CLASSIC to stringResource(R.string.home_layout_classic),
             tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE to stringResource(R.string.home_layout_stage),
+            tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_SPOTLIGHT to stringResource(R.string.home_layout_spotlight),
         )
         tv.own.owntv.features.settings.PickerDialog(
             title = stringResource(R.string.home_layout_title),
