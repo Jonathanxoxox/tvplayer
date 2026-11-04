@@ -17,6 +17,7 @@ import tv.own.owntv.core.content.SearchReader
 import tv.own.owntv.core.home.HomeFeedReader
 import tv.own.owntv.core.live.GuideReader
 import tv.own.owntv.core.live.LiveEpgReader
+import tv.own.owntv.features.home.HomeCatalog
 import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MovieViewModel
@@ -64,7 +65,7 @@ val appModule = module {
     singleOf(::SearchReader)
     singleOf(::HomeFeedReader)
     // Mayo TV: the category row on Home and what Home hides or moves in it.
-    singleOf(::tv.own.owntv.features.home.HomeCatalog)
+    singleOf(::HomeCatalog)
     // Sports Hub: which match the playing channel came from. Lazy; nothing runs until it is asked.
     singleOf(::SportsPlayback)
     // Process-long scope for work that must outlive the screen that started it (a first-run restore).
