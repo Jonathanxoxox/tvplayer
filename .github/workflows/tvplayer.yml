@@ -69,6 +69,20 @@ jobs:
           fi
           echo "KEYSTORE_FILE=$KS" >> "$GITHUB_ENV"
 
+      # Ein eigener Stand des OwnTV-Cores (core-fork.properties: repo, ref) wird ausgecheckt, getestet und
+      # per Composite-Build (owntv.corePath, settings.gradle.kts) statt der veröffentlichten Version gebaut.
+      # Ohne die Datei bleibt es bei der Version aus libs.versions.toml.
+      - name: Core fork
+        run: |
+          if [ ! -f core-fork.properties ]; then exit 0; fi
+          REPO=$(sed -n 's/^repo=//p' core-fork.properties)
+          REF=$(sed -n 's/^ref=//p' core-fork.properties)
+          CORE="$RUNNER_TEMP/owntv-core"
+          git clone --depth 1 --branch "$REF" "https://github.com/$REPO.git" "$CORE"
+          echo "::notice::OwnTV-Core aus $REPO@$REF ($(git -C "$CORE" rev-parse --short HEAD))"
+          (cd "$CORE" && chmod +x ./gradlew && ./gradlew :core:testDebugUnitTest :player-core:testDebugUnitTest --stacktrace)
+          echo "CORE_ARGS=-Powntv.corePath=$CORE" >> "$GITHUB_ENV"
+
       - name: Build APK
         env:
           VERSION_NAME: 1.0.${{ github.run_number }}
@@ -81,7 +95,7 @@ jobs:
         run: |
           export VERSION_CODE=$((10000 + GITHUB_RUN_NUMBER))
           chmod +x ./gradlew
-          ./gradlew assembleStandardRelease --stacktrace
+          ./gradlew assembleStandardRelease $CORE_ARGS --stacktrace
           mkdir -p dist
           cp "$(ls app/build/outputs/apk/standard/release/*.apk | head -n1)" dist/MayoTV.apk
           cp dist/MayoTV.apk "dist/MayoTV-v1.0.${GITHUB_RUN_NUMBER}.apk"
