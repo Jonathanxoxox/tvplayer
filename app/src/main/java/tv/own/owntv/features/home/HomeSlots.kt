@@ -29,26 +29,27 @@ object HomeSlots {
 
     /**
      * The arrange window's list: Home's [rows], each followed by the app rows [placed] after it, the
-     * [unplaced] ones after the first row ([unplacedEarly]) or at the end. A placed row whose anchor is not
-     * among [rows] goes to the end too.
+     * [unplaced] ones where Home draws them now: after [unplacedAfter] (the first row Home draws, which is
+     * not always the first in the list: Spotlight hides the hero), or at the end when null. A placed row
+     * whose anchor is not among [rows] goes to the end too.
      */
     fun mixed(
         rows: List<HomeRow>,
         placed: List<Pair<String, String>>,
         unplaced: List<String>,
-        unplacedEarly: Boolean,
+        unplacedAfter: HomeRow?,
     ): List<HomeSlot> {
         val byAnchor = placed.groupBy({ it.first }, { it.second })
         val names = rows.map { it.name }.toSet()
         return buildList {
             byAnchor[TOP]?.forEach { add(HomeSlot.App(it)) }
-            rows.forEachIndexed { i, row ->
+            rows.forEach { row ->
                 add(HomeSlot.Row(row))
                 byAnchor[row.name]?.forEach { add(HomeSlot.App(it)) }
-                if (i == 0 && unplacedEarly) unplaced.forEach { add(HomeSlot.App(it)) }
+                if (row == unplacedAfter) unplaced.forEach { add(HomeSlot.App(it)) }
             }
             placed.filter { it.first != TOP && it.first !in names }.forEach { add(HomeSlot.App(it.second)) }
-            if (!unplacedEarly || rows.isEmpty()) unplaced.forEach { add(HomeSlot.App(it)) }
+            if (unplacedAfter == null || unplacedAfter !in rows) unplaced.forEach { add(HomeSlot.App(it)) }
         }
     }
 

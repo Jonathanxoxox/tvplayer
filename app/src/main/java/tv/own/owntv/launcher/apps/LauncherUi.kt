@@ -393,9 +393,10 @@ fun appRowNames(channels: List<AppChannel>): Map<String, String> {
     val youtube = stringResource(R.string.launcher_youtube)
     val continueTitle = stringResource(R.string.launcher_row_continue)
     return channels.associate { c ->
-        val app = if (isTizenTube(c.pkg)) youtube else labels[c.pkg] ?: c.pkg
+        val label = labels[c.pkg] ?: c.pkg
+        val app = if (isTizenTube(c.pkg) || label.contains("TizenTube", ignoreCase = true)) youtube else label
         val title = if (c.isWatchNext()) continueTitle else c.name.ifBlank { app }
-        c.key to if (title == app) app else context.getString(R.string.home_arrange_app_row, title, app)
+        c.key to if (title.contains(app, ignoreCase = true)) title else context.getString(R.string.home_arrange_app_row, title, app)
     }
 }
 

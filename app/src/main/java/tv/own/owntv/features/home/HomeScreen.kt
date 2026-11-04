@@ -284,7 +284,9 @@ fun HomeScreen(
     // Home's rows and the other apps' rows in one list, starting at [appKey]'s row or the channel row.
     val openArrange: (String?) -> Unit = { appKey ->
         val mixed = HomeSlots.mixed(
-            state.config.settingsRows, placedApps, visibleAppKeys.filter { it !in placedAppKeys }, unplacedEarly = defaultEarly,
+            state.config.settingsRows, placedApps, visibleAppKeys.filter { it !in placedAppKeys },
+            // Where Home draws them now: after the first row on screen (Spotlight has no hero), or last.
+            unplacedAfter = if (defaultEarly) renderRows.firstOrNull { it in state.config.settingsRows } else null,
         )
         val at = mixed.indexOf(if (appKey != null) HomeSlot.App(appKey) else HomeSlot.Row(HomeRow.RECENT_CHANNELS))
         arrangingRows = mixed to at.coerceAtLeast(0)

@@ -24,14 +24,19 @@ class HomeSlotsTest {
     }
 
     @Test
-    fun `never placed app rows come right after the first row, or at the end`() {
+    fun `never placed app rows come right after the first row Home draws, or at the end`() {
         assertEquals(
             listOf(r(HERO), a("yt"), a("nuvio"), r(RECENT_CHANNELS), r(FAVORITE_CHANNELS), r(CONTINUE_MOVIES)),
-            HomeSlots.mixed(rows, emptyList(), listOf("yt", "nuvio"), unplacedEarly = true),
+            HomeSlots.mixed(rows, emptyList(), listOf("yt", "nuvio"), unplacedAfter = HERO),
+        )
+        // Spotlight draws no hero: the channel row is the first on screen, and the app rows follow it.
+        assertEquals(
+            listOf(r(HERO), r(RECENT_CHANNELS), a("yt"), r(FAVORITE_CHANNELS), r(CONTINUE_MOVIES)),
+            HomeSlots.mixed(rows, emptyList(), listOf("yt"), unplacedAfter = RECENT_CHANNELS),
         )
         assertEquals(
             listOf(r(HERO), r(RECENT_CHANNELS), r(FAVORITE_CHANNELS), r(CONTINUE_MOVIES), a("yt")),
-            HomeSlots.mixed(rows, emptyList(), listOf("yt"), unplacedEarly = false),
+            HomeSlots.mixed(rows, emptyList(), listOf("yt"), unplacedAfter = null),
         )
     }
 
@@ -40,7 +45,7 @@ class HomeSlotsTest {
         val window = listOf(a("spotify"), r(HERO), r(RECENT_CHANNELS), a("yt"), r(FAVORITE_CHANNELS), r(CONTINUE_MOVIES), a("nuvio"))
         val stored = HomeSlots.anchors(window, keep = listOf(HomeSlots.encode("HERO", "gone")))
         val placed = stored.mapNotNull(HomeSlots::decode).filter { it.second != "gone" }
-        assertEquals(window, HomeSlots.mixed(rows, placed, emptyList(), unplacedEarly = true))
+        assertEquals(window, HomeSlots.mixed(rows, placed, emptyList(), unplacedAfter = HERO))
         assertEquals(HomeSlots.encode("HERO", "gone"), stored.last())
     }
 

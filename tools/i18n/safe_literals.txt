@@ -1470,6 +1470,7 @@
 1	protocol	app/src/main/java/tv/own/owntv/launcher/apps/LauncherSystem.kt	com.tcl.home
 1	protocol	app/src/main/java/tv/own/owntv/launcher/apps/LauncherSystem.kt	mayo_home_button
 1	protocol	app/src/main/java/tv/own/owntv/launcher/apps/LauncherUi.kt	/${LauncherApps.WATCH_NEXT}
+1	technical	app/src/main/java/tv/own/owntv/launcher/apps/LauncherUi.kt	TizenTube
 2	technical	app/src/main/java/tv/own/owntv/launcher/apps/LauncherUi.kt	all_apps
 1	technical	app/src/main/java/tv/own/owntv/launcher/apps/LauncherUi.kt	io.gh.reisxd.tizentube
 3	empty	app/src/main/java/tv/own/owntv/perf/DexMetadataHook.kt	\0
