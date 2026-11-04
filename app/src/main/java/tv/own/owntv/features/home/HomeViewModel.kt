@@ -15,7 +15,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -97,6 +100,8 @@ data class HomeUiState(
     /** Mayo TV: what is on now per channel for the rows in Cards mode too (core fills the guide only for On now). */
     val recentOnNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> = emptyMap(),
     val favoriteOnNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> = emptyMap(),
+    /** Mayo TV: the category row that takes the place of Recently watched ([HomeCatalog]); null shows that row. */
+    val catalog: HomeCatalog.Row? = null,
     /**
      * True until the first [HomeViewModel.loadHomeData] completes. Home's queries are profile-scoped and
      * already indexed, but on a cold boot their first reads come off slow eMMC (pages not yet in the OS
@@ -126,6 +131,9 @@ data class ContinueTarget(
     val positionMs: Long = 0L,
 )
 
+/** Short-guide requests the category row's cards make at once ([HomeViewModel.onNowFor]). */
+private const val PROVIDER_EPG_PARALLEL = 6
+
 class HomeViewModel(
     private val feed: HomeFeedReader,
     private val movieDao: MovieDao,
@@ -144,6 +152,8 @@ class HomeViewModel(
     private val userDataWriter: tv.own.owntv.core.backup.UserDataWriter,
     private val guideReader: tv.own.owntv.core.live.GuideReader,
     private val customize: tv.own.owntv.core.customize.CustomizationStore,
+    private val catalog: HomeCatalog,
+    private val liveEpg: tv.own.owntv.core.live.LiveEpgReader,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -185,6 +195,24 @@ class HomeViewModel(
                 reloadRequests.emit(null)
             }
         }
+        // A category chosen in Settings, or hidden channels shown again there.
+        viewModelScope.launch {
+            catalog.changes.drop(1).collect { reloadRequests.emit(null) }
+        }
+    }
+
+    /** Hides [channel] from Home's category row; Live TV still shows it. */
+    fun hideFromHome(channel: ChannelEntity) {
+        val row = _uiState.value.catalog ?: return
+        catalog.hide(channel)
+        _uiState.value = _uiState.value.copy(catalog = HomeCatalog.Row(row.category, row.channels - channel))
+    }
+
+    /** Keeps [channels] as Home's order for the category row. */
+    fun reorderOnHome(channels: List<ChannelEntity>) {
+        val row = _uiState.value.catalog ?: return
+        catalog.saveOrder(row.category.key, channels)
+        _uiState.value = _uiState.value.copy(catalog = HomeCatalog.Row(row.category, channels))
     }
 
     // --- The single most-recent resumable item, for the shared top-bar Continue chip. ---
@@ -384,18 +412,43 @@ class HomeViewModel(
         reloadRequests.tryEmit(profileId?.takeIf { it >= 0 })
     }
 
-    /** The programme on now for each of [channels], as More › Favourites reads it. */
-    private suspend fun onNowFor(profileId: Long, channels: List<ChannelEntity>): Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> {
+    /**
+     * The programme on now for each of [channels], as More › Favourites reads it. With [providerFallback]
+     * the channels the stored guide cannot answer ask the provider's short guide, a few at a time: the
+     * Magenta TV channels of Jonathan's playlist have no stored guide at all, so their cards showed only
+     * the channel's name.
+     */
+    private suspend fun onNowFor(
+        profileId: Long,
+        channels: List<ChannelEntity>,
+        providerFallback: Boolean = false,
+    ): Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> {
         if (channels.isEmpty()) return emptyMap()
         return runCatching {
-            guideReader.onNow(
+            val cust = customize.observe(profileId, tv.own.owntv.core.model.MediaType.LIVE).first()
+            val shift = settings.epgOffsetMinutes.first()
+            val now = System.currentTimeMillis()
+            val stored = guideReader.onNow(
                 channels = channels,
-                cust = customize.observe(profileId, tv.own.owntv.core.model.MediaType.LIVE).first(),
-                globalShiftMinutes = settings.epgOffsetMinutes.first(),
-                atMs = System.currentTimeMillis(),
+                cust = cust,
+                globalShiftMinutes = shift,
+                atMs = now,
                 // A real window: an empty one (now..now) finds no programme at all.
                 lookAheadMs = 60 * 60_000L,
             ).mapNotNull { (id, slot) -> slot.now?.let { id to it } }.toMap()
+            if (!providerFallback) return@runCatching stored
+            val gate = kotlinx.coroutines.sync.Semaphore(PROVIDER_EPG_PARALLEL)
+            val asked = kotlinx.coroutines.coroutineScope {
+                channels.filter { it.id !in stored }.map { ch ->
+                    async {
+                        gate.withPermit {
+                            runCatching { liveEpg.providerProgrammes(ch, cust, shift) }.getOrNull()
+                                ?.firstOrNull { it.startMs <= now && it.stopMs > now }?.let { ch.id to it }
+                        }
+                    }
+                }.awaitAll().filterNotNull()
+            }
+            stored + asked
         }.getOrDefault(emptyMap())
     }
 
@@ -407,6 +460,7 @@ class HomeViewModel(
     private suspend fun loadHomeData(profileId: Long) {
         val previous = _uiState.value
         val data = feed.load(profileId)
+        val catalogRow = runCatching { catalog.load(profileId) }.getOrNull()
         _uiState.value = HomeUiState(
             trendingItems = data.trendingItems,
             activeTrendingIndex = previous.activeTrendingIndex
@@ -426,12 +480,18 @@ class HomeViewModel(
             config = data.config,
             recentGuide = data.recentGuide,
             favoriteGuide = data.favoriteGuide,
+            catalog = catalogRow,
             isLoading = false,
         )
         tv.own.owntv.perf.StartLog.stamp("home-data")
         // The channel cards show what is on now under the logo in either mode (Jonathan, 1 Nov 2026).
         val cards = tv.own.owntv.core.model.HomeLiveRowMode.CARDS
-        val recentNow = if (data.config.recentLiveMode == cards) onNowFor(profileId, data.recentLive) else emptyMap()
+        val recentNow = when {
+            // The category row is always cards, each with what is on now.
+            catalogRow != null -> onNowFor(profileId, catalogRow.channels, providerFallback = true)
+            data.config.recentLiveMode == cards -> onNowFor(profileId, data.recentLive)
+            else -> emptyMap()
+        }
         val favoriteNow = if (data.config.favoriteLiveMode == cards) onNowFor(profileId, data.favoriteLive) else emptyMap()
         if (recentNow.isNotEmpty() || favoriteNow.isNotEmpty()) {
             _uiState.value = _uiState.value.copy(recentOnNow = recentNow, favoriteOnNow = favoriteNow)

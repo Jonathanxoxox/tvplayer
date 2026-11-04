@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mayo TV (4 Nov 2026): a Live TV category's channels on Home in place of Recently watched. -->
+<resources>
+    <string name="home_catalog_heading">Channel row</string>
+    <string name="home_catalog_title">Category</string>
+    <string name="home_catalog_description">The channels Home shows in place of Recently watched. Hold OK on a channel on Home to hide or move it there.</string>
+    <string name="home_catalog_show_hidden">Show hidden channels again</string>
+    <plurals name="home_catalog_hidden_count">
+        <item quantity="one">%1$d channel hidden from Home</item>
+        <item quantity="other">%1$d channels hidden from Home</item>
+    </plurals>
+</resources>

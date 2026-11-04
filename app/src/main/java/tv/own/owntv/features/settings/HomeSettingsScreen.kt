@@ -29,6 +29,7 @@ import tv.own.owntv.core.model.HeroKind
 import tv.own.owntv.core.model.HomeRow
 import tv.own.owntv.core.model.HomeTrendingStyle
 import tv.own.owntv.core.trending.TrendingAvailability
+import tv.own.owntv.features.home.HomeCatalog
 import tv.own.owntv.features.home.displayLabel
 import tv.own.owntv.features.home.displayTitle
 import tv.own.owntv.features.home.settingsDescription
@@ -179,6 +180,46 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         },
                 )
             }
+        }
+
+        // Mayo TV: which category's channels stand where Recently watched was (HomeCatalog).
+        val catalogChoice by vm.catalogChoice.collectAsStateWithLifecycle()
+        var pickingCatalog by remember { mutableStateOf(false) }
+        val recentTitle = HomeRow.RECENT_CHANNELS.displayTitle()
+        StageSettingsHeading(stringResource(R.string.home_catalog_heading), if (catalogChoice.hidden > 0) 2 else 1)
+        val catalogTitle = stringResource(R.string.home_catalog_title)
+        val catalogDesc = stringResource(R.string.home_catalog_description)
+        val catalogValue = SettingValue.Choice(catalogChoice.current?.name ?: recentTitle)
+        val catalogOptions = listOf(HomeCatalog.RECENT to recentTitle) + catalogChoice.categories.map { it.key to it.name }
+        StageSettingRow(
+            icon = OwnTVIcon.LIVE_TV,
+            title = catalogTitle,
+            desc = catalogDesc,
+            value = catalogValue,
+            onClick = { pickingCatalog = true },
+            help = settingHelp(null, catalogTitle, catalogDesc, catalogValue, catalogOptions.map { it.second }, pinnable = false),
+        )
+        if (catalogChoice.hidden > 0) {
+            val showTitle = stringResource(R.string.home_catalog_show_hidden)
+            val showDesc = pluralStringResource(R.plurals.home_catalog_hidden_count, catalogChoice.hidden, catalogChoice.hidden)
+            StageSettingRow(
+                icon = OwnTVIcon.EYE_OFF,
+                title = showTitle,
+                desc = showDesc,
+                value = null,
+                onClick = vm::showHiddenOnHome,
+                help = SettingHelp(showTitle, showDesc, hints = settingHints(null, pinnable = false)),
+            )
+        }
+        if (pickingCatalog) {
+            PickerDialog(
+                title = catalogTitle,
+                options = catalogOptions,
+                selected = catalogChoice.current?.key ?: HomeCatalog.RECENT,
+                onSelect = { key -> vm.chooseCatalog(key); pickingCatalog = false },
+                onDismiss = { pickingCatalog = false },
+                searchable = catalogOptions.size > 12,
+            )
         }
 
         StageSettingsHeading(stringResource(R.string.settings_keep_watching), 4)

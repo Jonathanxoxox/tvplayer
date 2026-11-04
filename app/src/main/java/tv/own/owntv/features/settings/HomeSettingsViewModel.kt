@@ -28,6 +28,7 @@ import tv.own.owntv.core.sync.TrendingActivityTracker
 import tv.own.owntv.core.trending.TrendingAvailability
 import tv.own.owntv.core.trending.trendingAvailability
 import tv.own.owntv.core.sync.work.CatalogSyncScheduler
+import tv.own.owntv.features.home.HomeCatalog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,7 +39,40 @@ class HomeSettingsViewModel(
     private val trendingDao: TrendingDao,
     private val trendingActivity: TrendingActivityTracker,
     private val syncScheduler: CatalogSyncScheduler,
+    private val catalog: HomeCatalog,
 ) : ViewModel() {
+    /** Mayo TV: the categories Home's channel row can show, the one it shows, and how many channels Home hides. */
+    data class CatalogChoice(
+        val categories: List<HomeCatalog.Category> = emptyList(),
+        val current: HomeCatalog.Category? = null,
+        val hidden: Int = 0,
+    )
+
+    private val _catalogChoice = MutableStateFlow(CatalogChoice())
+    val catalogChoice: StateFlow<CatalogChoice> = _catalogChoice.asStateFlow()
+
+    init {
+        loadCatalogChoice()
+    }
+
+    private fun loadCatalogChoice() {
+        viewModelScope.launch {
+            val all = runCatching { catalog.categories() }.getOrDefault(emptyList())
+            _catalogChoice.value = CatalogChoice(all, catalog.current(all), catalog.hidden().size)
+        }
+    }
+
+    /** A category's key, or [HomeCatalog.RECENT] for the recently watched channels. */
+    fun chooseCatalog(key: String) {
+        catalog.choose(key)
+        loadCatalogChoice()
+    }
+
+    fun showHiddenOnHome() {
+        catalog.showAll()
+        loadCatalogChoice()
+    }
+
     val config: StateFlow<HomeConfig> = settings.activeProfileId
         .flatMapLatest { pid -> if (pid < 0) flowOf(HomeConfig()) else settings.homeConfig(pid) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeConfig())

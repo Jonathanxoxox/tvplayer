@@ -64,6 +64,8 @@ fun HomeLiveRow(
     modifier: Modifier = Modifier,
     /** What is on now in Cards mode (the guide slice is filled only for On now). */
     cardsNow: Map<Long, EpgProgrammeEntity> = emptyMap(),
+    /** Hold OK on a card; null where the row offers nothing for it. */
+    onLongClick: ((ChannelEntity) -> Unit)? = null,
 ) {
     val onNow = mode == HomeLiveRowMode.ON_NOW
     val shown = if (onNow) guide.channels else channels
@@ -83,6 +85,7 @@ fun HomeLiveRow(
                     programme = if (onNow) currentProgramme(guide.programmes[channel.id].orEmpty(), guide.now) else cardsNow[channel.id],
                     now = if (onNow) guide.now else System.currentTimeMillis(),
                     onClick = { onChannelClick(channel.id, shown) },
+                    onLongClick = onLongClick?.let { { it(channel) } },
                     modifier = Modifier
                         .then(if (index == 0 && firstItemFocusRequester != null) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
                         .tracked(track = track)
@@ -104,6 +107,7 @@ private fun LogoChannelCard(
     now: Long,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
 ) {
     val left = programme?.let { timeLeftText(((it.stopMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L) }
     tv.own.owntv.ui.stage.StageStill(
@@ -115,6 +119,7 @@ private fun LogoChannelCard(
         titleSize = 18,
         lineSize = 15,
         progress = programme?.let { programmeProgress(it, now) },
+        onLongClick = onLongClick,
         modifier = modifier,
     ) {
         Box(Modifier.fillMaxSize().background(StageColors.ControlFill), contentAlignment = Alignment.Center) {

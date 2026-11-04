@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_catalog_heading">Senderreihe</string>
+    <string name="home_catalog_title">Kategorie</string>
+    <string name="home_catalog_description">Die Sender, die die Startseite statt „Zuletzt angesehen“ zeigt. Auf der Startseite OK gedrückt halten, um einen Sender dort auszublenden oder zu verschieben.</string>
+    <string name="home_catalog_show_hidden">Ausgeblendete Sender wieder zeigen</string>
+    <plurals name="home_catalog_hidden_count">
+        <item quantity="one">%1$d Sender auf der Startseite ausgeblendet</item>
+        <item quantity="other">%1$d Sender auf der Startseite ausgeblendet</item>
+    </plurals>
+</resources>
