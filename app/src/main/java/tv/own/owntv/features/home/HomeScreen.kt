@@ -280,18 +280,13 @@ fun HomeScreen(
     // The category row's card whose Hold-OK menu is open.
     var catalogMenu by remember { mutableStateOf<ChannelEntity?>(null) }
     // Home's rows while their Move window is open, with the carried row's place.
-    var arrangingRows by remember { mutableStateOf<Pair<List<HomeSlot>, Int>?>(null) }
-    // Home's rows and the other apps' rows in one list, starting at [appKey]'s row or the channel row.
+    var arrangeStart by remember { mutableStateOf<HomeSlot?>(null) }
+    // Home's rows and the other apps' rows in one window, starting at [appKey]'s row or the channel row.
     val openArrange: (String?) -> Unit = { appKey ->
-        val mixed = HomeSlots.mixed(
-            state.config.settingsRows, placedApps, visibleAppKeys.filter { it !in placedAppKeys },
-            // Where Home draws them now: after the first row on screen (Spotlight has no hero), or last.
-            unplacedAfter = if (defaultEarly) renderRows.firstOrNull { it in state.config.settingsRows } else null,
-        )
-        val at = mixed.indexOf(if (appKey != null) HomeSlot.App(appKey) else HomeSlot.Row(HomeRow.RECENT_CHANNELS))
-        arrangingRows = mixed to at.coerceAtLeast(0)
+        arrangeStart = if (appKey != null) HomeSlot.App(appKey) else HomeSlot.Row(HomeRow.RECENT_CHANNELS)
     }
-    val homeContext = androidx.compose.ui.platform.LocalContext.current
+    // For the window opened from Settings: where Home puts app rows nobody placed (Spotlight has no hero).
+    androidx.compose.runtime.SideEffect { HomeDrawnRows.first = renderRows.firstOrNull { it in state.config.settingsRows } }
     val homeSettingsVm: tv.own.owntv.features.settings.HomeSettingsViewModel = org.koin.androidx.compose.koinViewModel()
     val latestEntry by androidx.compose.runtime.rememberUpdatedState(
         lastFocus ?: if (fullBleed) playFocus else renderRows.firstOrNull()?.let(rowFocusRequester),
@@ -793,7 +788,7 @@ fun HomeScreen(
                 homeScope.launch {
                     kotlinx.coroutines.delay(60)
                     // Closed for "Arrange rows": focus belongs to that window, which opens with the row in hand.
-                    if (arrangingRows != null) return@launch
+                    if (arrangeStart != null) return@launch
                     // A hidden channel's card is gone: the row's first card then.
                     val back = runCatching { lastFocus?.requestFocus() == true }.getOrDefault(false)
                     if (!back) rowFocusRequester(HomeRow.RECENT_CHANNELS)?.let { runCatching { it.requestFocus() } }
@@ -801,36 +796,14 @@ fun HomeScreen(
             },
         )
     }
-    // Home's rows moved from Home: the same window as Settings › Home › Rows uses.
-    arrangingRows?.let { (slots, index) ->
-        val appNames = tv.own.owntv.launcher.apps.appRowNames(appChannelList)
-        val names = slots.map { s ->
-            when (s) {
-                is HomeSlot.Row -> if (s.row == HomeRow.RECENT_CHANNELS) state.catalog?.category?.name ?: s.row.displayTitle() else s.row.displayTitle()
-                is HomeSlot.App -> appNames[s.key] ?: s.key
-            }
-        }
-        tv.own.owntv.ui.components.MoveOrderOverlay(
-            title = stringResource(R.string.home_arrange_rows),
-            itemNames = names,
-            activeIndex = index,
-            onMove = { from, to ->
-                val now = arrangingRows?.first
-                if (now != null && from in now.indices && to in now.indices && from != to) {
-                    arrangingRows = now.toMutableList().apply { add(to, removeAt(from)) } to to
-                }
-            },
-            onCommit = {
-                arrangingRows?.first?.let { slots ->
-                    homeSettingsVm.setRowOrder(slots.mapNotNull { (it as? HomeSlot.Row)?.row })
-                    val inWindow = slots.mapNotNull { (it as? HomeSlot.App)?.key }.toSet()
-                    if (inWindow.isNotEmpty()) tv.own.owntv.launcher.apps.LauncherPrefs.update(homeContext) { c ->
-                        c.copy(channelSlots = HomeSlots.anchors(slots, keep = c.channelSlots.filter { e -> HomeSlots.decode(e)?.second !in inWindow }))
-                    }
-                }
-                arrangingRows = null
-            },
-            onCancel = { arrangingRows = null },
+    // Home's rows and the other apps' rows, moved from Home: the same window Settings › Home opens.
+    arrangeStart?.let { start ->
+        ArrangeRowsWindow(
+            rows = state.config.settingsRows,
+            catalogName = state.catalog?.category?.name,
+            startAt = start,
+            onSaveRows = homeSettingsVm::setRowOrder,
+            onClose = { arrangeStart = null },
         )
     }
     InAppToast(trendingToast)
