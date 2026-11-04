@@ -169,9 +169,11 @@ fun HomeScreen(
 ) {
     val state by vm.uiState.collectAsStateWithLifecycle()
     // Asked for only while the row is switched on (Layout → Home rows); off costs nothing.
-    val sportsCards = if (HomeRow.LIVE_SPORTS in state.config.visibleOrder) {
-        sportsVm.homeRow.collectAsStateWithLifecycle().value
-    } else emptyList()
+    // The Spotlight layout ranks the followed matches too, so it asks for them as well.
+    val wantMatches = HomeRow.LIVE_SPORTS in state.config.visibleOrder ||
+        tv.own.owntv.launcher.apps.rememberLauncherConfig().homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_SPOTLIGHT
+    val matches = if (wantMatches) sportsVm.homeRow.collectAsStateWithLifecycle().value else emptyList()
+    val sportsCards = if (HomeRow.LIVE_SPORTS in state.config.visibleOrder) matches else emptyList()
     val trendingUnavailableMessage = stringResource(R.string.home_trending_unavailable)
     val heroPreviewEngine = koinInject<HeroPreviewEngine>()
     val engineState by heroPreviewEngine.state.collectAsStateWithLifecycle()
@@ -217,6 +219,15 @@ fun HomeScreen(
     val showAppsRow = launcherConfig.appsRow && renderRows.isNotEmpty() && !compactApps
     val showAppPills = launcherConfig.appsRow && renderRows.isNotEmpty() && compactApps
     val earlyChannels = compactApps && launcherConfig.appChannels
+    // The Spotlight's highlights (Jonathan, 4 Nov 2026): followed matches, the evening, habits, watching on.
+    val spotlightMatches = if (spotlightLayout) matches else emptyList()
+    val spotlightHighlights = remember(spotlightLayout, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems) {
+        if (!spotlightLayout) emptyList()
+        else SpotlightHighlights.rank(
+            System.currentTimeMillis(), spotlightMatches, state.catalog?.channels.orEmpty(), state.recentOnNow,
+            state.spotlightWatched, state.heroItems,
+        )
+    }
     val showAllHiddenState = orderedRows.isEmpty()
     val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty()
     val fullBleed = renderRows.firstOrNull() == HomeRow.TRENDING &&
@@ -569,6 +580,15 @@ fun HomeScreen(
                             active = previewEnabled,
                             modifier = rowModifier,
                             spotlight = spotlightLayout,
+                            highlights = spotlightHighlights,
+                            onOpenMatch = onOpenMatch,
+                            onResume = { item ->
+                                when (item) {
+                                    is HeroItem.MovieHero -> onPlayMovie(item.movie.id, item.positionMs)
+                                    is HeroItem.SeriesHero -> onPlayEpisode(item.series.id, item.episode.id, item.positionMs)
+                                    is HeroItem.LiveHero -> Unit
+                                }
+                            },
                         ) else
                         // Mayo TV: a category's channels in place of Recently watched, when one is set.
                         HomeLiveRow(
