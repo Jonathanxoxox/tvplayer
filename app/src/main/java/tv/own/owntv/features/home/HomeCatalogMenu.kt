@@ -24,6 +24,7 @@ import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.ui.components.MoveOrderOverlay
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.OwnTVPopup
+import tv.own.owntv.ui.components.longPressMenuGuard
 import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.stage.StageMenu
 import tv.own.owntv.ui.stage.StageMenuHeader
@@ -52,8 +53,11 @@ internal fun HomeCatalogMenu(
             val first = remember { FocusRequester() }
             LaunchedEffect(Unit) { withFrameNanos { }; runCatching { first.requestFocus() } }
             BackHandler { onClose() }
+            // Opened by a held OK: that press's repeats and release must not click "Hide channel" (the
+            // menu flashed up and closed again, the channel hidden; Jonathan, 4 Nov 2026).
             Box(
-                Modifier.fillMaxSize().background(stageTone(Color.Black.copy(alpha = 0.45f), StageColors.Scrim)).trapAllFocusExit().focusGroup(),
+                Modifier.fillMaxSize().background(stageTone(Color.Black.copy(alpha = 0.45f), StageColors.Scrim)).trapAllFocusExit().focusGroup()
+                    .longPressMenuGuard(),
                 contentAlignment = Alignment.Center,
             ) {
                 StageMenu(Modifier.width(440.mpx)) {

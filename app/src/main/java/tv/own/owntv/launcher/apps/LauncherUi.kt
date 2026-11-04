@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -145,7 +146,9 @@ fun AppCard(
                 .background(StageColors.GlassOff),
             contentAlignment = Alignment.Center,
         ) {
-            if (art != null && LauncherApps.isBanner(art)) {
+            if (isTizenTube(app.pkg)) {
+                YouTubeFace(height)
+            } else if (art != null && LauncherApps.isBanner(art)) {
                 Image(art, contentDescription = app.label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
             } else {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.mpx)) {
@@ -324,10 +327,10 @@ fun AppChannelRows(
     val continueTitle = stringResource(R.string.launcher_row_continue)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(40.mpx)) {
         shown.forEach { channel ->
-            val appLabel = labels[channel.pkg] ?: channel.pkg
+            val appLabel = if (isTizenTube(channel.pkg)) stringResource(R.string.launcher_youtube) else labels[channel.pkg] ?: channel.pkg
             val title = if (channel.key.endsWith("/${LauncherApps.WATCH_NEXT}")) continueTitle else channel.name.ifBlank { appLabel }
             Column {
-                Row(
+                if (config.rowTitles) Row(
                     Modifier.padding(start = start).height(46.mpx),
                     horizontalArrangement = Arrangement.spacedBy(14.mpx),
                     verticalAlignment = Alignment.Top,
@@ -370,12 +373,110 @@ fun AppChannelRows(
 
 /** The app's icon, small, before a row's name. */
 @Composable
-private fun AppBadge(pkg: String, modifier: Modifier = Modifier) {
+private fun AppBadge(pkg: String, modifier: Modifier = Modifier, size: Dp = 30.mpx) {
+    if (isTizenTube(pkg)) {
+        Image(painterResource(R.drawable.ic_youtube_mark), contentDescription = null, modifier = modifier.size(size))
+        return
+    }
     val context = LocalContext.current
     val icon = produceState<ImageBitmap?>(null, pkg) {
         value = withContext(Dispatchers.IO) {
             runCatching { context.packageManager.getApplicationIcon(pkg).toBitmap(64, 64).asImageBitmap() }.getOrNull()
         }
     }.value ?: return
-    Image(icon, contentDescription = null, modifier = modifier.size(30.mpx).clip(RoundedCornerShape(8.mpx)))
+    Image(icon, contentDescription = null, modifier = modifier.size(size).clip(RoundedCornerShape(8.mpx)))
+}
+
+/** TizenTube's packages ("….tizentube", "….tizentube.cobalt"): Home shows it as YouTube, which it is on the TV (Jonathan, 4 Nov 2026). */
+private const val TIZENTUBE = "io.gh.reisxd.tizentube"
+
+internal fun isTizenTube(pkg: String): Boolean = pkg.startsWith(TIZENTUBE)
+
+/** What Home calls [app]: TizenTube as YouTube, everything else by its own label. */
+@Composable
+internal fun homeLabel(app: LauncherApp): String =
+    if (isTizenTube(app.pkg)) stringResource(R.string.launcher_youtube) else app.label
+
+/** TizenTube's card face: the YouTube mark and name on white, in place of TizenTube's own banner. */
+@Composable
+private fun YouTubeFace(height: Dp) {
+    Row(
+        Modifier.fillMaxSize().background(androidx.compose.ui.graphics.Color.White),
+        horizontalArrangement = Arrangement.spacedBy(14.mpx, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(painterResource(R.drawable.ic_youtube_mark), contentDescription = null, modifier = Modifier.size(height * 0.42f))
+        Text(
+            stringResource(R.string.launcher_youtube), style = stageText(30, 800),
+            color = androidx.compose.ui.graphics.Color(0xFF0F0F0F), maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+/**
+ * The Apps row as small buttons on one line, for the Classic and Stage layouts: each app's icon and
+ * name, then All apps.
+ */
+@Composable
+fun HomeAppPills(
+    start: Dp,
+    onFocus: () -> Unit,
+    onAllApps: () -> Unit,
+    track: (FocusRequester) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    val config = rememberLauncherConfig()
+    val apps by LauncherApps.apps.collectAsStateWithLifecycle()
+    val resumes = rememberResumeCount()
+    LaunchedEffect(resumes) { LauncherApps.refreshApps(context) }
+    val row = rowApps(config, apps)
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(14.mpx),
+        contentPadding = PaddingValues(start = start, end = 64.mpx, top = 6.mpx, bottom = 6.mpx),
+        modifier = modifier.focusRestorer().focusGroup(),
+    ) {
+        itemsIndexed(row, key = { _, app -> app.pkg }) { _, app ->
+            val requester = remember { FocusRequester() }
+            AppPill(
+                label = homeLabel(app),
+                onClick = { LauncherApps.open(context, app) },
+                modifier = Modifier.focusRequester(requester).onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
+            ) { AppBadge(app.pkg, size = 32.mpx) }
+        }
+        item(key = "all_apps") {
+            val requester = remember { FocusRequester() }
+            AppPill(
+                label = stringResource(R.string.launcher_all_apps),
+                onClick = onAllApps,
+                modifier = Modifier.focusRequester(requester).onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
+            ) { focused -> OwnTVIcon(OwnTVIcon.GRID, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(28.mpx)) }
+        }
+    }
+}
+
+@Composable
+private fun AppPill(
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: @Composable (focused: Boolean) -> Unit,
+) {
+    StageSurface(
+        onClick = onClick,
+        radius = 30.mpx,
+        focusStyle = StageFocus.FILLED,
+        idle = Modifier.clip(RoundedCornerShape(30.mpx)).background(StageColors.GlassOff),
+        contentAlignment = Alignment.Center,
+        modifier = modifier.height(60.mpx),
+    ) { focused ->
+        Row(
+            Modifier.padding(horizontal = 22.mpx),
+            horizontalArrangement = Arrangement.spacedBy(12.mpx),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            icon(focused)
+            Text(label, style = stageText(18, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
 }

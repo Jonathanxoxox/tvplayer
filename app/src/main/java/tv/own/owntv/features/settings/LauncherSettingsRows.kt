@@ -140,11 +140,14 @@ internal fun LauncherSettingsRows(
         onClick = { update { it.copy(appsRow = !it.appsRow) } },
     )
     val inRow = rowApps(config, apps)
+    // TizenTube is called YouTube here as on Home (Jonathan, 4 Nov 2026).
+    val youtube = stringResource(R.string.launcher_youtube)
+    val nameOf = { app: tv.own.owntv.launcher.apps.LauncherApp -> if (tv.own.owntv.launcher.apps.isTizenTube(app.pkg)) youtube else app.label }
     StageSettingRow(
         icon = OwnTVIcon.MOVE,
         title = stringResource(R.string.launcher_row_apps_setting),
         desc = stringResource(R.string.launcher_row_apps_setting_line),
-        value = SettingValue.Opens(inRow.joinToString(stringResource(R.string.content_epg_bits_separator)) { it.label }),
+        value = SettingValue.Opens(inRow.joinToString(stringResource(R.string.content_epg_bits_separator), transform = nameOf)),
         enabled = config.appsRow,
         onClick = { pickRow = true },
     )
@@ -185,7 +188,7 @@ internal fun LauncherSettingsRows(
         )
         PickerDialog(
             title = stringResource(R.string.launcher_boot),
-            options = fixed + apps.map { it.pkg to it.label },
+            options = fixed + apps.map { it.pkg to nameOf(it) },
             selected = config.boot,
             onSelect = { value -> update { it.copy(boot = value) }; pickBoot = false },
             onDismiss = { pickBoot = false },
@@ -198,7 +201,7 @@ internal fun LauncherSettingsRows(
                 apps.forEach { app ->
                     val on = app.pkg in current
                     StagePopupOption(
-                        title = app.label,
+                        title = nameOf(app),
                         onClick = { update { it.copy(rowApps = if (on) current - app.pkg else current + app.pkg) } },
                         leading = { f -> StagePopupCheck(on, f) },
                     )
@@ -207,7 +210,7 @@ internal fun LauncherSettingsRows(
         }
     }
     if (pickChannels) {
-        val labels = apps.associate { it.pkg to it.label }
+        val labels = apps.associate { it.pkg to nameOf(it) }
         val continueTitle = stringResource(R.string.launcher_row_continue)
         StagePopup(onDismiss = { pickChannels = false }, title = stringResource(R.string.launcher_app_channels)) {
             Column(verticalArrangement = Arrangement.spacedBy(4.mpx), modifier = Modifier.padding(top = 18.mpx)) {

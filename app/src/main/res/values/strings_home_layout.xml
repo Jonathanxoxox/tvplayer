@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mayo TV (4 Nov 2026): Home's layouts, its row titles, and YouTube for TizenTube. -->
+<resources>
+    <string name="home_layout_heading">Layout</string>
+    <string name="home_layout_title">Home layout</string>
+    <string name="home_layout_description">Standard keeps the Apps row under the first row. Classic puts the apps on top as buttons with their channels right after. Stage shows the focused channel large.</string>
+    <string name="home_layout_standard">Standard</string>
+    <string name="home_layout_classic">Classic</string>
+    <string name="home_layout_stage">Stage</string>
+    <string name="home_row_titles">Row titles</string>
+    <string name="home_row_titles_description">The titles over the rows, such as “Magenta TV”, “Apps” or “Continue watching”.</string>
+    <string name="home_stage_live">LIVE</string>
+    <string name="home_stage_time_span">%1$s – %2$s</string>
+    <string name="launcher_youtube">YouTube</string>
+</resources>

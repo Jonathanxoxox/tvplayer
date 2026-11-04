@@ -66,6 +66,8 @@ fun timeLeftText(minutes: Long): String = stringResource(R.string.home_time_left
  */
 @Composable
 fun HomeRowHeader(title: String, small: String?, start: Dp, big: Boolean = false) {
+    // Settings › Home screen › Row titles off (Jonathan, 4 Nov 2026): the cards say what the row is.
+    if (!tv.own.owntv.launcher.apps.rememberLauncherConfig().rowTitles) return
     Row(
         Modifier.padding(start = start).height((if (big) 48 else 46).mpx),
         horizontalArrangement = Arrangement.spacedBy(14.mpx),

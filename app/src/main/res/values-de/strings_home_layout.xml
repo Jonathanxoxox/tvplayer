@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="home_layout_heading">Layout</string>
+    <string name="home_layout_title">Startseiten-Layout</string>
+    <string name="home_layout_description">Standard: die Apps-Reihe unter der ersten Reihe. Klassisch: die Apps oben als Knöpfe, ihre Kanäle gleich danach. Bühne: der gewählte Sender groß oben.</string>
+    <string name="home_layout_standard">Standard</string>
+    <string name="home_layout_classic">Klassisch</string>
+    <string name="home_layout_stage">Bühne</string>
+    <string name="home_row_titles">Überschriften über den Reihen</string>
+    <string name="home_row_titles_description">Die Titel über den Reihen, etwa „Magenta TV“, „Apps“ oder „Serien weiterschauen“.</string>
+    <string name="home_stage_live">LIVE</string>
+    <string name="home_stage_time_span">%1$s – %2$s</string>
+    <string name="launcher_youtube">YouTube</string>
+</resources>

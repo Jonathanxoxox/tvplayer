@@ -30,6 +30,8 @@ import tv.own.owntv.core.model.HomeRow
 import tv.own.owntv.core.model.HomeTrendingStyle
 import tv.own.owntv.core.trending.TrendingAvailability
 import tv.own.owntv.features.home.HomeCatalog
+import tv.own.owntv.launcher.apps.LauncherConfig
+import tv.own.owntv.launcher.apps.LauncherPrefs
 import tv.own.owntv.features.home.displayLabel
 import tv.own.owntv.features.home.displayTitle
 import tv.own.owntv.features.home.settingsDescription
@@ -106,6 +108,48 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 onClick = flip,
                 onStep = { step -> vm.setTrendingStyle(if (step < 0) HomeTrendingStyle.HERO else HomeTrendingStyle.POSTERS) },
                 help = settingHelp(null, styleTitle, stringResource(R.string.home_row_trending_description), styleValue, choices = styleValue.options, pinnable = false),
+            )
+        }
+
+        // Mayo TV: Home's layout and its row titles, kept with the launcher's own settings (LauncherPrefs).
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val launcher by remember(context) { LauncherPrefs.config(context) }.collectAsStateWithLifecycle()
+        var pickingLayout by remember { mutableStateOf(false) }
+        StageSettingsHeading(stringResource(R.string.home_layout_heading), 2)
+        val layoutTitle = stringResource(R.string.home_layout_title)
+        val layoutDesc = stringResource(R.string.home_layout_description)
+        val layoutOptions = listOf(
+            LauncherConfig.LAYOUT_STANDARD to stringResource(R.string.home_layout_standard),
+            LauncherConfig.LAYOUT_CLASSIC to stringResource(R.string.home_layout_classic),
+            LauncherConfig.LAYOUT_STAGE to stringResource(R.string.home_layout_stage),
+        )
+        val layoutValue = SettingValue.Choice((layoutOptions.firstOrNull { it.first == launcher.homeLayout } ?: layoutOptions[0]).second)
+        StageSettingRow(
+            icon = OwnTVIcon.GRID,
+            title = layoutTitle,
+            desc = layoutDesc,
+            value = layoutValue,
+            onClick = { pickingLayout = true },
+            help = settingHelp(null, layoutTitle, layoutDesc, layoutValue, layoutOptions.map { it.second }, pinnable = false),
+        )
+        val titlesTitle = stringResource(R.string.home_row_titles)
+        val titlesDesc = stringResource(R.string.home_row_titles_description)
+        val titlesValue = SettingValue.Switch(launcher.rowTitles)
+        StageSettingRow(
+            icon = OwnTVIcon.TEXT_SIZE,
+            title = titlesTitle,
+            desc = titlesDesc,
+            value = titlesValue,
+            onClick = { LauncherPrefs.update(context) { it.copy(rowTitles = !it.rowTitles) } },
+            help = settingHelp(null, titlesTitle, titlesDesc, titlesValue, pinnable = false),
+        )
+        if (pickingLayout) {
+            PickerDialog(
+                title = layoutTitle,
+                options = layoutOptions,
+                selected = launcher.homeLayout,
+                onSelect = { key -> LauncherPrefs.update(context) { it.copy(homeLayout = key) }; pickingLayout = false },
+                onDismiss = { pickingLayout = false },
             )
         }
 
