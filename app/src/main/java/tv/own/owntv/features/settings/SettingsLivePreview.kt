@@ -58,8 +58,8 @@ internal fun SettingsLivePreview() {
     val launcher = tv.own.owntv.launcher.apps.rememberLauncherConfig()
     val apps by tv.own.owntv.launcher.apps.LauncherApps.apps.collectAsStateWithLifecycle()
     val compact = launcher.homeLayout != tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STANDARD
-    val stage = launcher.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE ||
-        launcher.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_SPOTLIGHT
+    val spotlight = launcher.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_SPOTLIGHT
+    val stage = launcher.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE || spotlight
     val titles = launcher.rowTitles
     val channels = (state.catalog?.channels ?: state.recentLive).take(6)
     val onNow = state.recentOnNow
@@ -109,7 +109,7 @@ internal fun SettingsLivePreview() {
             )
             Column(Modifier.padding(start = 150.mpx, top = if (compact) 44.mpx else 130.mpx), verticalArrangement = Arrangement.spacedBy(30.mpx)) {
                 if (compact) PreviewPills(appNames, a)
-                if (stage) PreviewStage(channels.firstOrNull(), onNow, a) else PreviewChannelRow(catalogTitle, channels, onNow, titles, a, ink)
+                if (stage) PreviewStage(channels.firstOrNull(), onNow, a, spotlight) else PreviewChannelRow(catalogTitle, channels, onNow, titles, a, ink)
                 if (stage) PreviewLogoStrip(channels, a, ink)
                 if (!compact) PreviewAppsRow(appsTitle, appNames, titles, ink)
                 PreviewBlocksRow(appChannelsTitle, titles && compact, ink)
@@ -176,13 +176,18 @@ private fun PreviewStage(
     ch: tv.own.owntv.core.database.entity.ChannelEntity?,
     onNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity>,
     a: tv.own.owntv.ui.theme.StageAccent,
+    spotlight: Boolean,
 ) {
-    Row(Modifier.height(330.mpx).width(1680.mpx), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.height(if (spotlight) 560.mpx else 330.mpx).width(1680.mpx), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.mpx)) {
             Text(stringResource(R.string.home_stage_live), style = stageText(18, 800), color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text((ch?.let { onNow[it.id]?.title ?: it.name }).orEmpty(), style = stageText(64, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        Box(Modifier.size(540.mpx, 304.mpx).clip(RoundedCornerShape(18.mpx)).background(androidx.compose.ui.graphics.Color.Black), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.size(if (spotlight) 960.mpx else 540.mpx, if (spotlight) 540.mpx else 304.mpx)
+                .clip(RoundedCornerShape(18.mpx)).background(androidx.compose.ui.graphics.Color.Black),
+            contentAlignment = Alignment.Center,
+        ) {
             if (ch != null) PreviewLogo(ch, Modifier.size(240.mpx, 160.mpx))
         }
     }

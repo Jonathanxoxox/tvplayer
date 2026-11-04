@@ -578,14 +578,14 @@ fun SettingsScreen(
             title = stringResource(R.string.home_layout_title), desc = stringResource(R.string.home_layout_description),
             // ◀ ▶ (or OK) step through the layouts in place, so the live preview beside it changes as they go
             // by (Jonathan, 4 Nov 2026), as Design does.
-            value = tv.own.owntv.features.settings.SettingValue.Segmented(
+            // The chosen one's name only: four segments pushed the row's own title off it.
+            value = tv.own.owntv.features.settings.SettingValue.Choice(
                 listOf(
                     stringResource(R.string.home_layout_standard),
                     stringResource(R.string.home_layout_classic),
                     stringResource(R.string.home_layout_stage),
                     stringResource(R.string.home_layout_spotlight),
-                ),
-                homeLayouts.indexOf(launcherConfig.homeLayout).coerceAtLeast(0),
+                )[homeLayouts.indexOf(launcherConfig.homeLayout).coerceAtLeast(0)],
             ),
             onStep = { step -> stepHomeLayout(step) },
             focus = homeLayoutRowFocus,
