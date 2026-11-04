@@ -245,6 +245,9 @@ fun HomeScreen(
     val track: (FocusRequester) -> Unit = { lastFocus = it }
     // The category row's card whose Hold-OK menu is open.
     var catalogMenu by remember { mutableStateOf<ChannelEntity?>(null) }
+    // Home's rows while their Move window is open, with the carried row's place.
+    var arrangingRows by remember { mutableStateOf<Pair<List<HomeRow>, Int>?>(null) }
+    val homeSettingsVm: tv.own.owntv.features.settings.HomeSettingsViewModel = org.koin.androidx.compose.koinViewModel()
     val latestEntry by androidx.compose.runtime.rememberUpdatedState(
         lastFocus ?: if (fullBleed) playFocus else renderRows.firstOrNull()?.let(rowFocusRequester),
     )
@@ -725,6 +728,7 @@ fun HomeScreen(
             channel = catalogMenu,
             onHide = vm::hideFromHome,
             onReorder = vm::reorderOnHome,
+            onArrangeRows = { arrangingRows = state.config.settingsRows.let { it to it.indexOf(HomeRow.RECENT_CHANNELS).coerceAtLeast(0) } },
             onClose = {
                 catalogMenu = null
                 homeScope.launch {
@@ -734,6 +738,23 @@ fun HomeScreen(
                     if (!back) rowFocusRequester(HomeRow.RECENT_CHANNELS)?.let { runCatching { it.requestFocus() } }
                 }
             },
+        )
+    }
+    // Home's rows moved from Home: the same window as Settings › Home › Rows uses.
+    arrangingRows?.let { (rows, index) ->
+        val names = rows.map { r -> if (r == HomeRow.RECENT_CHANNELS) state.catalog?.category?.name ?: r.displayTitle() else r.displayTitle() }
+        tv.own.owntv.ui.components.MoveOrderOverlay(
+            title = stringResource(R.string.home_arrange_rows),
+            itemNames = names,
+            activeIndex = index,
+            onMove = { from, to ->
+                val now = arrangingRows?.first
+                if (now != null && from in now.indices && to in now.indices && from != to) {
+                    arrangingRows = now.toMutableList().apply { add(to, removeAt(from)) } to to
+                }
+            },
+            onCommit = { arrangingRows?.first?.let(homeSettingsVm::setRowOrder); arrangingRows = null },
+            onCancel = { arrangingRows = null },
         )
     }
     InAppToast(trendingToast)

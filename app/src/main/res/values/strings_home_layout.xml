@@ -13,4 +13,5 @@
     <string name="home_stage_live">LIVE</string>
     <string name="home_stage_time_span">%1$s – %2$s</string>
     <string name="launcher_youtube">YouTube</string>
+    <string name="home_arrange_rows">Arrange rows</string>
 </resources>
