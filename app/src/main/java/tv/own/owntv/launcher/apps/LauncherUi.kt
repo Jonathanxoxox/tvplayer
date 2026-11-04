@@ -287,24 +287,31 @@ fun AppChannelRows(
     onFocus: () -> Unit,
     track: (FocusRequester) -> Unit,
     modifier: Modifier = Modifier,
+    /** Only these rows ([AppChannel.key]), in this order: the ones the user placed here. Null = all but [exclude]. */
+    only: List<String>? = null,
+    exclude: Set<String> = emptySet(),
+    /** Hold OK on a card: arrange Home's rows, starting at this one's. */
+    onArrange: ((String) -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val config = rememberLauncherConfig()
     val channels by LauncherApps.channels.collectAsStateWithLifecycle()
     val apps by LauncherApps.apps.collectAsStateWithLifecycle()
     val resumes = rememberResumeCount()
+    // Read once per visit, by the block that is always there, not once per placed row.
     LaunchedEffect(config.appChannels, resumes) {
-        if (!config.appChannels) return@LaunchedEffect
+        if (!config.appChannels || only != null) return@LaunchedEffect
         LauncherApps.refreshChannels(context)
         if (apps.isEmpty()) LauncherApps.refreshApps(context)
     }
-    val shown = channels.filter { it.key !in config.hiddenChannels }
+    val visible = channels.filter { it.key !in config.hiddenChannels }
+    val shown = if (only != null) only.mapNotNull { k -> visible.firstOrNull { it.key == k } } else visible.filter { it.key !in exclude }
     // Android shows other apps' rows only once Mayo TV may read them: until then, one card that asks.
     val canRead = androidx.compose.runtime.remember(resumes) { LauncherApps.canReadChannels(context) }
     val ask = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
     ) { LauncherApps.canReadChannels(context) }
-    if (config.appChannels && !canRead) {
+    if (only == null && config.appChannels && !canRead) {
         Column(modifier) {
             tv.own.owntv.features.home.HomeRowHeader(stringResource(R.string.launcher_app_channels), small = null, start = start)
             val requester = remember { FocusRequester() }
@@ -333,7 +340,7 @@ fun AppChannelRows(
     Column(modifier, verticalArrangement = Arrangement.spacedBy(40.mpx)) {
         shown.forEach { channel ->
             val appLabel = if (isTizenTube(channel.pkg)) stringResource(R.string.launcher_youtube) else labels[channel.pkg] ?: channel.pkg
-            val title = if (channel.key.endsWith("/${LauncherApps.WATCH_NEXT}")) continueTitle else channel.name.ifBlank { appLabel }
+            val title = if (channel.isWatchNext()) continueTitle else channel.name.ifBlank { appLabel }
             Column {
                 if (config.rowTitles) Row(
                     Modifier.padding(start = start).height(46.mpx),
@@ -358,6 +365,7 @@ fun AppChannelRows(
                             title = program.title,
                             line = program.subtitle.ifBlank { null },
                             onClick = { LauncherApps.openProgram(context, channel.pkg, program) },
+                            onLongClick = onArrange?.let { arrange -> { arrange(channel.key) } },
                             width = w,
                             height = h,
                             titleSize = 17,
@@ -373,6 +381,21 @@ fun AppChannelRows(
                 }
             }
         }
+    }
+}
+
+/** What the arrange window calls each app row: "Recommended · YouTube", or the app's name alone. */
+@Composable
+fun appRowNames(channels: List<AppChannel>): Map<String, String> {
+    val context = LocalContext.current
+    val apps by LauncherApps.apps.collectAsStateWithLifecycle()
+    val labels = apps.associate { it.pkg to it.label }
+    val youtube = stringResource(R.string.launcher_youtube)
+    val continueTitle = stringResource(R.string.launcher_row_continue)
+    return channels.associate { c ->
+        val app = if (isTizenTube(c.pkg)) youtube else labels[c.pkg] ?: c.pkg
+        val title = if (c.isWatchNext()) continueTitle else c.name.ifBlank { app }
+        c.key to if (title == app) app else context.getString(R.string.home_arrange_app_row, title, app)
     }
 }
 
@@ -491,3 +514,6 @@ private fun AppPill(
         }
     }
 }
+
+/** Android's Watch next row of an app (Continue watching), which has no name of its own. */
+private fun AppChannel.isWatchNext(): Boolean = key.endsWith("/${LauncherApps.WATCH_NEXT}")
