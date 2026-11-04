@@ -108,6 +108,7 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
         StageSettingsHeading(stringResource(R.string.settings_sections), config.settingsRows.size)
         val hiddenNote = stringResource(R.string.settings_hidden_sections)
+        val catalogChoice by vm.catalogChoice.collectAsStateWithLifecycle()
         config.settingsRows.forEach { row ->
             key(row) {
                 val hidden = row in config.hidden
@@ -128,7 +129,8 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     liveMode?.let { mode -> StageAction(OwnTVIcon.GRID, mode.displayLabel(), { vm.setLiveRowMode(row, mode.toggled()) }) },
                 )
                 val isMoving = moving == row
-                val title = row.displayTitle()
+                // The channel row is named after the category it shows (Magenta TV), not "Recently watched".
+                val title = if (row == HomeRow.RECENT_CHANNELS) catalogChoice.current?.name ?: row.displayTitle() else row.displayTitle()
                 val hiddenWord = stringResource(R.string.settings_hidden)
                 StageSettingRow(
                     icon = row.icon,
@@ -180,7 +182,6 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
 
         // Mayo TV: which category's channels stand where Recently watched was (HomeCatalog).
-        val catalogChoice by vm.catalogChoice.collectAsStateWithLifecycle()
         var pickingCatalog by remember { mutableStateOf(false) }
         val recentTitle = HomeRow.RECENT_CHANNELS.displayTitle()
         StageSettingsHeading(stringResource(R.string.home_catalog_heading), if (catalogChoice.hidden > 0) 2 else 1)

@@ -222,6 +222,17 @@ fun SettingsScreen(
     var showHomeLayout by remember { mutableStateOf(false) }
     val launcherConfig = tv.own.owntv.launcher.apps.rememberLauncherConfig()
     val launcherContext = LocalContext.current
+    val homeLayouts = listOf(
+        tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STANDARD,
+        tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_CLASSIC,
+        tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE,
+    )
+    val stepHomeLayout: (Int) -> Unit = { step ->
+        tv.own.owntv.launcher.apps.LauncherPrefs.update(launcherContext) { c ->
+            val i = homeLayouts.indexOf(c.homeLayout).coerceAtLeast(0)
+            c.copy(homeLayout = homeLayouts[Math.floorMod(i + step, homeLayouts.size)])
+        }
+    }
     val accentRowFocus = remember { FocusRequester() }
     val focusHighlightRowFocus = remember { FocusRequester() }
     val zoomRowFocus = remember { FocusRequester() }
@@ -564,16 +575,19 @@ fun SettingsScreen(
             "home_layout", TileTone.PRIMARY, OwnTVIcon.GRID,
             heading = stringResource(R.string.settings_heading_home),
             title = stringResource(R.string.home_layout_title), desc = stringResource(R.string.home_layout_description),
-            chip = stringResource(
-                when (launcherConfig.homeLayout) {
-                    tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_CLASSIC -> R.string.home_layout_classic
-                    tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE -> R.string.home_layout_stage
-                    else -> R.string.home_layout_standard
-                },
+            // ◀ ▶ (or OK) step through the layouts in place, so the live preview beside it changes as they go
+            // by (Jonathan, 4 Nov 2026), as Design does.
+            value = tv.own.owntv.features.settings.SettingValue.Segmented(
+                listOf(
+                    stringResource(R.string.home_layout_standard),
+                    stringResource(R.string.home_layout_classic),
+                    stringResource(R.string.home_layout_stage),
+                ),
+                homeLayouts.indexOf(launcherConfig.homeLayout).coerceAtLeast(0),
             ),
-            chipTone = TileTone.PRIMARY,
+            onStep = { step -> stepHomeLayout(step) },
             focus = homeLayoutRowFocus,
-            onClick = { saveScroll(); dialogReturn = homeLayoutRowFocus; showHomeLayout = true },
+            onClick = { stepHomeLayout(1) },
         ),
         RootRow(
             "home_row_titles", TileTone.SECONDARY, OwnTVIcon.TEXT_SIZE,
