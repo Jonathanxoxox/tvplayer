@@ -402,7 +402,7 @@ fun appRowNames(channels: List<AppChannel>): Map<String, String> {
 
 /** The app's icon, small, before a row's name. */
 @Composable
-private fun AppBadge(pkg: String, modifier: Modifier = Modifier, size: Dp = 30.mpx) {
+internal fun AppBadge(pkg: String, modifier: Modifier = Modifier, size: Dp = 30.mpx) {
     if (isTizenTube(pkg)) {
         Image(painterResource(R.drawable.ic_youtube_mark), contentDescription = null, modifier = modifier.size(size))
         return
@@ -461,6 +461,8 @@ fun HomeAppPills(
     LaunchedEffect(resumes) { LauncherApps.refreshApps(context) }
     val row = rowApps(config, apps)
     var menuFor by remember { mutableStateOf<LauncherApp?>(null) }
+    // What Spotify or YouTube plays in the background, beside the apps (Jonathan, 4 Nov 2026).
+    val playing = rememberNowPlaying()
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(14.mpx),
         contentPadding = PaddingValues(start = start, end = 64.mpx, top = 6.mpx, bottom = 6.mpx),
@@ -483,6 +485,13 @@ fun HomeAppPills(
                 onClick = onAllApps,
                 modifier = Modifier.focusRequester(requester).onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
             ) { focused -> OwnTVIcon(OwnTVIcon.GRID, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(28.mpx)) }
+        }
+        if (playing != null) item(key = "now_playing") {
+            val requester = remember { FocusRequester() }
+            NowPlayingPill(
+                playing,
+                Modifier.focusRequester(requester).onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
+            )
         }
     }
     menuFor?.let { app -> RowAppMenu(app, row, onDismiss = { menuFor = null }) }
