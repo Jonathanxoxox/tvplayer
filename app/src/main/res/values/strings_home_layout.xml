@@ -13,4 +13,13 @@
     <string name="home_stage_live">LIVE</string>
     <string name="home_stage_time_span">%1$s – %2$s</string>
     <string name="launcher_youtube">YouTube</string>
+    <string name="home_hl_live">LIVE · %1$s</string>
+    <string name="home_hl_soon">SOON · %1$s</string>
+    <string name="home_hl_evening">TONIGHT · %1$s</string>
+    <string name="home_hl_habit">OFTEN ON AT THIS TIME · %1$s</string>
+    <string name="home_hl_resume">CONTINUE WATCHING</string>
+    <string name="home_hl_versus">%1$s – %2$s</string>
+    <string name="home_hl_watch">Watch</string>
+    <string name="home_hl_to_match">To the match</string>
+    <string name="home_hl_continue">Continue</string>
 </resources>

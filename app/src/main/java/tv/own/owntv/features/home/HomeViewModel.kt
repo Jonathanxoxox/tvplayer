@@ -102,6 +102,8 @@ data class HomeUiState(
     val favoriteOnNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> = emptyMap(),
     /** Mayo TV: the category row that takes the place of Recently watched ([HomeCatalog]); null shows that row. */
     val catalog: HomeCatalog.Row? = null,
+    /** Live channels with when each was last watched, newest first: the Spotlight's habits. */
+    val spotlightWatched: List<Pair<ChannelEntity, Long>> = emptyList(),
     /**
      * True until the first [HomeViewModel.loadHomeData] completes. Home's queries are profile-scoped and
      * already indexed, but on a cold boot their first reads come off slow eMMC (pages not yet in the OS
@@ -133,6 +135,9 @@ data class ContinueTarget(
 
 /** Short-guide requests the category row's cards make at once ([HomeViewModel.onNowFor]). */
 private const val PROVIDER_EPG_PARALLEL = 6
+
+/** How many recently watched live channels the Spotlight looks at for habits. */
+private const val WATCHED_FOR_SPOTLIGHT = 40
 
 class HomeViewModel(
     private val feed: HomeFeedReader,
@@ -509,6 +514,14 @@ class HomeViewModel(
         if (recentNow.isNotEmpty() || favoriteNow.isNotEmpty()) {
             _uiState.value = _uiState.value.copy(recentOnNow = recentNow, favoriteOnNow = favoriteNow)
         }
+        // After the first paint: the live channels last watched, for the Spotlight's "often on at this time".
+        val watched = runCatching {
+            historyDao.getForProfileType(profileId, tv.own.owntv.core.model.MediaType.LIVE)
+                .sortedByDescending { it.watchedAt }
+                .take(WATCHED_FOR_SPOTLIGHT)
+                .mapNotNull { h -> channelDao.getById(h.itemId)?.let { it to h.watchedAt } }
+        }.getOrDefault(emptyList())
+        if (watched.isNotEmpty()) _uiState.value = _uiState.value.copy(spotlightWatched = watched)
         _uiState.value.trendingItems.getOrNull(_uiState.value.activeTrendingIndex)?.let(::resolveTrendingExtras)
         // Keep watching shows every card as a still, so each needs its artwork up front, not on focus.
         _uiState.value.heroItems.indices.forEach { resolveHeroMetadata(it) }
