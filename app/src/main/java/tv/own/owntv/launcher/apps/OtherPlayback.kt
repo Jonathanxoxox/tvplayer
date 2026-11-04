@@ -14,10 +14,10 @@ import android.service.notification.NotificationListenerService
 class MediaListener : NotificationListenerService()
 
 /**
- * Other apps' playback, stopped when Mayo TV starts its own (Jonathan, 4 Nov 2026). Mayo TV may not close
- * other apps on Android 14, but it may stop what they play: Spotify left paused keeps a foreground service
- * with some 340 MB and the audio path, and stopping it lets it go. Without the listener allowed this does
- * nothing.
+ * Other apps' playback, stopped when Mayo TV starts its own (Jonathan, 4 Nov 2026), so two sounds never
+ * play at once. Mayo TV may not close other apps on Android 14. An app that offers Stop is stopped, which
+ * lets most of them end their foreground service; one that does not (Spotify for TV lists no Stop, and keeps
+ * its service while paused) is paused when it plays. Without the listener allowed this does nothing.
  */
 object OtherPlayback {
     private val holding = setOf(
@@ -34,7 +34,13 @@ object OtherPlayback {
                 .orEmpty()
             sessions
                 .filter { it.packageName != context.packageName && it.playbackState?.state in holding }
-                .forEach { it.transportControls.stop() }
+                .forEach { c ->
+                    val state = c.playbackState ?: return@forEach
+                    when {
+                        state.actions and PlaybackState.ACTION_STOP != 0L -> c.transportControls.stop()
+                        state.state == PlaybackState.STATE_PLAYING || state.state == PlaybackState.STATE_BUFFERING -> c.transportControls.pause()
+                    }
+                }
         }
     }
 }
