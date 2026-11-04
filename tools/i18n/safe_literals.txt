@@ -1492,6 +1492,7 @@
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	AFR: video ${fps}fps matches no mode -> display left on ${mode.refreshRate}Hz
 1	compiler	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	DEPRECATION
 1	log	app/src/main/java/tv/own/owntv/player/FrameRateController.kt	FrameRate
+1	preference-key	app/src/main/java/tv/own/owntv/player/FrameRateMemory.kt	afr_channel_rates
 1	technical	app/src/main/java/tv/own/owntv/player/PlayerCard.kt	EEEdMMM
 2	technical	app/src/main/java/tv/own/owntv/player/PlayerCard.kt	tnum
 1	technical	app/src/main/java/tv/own/owntv/player/PlayerClock.kt	EEEdMMM
