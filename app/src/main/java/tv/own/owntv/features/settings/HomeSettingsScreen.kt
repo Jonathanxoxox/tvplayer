@@ -181,6 +181,28 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             }
         }
 
+        // Home's rows together with the other apps' rows (YouTube, Nuvio …), in one window (Jonathan, 4 Nov 2026).
+        var arranging by remember { mutableStateOf(false) }
+        val arrangeTitle = stringResource(R.string.home_arrange_rows)
+        val arrangeDesc = stringResource(R.string.home_arrange_rows_description)
+        StageSettingRow(
+            icon = OwnTVIcon.MOVE,
+            title = arrangeTitle,
+            desc = arrangeDesc,
+            value = null,
+            onClick = { arranging = true },
+            help = SettingHelp(arrangeTitle, arrangeDesc, hints = settingHints(null, pinnable = false)),
+        )
+        if (arranging) {
+            tv.own.owntv.features.home.ArrangeRowsWindow(
+                rows = config.settingsRows,
+                catalogName = catalogChoice.current?.name,
+                startAt = tv.own.owntv.features.home.HomeSlot.Row(HomeRow.RECENT_CHANNELS),
+                onSaveRows = vm::setRowOrder,
+                onClose = { arranging = false },
+            )
+        }
+
         // Mayo TV: which category's channels stand where Recently watched was (HomeCatalog).
         var pickingCatalog by remember { mutableStateOf(false) }
         val recentTitle = HomeRow.RECENT_CHANNELS.displayTitle()

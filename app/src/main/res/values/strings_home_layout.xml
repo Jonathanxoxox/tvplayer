@@ -25,4 +25,5 @@
     <string name="home_hl_continue">Continue</string>
     <string name="home_arrange_app_row">%1$s · %2$s</string>
     <string name="home_hl_now">ON NOW · %1$s</string>
+    <string name="home_arrange_rows_description">Home\'s rows and the other apps\' rows (YouTube, Nuvio …) in one list</string>
 </resources>
