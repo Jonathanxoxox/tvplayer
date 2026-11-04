@@ -161,6 +161,9 @@ fun HomeScreen(
     onOpenMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = {},
     /** The Apps row's All apps card: the Apps section. */
     onOpenApps: () -> Unit = {},
+    /** The Stage layout plays its channels as the guide does: in its picture, then full screen from there. */
+    liveVm: tv.own.owntv.features.live.LiveViewModel? = null,
+    onPlayFromStage: (ChannelEntity, List<ChannelEntity>) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
     sportsVm: tv.own.owntv.features.sports.SportsViewModel = org.koin.androidx.compose.koinViewModel(),
 ) {
@@ -549,15 +552,17 @@ fun HomeScreen(
                         )
 
                         // The Stage layout: the category's channels as a stage, the focused one large.
-                        HomeRow.RECENT_CHANNELS -> if (stageLayout && state.catalog != null) HomeStage(
+                        HomeRow.RECENT_CHANNELS -> if (stageLayout && state.catalog != null && liveVm != null) HomeStage(
                             row = state.catalog!!,
                             onNow = state.recentOnNow,
-                            onChannelClick = onPlayChannel,
                             onLongClick = { channel -> catalogMenu = channel },
                             onFocus = onNonHeroFocused,
                             firstItemFocusRequester = firstItemFocusRequester,
                             start = contentStart,
                             track = track,
+                            liveVm = liveVm,
+                            onPlayFullscreen = onPlayFromStage,
+                            active = previewEnabled,
                             modifier = rowModifier,
                         ) else
                         // Mayo TV: a category's channels in place of Recently watched, when one is set.

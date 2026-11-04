@@ -206,6 +206,9 @@ fun OwnTVShell(
     // Where ▶ out of the Stage rail returns to: the content, exactly as it was left.
     val contentAreaFocus = remember { FocusRequester() }
     var homeEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
+    // The channel full screen was opened from Home's stage (HomeStage): Back glides it back there, playing,
+    // as from the guide or a Sports match page (Jonathan, 4 Nov 2026).
+    var fromHomeStage by remember { mutableStateOf(false) }
     // The guide's entry hook: the TV Guide, or Live TV in Guide view (null while Live TV shows its list).
     var guideEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
     var vodEntry by remember { mutableStateOf<(() -> Boolean)?>(null) }
@@ -529,6 +532,7 @@ fun OwnTVShell(
     fun openFullscreen(source: MainSection = selectedSection) {
         restoreFocus = false
         zapSource = source
+        fromHomeStage = false
         homeVm.stopPreview()
         // Only Live TV promotes a channel to the ExoPlayer engine. Movies/Series/Search/EPG/Downloads all
         // play on mpv — clear any stale live-on-ExoPlayer flag so the shell renders mpv, not the old channel.
@@ -543,6 +547,7 @@ fun OwnTVShell(
     // Start something from a tile, the Home row, Search or a reminder: tune it, then go full screen. One copy
     // of each, so every way in behaves the same (an external player takes the item instead of the screen).
     val playLiveById: (Long, List<ChannelEntity>) -> Unit = { id, zap ->
+        fromHomeStage = false
         scope.launch { if (liveVm.ensurePlayingByIdAsync(id, zap)) openFullscreen(MainSection.LIVE_TV) }
     }
     val playMovieById: (Long, Long) -> Unit = { id, pos ->
@@ -607,10 +612,18 @@ fun OwnTVShell(
         // A channel played from a match page in Sports goes back to that page, the same glide as into the guide:
         // the page is laid out behind the picture (sportsBehind) and reports its corner like the guide.
         val toSports = selectedSection == MainSection.SPORTS && zapSource == MainSection.LIVE_TV && playerMode == PlayerMode.FULLSCREEN
+        // …and one from Home's stage back onto the stage, the page kept behind the picture (homeBehind).
+        val toHome = selectedSection == MainSection.HOME && fromHomeStage && zapSource == MainSection.LIVE_TV &&
+            playerMode == PlayerMode.FULLSCREEN
         val toList = zapSource == MainSection.LIVE_TV && MainSection.LIVE_TV in visibleSections
-        val intoGuide = (toSports || toList) && playerMode == PlayerMode.FULLSCREEN && liveOnExo && !catchupActive &&
+        val intoGuide = (toSports || toHome || toList) && playerMode == PlayerMode.FULLSCREEN && liveOnExo && !catchupActive &&
             livePreviewOn && multiview == null
         if (!intoGuide) {
+            if (toHome) {
+                fromHomeStage = false
+                closePlayer(toRail = false, intoLive = livePreviewOn)
+                return@exit
+            }
             if (toSports) {
                 // The page stayed behind the picture when the stream is on the preview engine: nothing to rebuild it from.
                 if (liveOnExo && multiview == null) sportsMatchRequests.returnToMatch = null
@@ -631,7 +644,7 @@ fun OwnTVShell(
         // Opened from the guide, the guide is still laid out behind the picture (guideBehind) and its corner
         // known: the shrink starts on the very next frame. Building the guide afresh first is what kept the
         // shrink from showing on the television: its first frames were spent laying the grid out.
-        val fromScratch = !toSports && selectedSection != MainSection.LIVE_TV
+        val fromScratch = !toSports && !toHome && selectedSection != MainSection.LIVE_TV
         if (fromScratch) {
             onSelectSection(MainSection.LIVE_TV)
             tv.own.owntv.features.epg.GuidePreviewSpot.rect = null
@@ -646,12 +659,12 @@ fun OwnTVShell(
             // was kept from loading until the picture came. Longer for that window only.
             val maxFrames = if (tv.own.owntv.StartupGate.isSettled) 45 else 90
             // (The match page is built already: it stayed behind the picture, so there is nothing to wait for.)
-            if (!toSports) while (!tv.own.owntv.features.epg.GuidePreviewSpot.ready && frames++ < maxFrames) withFrameNanos { }
+            if (!toSports && !toHome) while (!tv.own.owntv.features.epg.GuidePreviewSpot.ready && frames++ < maxFrames) withFrameNanos { }
             // Closed some other way while it got ready (a shortcut, the Home key): nothing left to glide.
             if (playerMode != PlayerMode.FULLSCREEN) { exitPending = false; return@launch }
             // The guide's row takes focus before the player's controls leave: with the controls gone and nobody
             // focused, Compose hands focus to the first thing on screen, the top of the menu, which flashed open.
-            if ((if (toSports) sportsEntry else guideEntry)?.invoke() != true) parkFocus()
+            if ((if (toSports) sportsEntry else if (toHome) homeEntry else guideEntry)?.invoke() != true) parkFocus()
             guideHandover = true
             handoverGrow = false
             exitPending = false
@@ -672,7 +685,8 @@ fun OwnTVShell(
             kotlinx.coroutines.delay(2_500)
             // The page is back for good: what it was reopened from the player for is spent.
             if (toSports) sportsMatchRequests.returnToMatch = null
-            if (playerMode == PlayerMode.NONE && (sectionNow == MainSection.LIVE_TV || sectionNow == MainSection.SPORTS) &&
+            if (playerMode == PlayerMode.NONE &&
+                (sectionNow == MainSection.LIVE_TV || sectionNow == MainSection.SPORTS || sectionNow == MainSection.HOME) &&
                 !tv.own.owntv.features.epg.GuidePreviewSpot.video) {
                 val engineState = liveVm.previewEngine.state.value
                 if (engineState == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
@@ -985,7 +999,10 @@ fun OwnTVShell(
         // channel on in its preview, so it must not be stopped, and forgotten, here first.
         val matchPageNext = selectedSection == MainSection.SPORTS &&
             (sportsMatchRequests.returnToMatch != null || sportsMatchRequests.returnedFromPlayer)
-        if (selectedSection != MainSection.LIVE_TV && playerMode == PlayerMode.NONE && !matchPageNext) liveVm.stopPreview()
+        // Off Home, a channel played from its stage is over; back on Home from full screen, it plays on there.
+        if (selectedSection != MainSection.HOME) fromHomeStage = false
+        val homeStageNext = selectedSection == MainSection.HOME && fromHomeStage
+        if (selectedSection != MainSection.LIVE_TV && playerMode == PlayerMode.NONE && !matchPageNext && !homeStageNext) liveVm.stopPreview()
         if (selectedSection != MainSection.HOME || playerMode != PlayerMode.NONE) homeVm.stopPreview()
     }
 
@@ -1212,7 +1229,10 @@ fun OwnTVShell(
       // corner and the page is not built again.
       val sportsBehind = playerMode == PlayerMode.FULLSCREEN && multiview == null && liveOnExo &&
           zapSource == MainSection.LIVE_TV && selectedSection == MainSection.SPORTS
-      if (playerMode != PlayerMode.FULLSCREEN || guideHandover || guideBehind || sportsBehind) {
+      // And Home, when the channel came from its stage.
+      val homeBehind = playerMode == PlayerMode.FULLSCREEN && multiview == null && liveOnExo &&
+          zapSource == MainSection.LIVE_TV && selectedSection == MainSection.HOME && fromHomeStage
+      if (playerMode != PlayerMode.FULLSCREEN || guideHandover || guideBehind || sportsBehind || homeBehind) {
         val browseHidden = playerMode == PlayerMode.FULLSCREEN && !guideHandover
         Column(
             modifier = Modifier.fillMaxSize()
@@ -1429,6 +1449,8 @@ fun OwnTVShell(
                                 onSelectSection(MainSection.SPORTS)
                             },
                             onOpenApps = { appsTakeFocus = true; appsOpen = true },
+                            liveVm = liveVm,
+                            onPlayFromStage = { ch, zap -> fromHomeStage = true; openLiveFullscreen(ch, zap) },
                             contentStart = 40.mpx,
                             modifier = Modifier.fillMaxSize(),
                         )
