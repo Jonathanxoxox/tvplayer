@@ -32,11 +32,22 @@ data class LauncherConfig(
     val appOrder: List<String> = emptyList(),
     /** Apps hidden from the grid. */
     val hiddenApps: Set<String> = emptySet(),
+    /** How Home is laid out: [LAYOUT_STANDARD], [LAYOUT_CLASSIC] or [LAYOUT_STAGE] (Jonathan, 4 Nov 2026). */
+    val homeLayout: String = LAYOUT_STANDARD,
+    /** The titles over Home's rows ("Magenta TV", "Apps" …); off, the cards speak for themselves. */
+    val rowTitles: Boolean = true,
 ) {
     companion object {
         const val BOOT_HOME = "home"
         const val BOOT_LIVE = "live"
         const val BOOT_OFF = "off"
+
+        /** Home as it was: the Apps row under the first row, the other apps' channels at the end. */
+        const val LAYOUT_STANDARD = "standard"
+        /** The apps as small buttons on top, their channels (YouTube, Nuvio, Spotify) right after the first row. */
+        const val LAYOUT_CLASSIC = "classic"
+        /** As classic, with the channel row as a stage: the focused channel's programme large over a strip of logos. */
+        const val LAYOUT_STAGE = "stage"
 
         /** TizenTube, YouTube, Nuvio, Spotify and Downloader, as far as they are installed. */
         val DEFAULT_ROW = listOf(
@@ -81,6 +92,8 @@ object LauncherPrefs {
             putBoolean("apps_in_menu", next.appsInMenu)
             putString("app_order", next.appOrder.joinToString(SEP))
             putStringSet("hidden_apps", next.hiddenApps)
+            putString("home_layout", next.homeLayout)
+            putBoolean("row_titles", next.rowTitles)
         }?.apply()
     }
 
@@ -101,6 +114,8 @@ object LauncherPrefs {
             appsInMenu = p.getBoolean("apps_in_menu", d.appsInMenu),
             appOrder = p.getString("app_order", null).toList(),
             hiddenApps = p.getStringSet("hidden_apps", null)?.toSet() ?: emptySet(),
+            homeLayout = p.getString("home_layout", d.homeLayout) ?: d.homeLayout,
+            rowTitles = p.getBoolean("row_titles", d.rowTitles),
         )
     }
 

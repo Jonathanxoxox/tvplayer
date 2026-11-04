@@ -130,6 +130,9 @@ private val CompactHeroHeight = 228.mpx - RowGap
 /** Where the rows start when there is no hero: just below the top-right cluster. */
 private val NoHeroTop = 110.mpx
 
+/** Where the app buttons of the Classic and Stage layouts sit: level with the clock. */
+private val AppPillsTop = 30.mpx
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HomeScreen(
@@ -202,7 +205,14 @@ fun HomeScreen(
     val renderRows = orderedRows.filter { rowCanRender(it, state, showHeroFallback, sportsCards.size) }
     val firstDataRow = renderRows.firstOrNull { it != HomeRow.HERO && rowHasData(it, state, sportsCards.size) }
     val launcherConfig = tv.own.owntv.launcher.apps.rememberLauncherConfig()
-    val showAppsRow = launcherConfig.appsRow && renderRows.isNotEmpty()
+    // Mayo TV's layouts (Jonathan, 4 Nov 2026): Classic and Stage put the apps on top as small buttons and
+    // their channels (YouTube, Nuvio, Spotify) right after the first row; Stage also draws the channel row
+    // as a stage.
+    val compactApps = launcherConfig.homeLayout != tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STANDARD
+    val stageLayout = launcherConfig.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE
+    val showAppsRow = launcherConfig.appsRow && renderRows.isNotEmpty() && !compactApps
+    val showAppPills = launcherConfig.appsRow && renderRows.isNotEmpty() && compactApps
+    val earlyChannels = compactApps && launcherConfig.appChannels
     val showAllHiddenState = orderedRows.isEmpty()
     val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty()
     val fullBleed = renderRows.firstOrNull() == HomeRow.TRENDING &&
@@ -296,8 +306,11 @@ fun HomeScreen(
             restoreFocus -> firstDataRow
             else -> null
         }
-        // The Apps row sits at position 1 when shown, so every row after the first moves down one.
-        val targetIndex = (targetRow?.let { renderRows.indexOf(it) } ?: 0).let { if (showAppsRow && it >= 1) it + 1 else it }
+        // The Apps row (or the other apps' channels) sits at position 1 when shown, so every row after the
+        // first moves down one; the app buttons on top move every row down one.
+        val targetIndex = (targetRow?.let { renderRows.indexOf(it) } ?: 0).let { i ->
+            i + (if (showAppPills) 1 else 0) + (if (i >= 1 && (showAppsRow || earlyChannels)) 1 else 0)
+        }
         runCatching { listState.scrollToItem(targetIndex.coerceAtLeast(0)) }
 
         // Only pull focus INTO the Home content when returning from the player (restoreFocus). On a cold
@@ -382,7 +395,15 @@ fun HomeScreen(
                     // of the list remembers its focused child.
                     .focusGroup(),
                 state = listState,
-                contentPadding = PaddingValues(top = if (fullBleed || posterItem != null) 0.dp else NoHeroTop, bottom = 48.mpx),
+                contentPadding = PaddingValues(
+                    top = when {
+                        fullBleed || posterItem != null -> 0.dp
+                        // The app buttons sit level with the clock, left of it.
+                        showAppPills -> AppPillsTop
+                        else -> NoHeroTop
+                    },
+                    bottom = 48.mpx,
+                ),
                 verticalArrangement = Arrangement.spacedBy(RowGap),
             ) {
                 val rowContent: @Composable (HomeRow) -> Unit = { row ->
@@ -526,8 +547,20 @@ fun HomeScreen(
                             modifier = rowModifier,
                         )
 
+                        // The Stage layout: the category's channels as a stage, the focused one large.
+                        HomeRow.RECENT_CHANNELS -> if (stageLayout && state.catalog != null) HomeStage(
+                            row = state.catalog!!,
+                            onNow = state.recentOnNow,
+                            onChannelClick = onPlayChannel,
+                            onLongClick = { channel -> catalogMenu = channel },
+                            onFocus = onNonHeroFocused,
+                            firstItemFocusRequester = firstItemFocusRequester,
+                            start = contentStart,
+                            track = track,
+                            modifier = rowModifier,
+                        ) else
                         // Mayo TV: a category's channels in place of Recently watched, when one is set.
-                        HomeRow.RECENT_CHANNELS -> HomeLiveRow(
+                        HomeLiveRow(
                             title = state.catalog?.category?.name ?: row.displayTitle(),
                             cardsNow = state.recentOnNow,
                             mode = if (state.catalog != null) HomeLiveRowMode.CARDS else state.config.recentLiveMode,
@@ -607,6 +640,9 @@ fun HomeScreen(
                         )
                     }
                 }
+                if (showAppPills) item(key = "launcher_app_pills") {
+                    tv.own.owntv.launcher.apps.HomeAppPills(start = contentStart, onFocus = onNonHeroFocused, onAllApps = onOpenApps, track = track)
+                }
                 itemsIndexed(renderRows.take(1), key = { _, row -> row.name }) { _, row -> rowContent(row) }
                 // Mayo TV as start screen: the Apps row right under the big picture (Jonathan, 1 Nov 2026).
                 if (showAppsRow) item(key = "launcher_apps") {
@@ -619,9 +655,13 @@ fun HomeScreen(
                         modifier = if (fullBleed) unfoldOnUp else Modifier,
                     )
                 }
+                // Classic and Stage: the other apps' channels right after the first row.
+                if (earlyChannels) item(key = "launcher_channels") {
+                    tv.own.owntv.launcher.apps.AppChannelRows(start = contentStart, onFocus = onNonHeroFocused, track = track)
+                }
                 itemsIndexed(renderRows.drop(1), key = { _, row -> row.name }) { _, row -> rowContent(row) }
                 // …and the other apps' channels at the very end.
-                if (launcherConfig.appChannels) item(key = "launcher_channels") {
+                if (launcherConfig.appChannels && !earlyChannels) item(key = "launcher_channels") {
                     tv.own.owntv.launcher.apps.AppChannelRows(start = contentStart, onFocus = onNonHeroFocused, track = track)
                 }
             }
