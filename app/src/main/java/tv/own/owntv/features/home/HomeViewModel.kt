@@ -97,6 +97,8 @@ data class HomeUiState(
     /** Mayo TV: what is on now per channel for the rows in Cards mode too (core fills the guide only for On now). */
     val recentOnNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> = emptyMap(),
     val favoriteOnNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity> = emptyMap(),
+    /** Mayo TV: the category row that takes the place of Recently watched ([HomeCatalog]); null shows that row. */
+    val catalog: HomeCatalog.Row? = null,
     /**
      * True until the first [HomeViewModel.loadHomeData] completes. Home's queries are profile-scoped and
      * already indexed, but on a cold boot their first reads come off slow eMMC (pages not yet in the OS
@@ -144,6 +146,7 @@ class HomeViewModel(
     private val userDataWriter: tv.own.owntv.core.backup.UserDataWriter,
     private val guideReader: tv.own.owntv.core.live.GuideReader,
     private val customize: tv.own.owntv.core.customize.CustomizationStore,
+    private val catalog: HomeCatalog,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -185,6 +188,24 @@ class HomeViewModel(
                 reloadRequests.emit(null)
             }
         }
+        // A category chosen in Settings, or hidden channels shown again there.
+        viewModelScope.launch {
+            catalog.changes.drop(1).collect { reloadRequests.emit(null) }
+        }
+    }
+
+    /** Hides [channel] from Home's category row; Live TV still shows it. */
+    fun hideFromHome(channel: ChannelEntity) {
+        val row = _uiState.value.catalog ?: return
+        catalog.hide(channel)
+        _uiState.value = _uiState.value.copy(catalog = HomeCatalog.Row(row.category, row.channels - channel))
+    }
+
+    /** Keeps [channels] as Home's order for the category row. */
+    fun reorderOnHome(channels: List<ChannelEntity>) {
+        val row = _uiState.value.catalog ?: return
+        catalog.saveOrder(row.category.key, channels)
+        _uiState.value = _uiState.value.copy(catalog = HomeCatalog.Row(row.category, channels))
     }
 
     // --- The single most-recent resumable item, for the shared top-bar Continue chip. ---
@@ -407,6 +428,7 @@ class HomeViewModel(
     private suspend fun loadHomeData(profileId: Long) {
         val previous = _uiState.value
         val data = feed.load(profileId)
+        val catalogRow = runCatching { catalog.load(profileId) }.getOrNull()
         _uiState.value = HomeUiState(
             trendingItems = data.trendingItems,
             activeTrendingIndex = previous.activeTrendingIndex
@@ -426,12 +448,18 @@ class HomeViewModel(
             config = data.config,
             recentGuide = data.recentGuide,
             favoriteGuide = data.favoriteGuide,
+            catalog = catalogRow,
             isLoading = false,
         )
         tv.own.owntv.perf.StartLog.stamp("home-data")
         // The channel cards show what is on now under the logo in either mode (Jonathan, 1 Nov 2026).
         val cards = tv.own.owntv.core.model.HomeLiveRowMode.CARDS
-        val recentNow = if (data.config.recentLiveMode == cards) onNowFor(profileId, data.recentLive) else emptyMap()
+        val recentNow = when {
+            // The category row is always cards, each with what is on now.
+            catalogRow != null -> onNowFor(profileId, catalogRow.channels)
+            data.config.recentLiveMode == cards -> onNowFor(profileId, data.recentLive)
+            else -> emptyMap()
+        }
         val favoriteNow = if (data.config.favoriteLiveMode == cards) onNowFor(profileId, data.favoriteLive) else emptyMap()
         if (recentNow.isNotEmpty() || favoriteNow.isNotEmpty()) {
             _uiState.value = _uiState.value.copy(recentOnNow = recentNow, favoriteOnNow = favoriteNow)

@@ -104,6 +104,12 @@
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	· $nowTitle
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	…
 1	technical	app/src/main/java/tv/own/owntv/features/epg/GuideStage.kt	→
+1	technical	app/src/main/java/tv/own/owntv/features/home/HomeCatalog.kt	Magenta TV
+1	preference-key	app/src/main/java/tv/own/owntv/features/home/HomeCatalog.kt	home_catalog
+1	preference-key	app/src/main/java/tv/own/owntv/features/home/HomeCatalog.kt	home_catalog_hidden
+1	preference-key	app/src/main/java/tv/own/owntv/features/home/HomeCatalog.kt	home_catalog_order:
+1	preference-key	app/src/main/java/tv/own/owntv/features/home/HomeCatalog.kt	recent
+1	preference-key	app/src/main/java/tv/own/owntv/features/home/HomeCatalog.kt	tvplayer
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	%.1f
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	,
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	episode:${episode.id}

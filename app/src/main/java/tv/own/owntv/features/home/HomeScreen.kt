@@ -229,6 +229,8 @@ fun HomeScreen(
     // carry-over). Compose's own restorer cannot follow a card inside a lazy row inside a lazy column.
     var lastFocus by remember { mutableStateOf<FocusRequester?>(null) }
     val track: (FocusRequester) -> Unit = { lastFocus = it }
+    // The category row's card whose Hold-OK menu is open.
+    var catalogMenu by remember { mutableStateOf<ChannelEntity?>(null) }
     val latestEntry by androidx.compose.runtime.rememberUpdatedState(
         lastFocus ?: if (fullBleed) playFocus else renderRows.firstOrNull()?.let(rowFocusRequester),
     )
@@ -281,7 +283,7 @@ fun HomeScreen(
         if (fullBleed) runCatching { listState.scrollToItem(0) }
     }
 
-    LaunchedEffect(orderedRows, state.trendingItems, state.heroItems, state.recentLive, state.favoriteLive, state.recentGuide, state.favoriteGuide, state.continueMovies, state.continueSeries, state.favoriteMovies, state.favoriteSeries, restoreFocus, restoreTrendingSearchFocus) {
+    LaunchedEffect(orderedRows, state.trendingItems, state.heroItems, state.recentLive, state.catalog, state.favoriteLive, state.recentGuide, state.favoriteGuide, state.continueMovies, state.continueSeries, state.favoriteMovies, state.favoriteSeries, restoreFocus, restoreTrendingSearchFocus) {
         if (orderedRows.isEmpty()) {
             if (restoreFocus) onRestored()
             return@LaunchedEffect
@@ -524,12 +526,14 @@ fun HomeScreen(
                             modifier = rowModifier,
                         )
 
+                        // Mayo TV: a category's channels in place of Recently watched, when one is set.
                         HomeRow.RECENT_CHANNELS -> HomeLiveRow(
-                            title = row.displayTitle(),
+                            title = state.catalog?.category?.name ?: row.displayTitle(),
                             cardsNow = state.recentOnNow,
-                            mode = state.config.recentLiveMode,
-                            channels = state.recentLive,
+                            mode = if (state.catalog != null) HomeLiveRowMode.CARDS else state.config.recentLiveMode,
+                            channels = state.catalog?.channels ?: state.recentLive,
                             guide = state.recentGuide,
+                            onLongClick = if (state.catalog != null) { channel -> catalogMenu = channel } else null,
                             onChannelClick = onPlayChannel,
                             onFocus = onNonHeroFocused,
                             firstItemFocusRequester = firstItemFocusRequester,
@@ -667,6 +671,23 @@ fun HomeScreen(
             }
         })
     }
+    state.catalog?.let { row ->
+        HomeCatalogMenu(
+            row = row,
+            channel = catalogMenu,
+            onHide = vm::hideFromHome,
+            onReorder = vm::reorderOnHome,
+            onClose = {
+                catalogMenu = null
+                homeScope.launch {
+                    kotlinx.coroutines.delay(60)
+                    // A hidden channel's card is gone: the row's first card then.
+                    val back = runCatching { lastFocus?.requestFocus() == true }.getOrDefault(false)
+                    if (!back) rowFocusRequester(HomeRow.RECENT_CHANNELS)?.let { runCatching { it.requestFocus() } }
+                }
+            },
+        )
+    }
     InAppToast(trendingToast)
 }
 
@@ -674,7 +695,7 @@ private fun rowHasData(row: HomeRow, state: HomeUiState, sportsCards: Int): Bool
     HomeRow.TRENDING -> state.trendingItems.size >= TrendingDao.MIN_ELIGIBLE_ITEMS
     HomeRow.LIVE_SPORTS -> sportsCards > 0
     HomeRow.HERO -> state.heroItems.isNotEmpty()
-    HomeRow.RECENT_CHANNELS -> when (state.config.recentLiveMode) {
+    HomeRow.RECENT_CHANNELS -> if (state.catalog != null) state.catalog.channels.isNotEmpty() else when (state.config.recentLiveMode) {
         HomeLiveRowMode.CARDS -> state.recentLive.isNotEmpty()
         HomeLiveRowMode.ON_NOW -> state.recentGuide.hasContent
     }
