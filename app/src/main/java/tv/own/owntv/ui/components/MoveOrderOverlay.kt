@@ -64,6 +64,9 @@ fun MoveOrderOverlay(
     var picked by remember { mutableStateOf<Int?>(start) }
     var focusPos by remember { mutableIntStateOf(start) }
     var focusTick by remember { mutableIntStateOf(0) }
+    // The window focuses its first row by itself on opening; until focus is on the carried row, that must
+    // not move focusPos there (it did: the arrows then carried a row the focus frame was not on).
+    var placed by remember { mutableStateOf(false) }
     // ▲ ▼ carry the row only from the list; from Cancel/Save they move the focus as usual.
     var listFocused by remember { mutableStateOf(false) }
     val rowFocus = remember { FocusRequester() }
@@ -77,6 +80,7 @@ fun MoveOrderOverlay(
         if (!fullyVisible) listState.scrollToItem((focusPos - 2).coerceAtLeast(0))
         withFrameNanos { }
         runCatching { rowFocus.requestFocus() }
+        placed = true
     }
     // Carries the picked row to [pos], or moves only the focus when nothing is picked up.
     fun goTo(pos: Int) {
@@ -131,7 +135,7 @@ fun MoveOrderOverlay(
                     chosen = carried,
                     onClick = { picked = if (carried) null else idx },
                     modifier = (if (idx == focusPos) Modifier.focusRequester(rowFocus) else Modifier)
-                        .onFocusChanged { if (it.isFocused) focusPos = idx },
+                        .onFocusChanged { if (it.isFocused && placed) focusPos = idx },
                     leading = { _ -> StagePopupIcon(OwnTVIcon.MOVE, if (carried) accent else StageColors.Dim) },
                 )
             }

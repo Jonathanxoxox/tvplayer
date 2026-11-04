@@ -219,6 +219,29 @@ fun HomeScreen(
     val showAppsRow = launcherConfig.appsRow && renderRows.isNotEmpty() && !compactApps
     val showAppPills = launcherConfig.appsRow && renderRows.isNotEmpty() && compactApps
     val earlyChannels = compactApps && launcherConfig.appChannels
+    // The other apps' rows where the user put them among Home's own (Jonathan, 4 Nov 2026), see HomeSlots.
+    val appChannelList by tv.own.owntv.launcher.apps.LauncherApps.channels.collectAsStateWithLifecycle()
+    val visibleAppKeys = if (launcherConfig.appChannels) {
+        appChannelList.map { it.key }.filter { it !in launcherConfig.hiddenChannels }
+    } else emptyList()
+    val placedApps = launcherConfig.channelSlots.mapNotNull(HomeSlots::decode).filter { it.second in visibleAppKeys }
+    val placedAppKeys = placedApps.map { it.second }.toSet()
+    val appsAfter = HomeSlots.place(state.config.order, renderRows, placedApps)
+    // Rows never placed keep their old spot; once the user has placed some, a new one joins at the end.
+    val defaultEarly = earlyChannels && launcherConfig.channelSlots.isEmpty()
+    // The LazyColumn's items, in order, as far as finding a row's index needs.
+    val lazyKeys = buildList {
+        if (showAppPills) add("launcher_app_pills")
+        if (HomeSlots.TOP in appsAfter) add("apps_top")
+        renderRows.forEachIndexed { i, row ->
+            add(row.name)
+            if (i == 0) {
+                if (showAppsRow) add("launcher_apps")
+                if (defaultEarly) add("launcher_channels")
+            }
+            if (row.name in appsAfter) add("apps_after_${row.name}")
+        }
+    }
     // The Spotlight's highlights (Jonathan, 4 Nov 2026): followed matches, the evening, habits, watching on.
     val spotlightMatches = if (spotlightLayout) matches else emptyList()
     val spotlightHighlights = remember(spotlightLayout, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems) {
@@ -257,7 +280,18 @@ fun HomeScreen(
     // The category row's card whose Hold-OK menu is open.
     var catalogMenu by remember { mutableStateOf<ChannelEntity?>(null) }
     // Home's rows while their Move window is open, with the carried row's place.
-    var arrangingRows by remember { mutableStateOf<Pair<List<HomeRow>, Int>?>(null) }
+    var arrangingRows by remember { mutableStateOf<Pair<List<HomeSlot>, Int>?>(null) }
+    // Home's rows and the other apps' rows in one list, starting at [appKey]'s row or the channel row.
+    val openArrange: (String?) -> Unit = { appKey ->
+        val mixed = HomeSlots.mixed(
+            state.config.settingsRows, placedApps, visibleAppKeys.filter { it !in placedAppKeys },
+            // Where Home draws them now: after the first row on screen (Spotlight has no hero), or last.
+            unplacedAfter = if (defaultEarly) renderRows.firstOrNull { it in state.config.settingsRows } else null,
+        )
+        val at = mixed.indexOf(if (appKey != null) HomeSlot.App(appKey) else HomeSlot.Row(HomeRow.RECENT_CHANNELS))
+        arrangingRows = mixed to at.coerceAtLeast(0)
+    }
+    val homeContext = androidx.compose.ui.platform.LocalContext.current
     val homeSettingsVm: tv.own.owntv.features.settings.HomeSettingsViewModel = org.koin.androidx.compose.koinViewModel()
     val latestEntry by androidx.compose.runtime.rememberUpdatedState(
         lastFocus ?: if (fullBleed) playFocus else renderRows.firstOrNull()?.let(rowFocusRequester),
@@ -324,12 +358,9 @@ fun HomeScreen(
             restoreFocus -> firstDataRow
             else -> null
         }
-        // The Apps row (or the other apps' channels) sits at position 1 when shown, so every row after the
-        // first moves down one; the app buttons on top move every row down one.
+        // The row's place among everything Home lists (app buttons, Apps row, other apps' rows).
         // No row to return to: the very top, app buttons included.
-        val targetIndex = targetRow?.let { renderRows.indexOf(it) }?.let { i ->
-            i + (if (showAppPills) 1 else 0) + (if (i >= 1 && (showAppsRow || earlyChannels)) 1 else 0)
-        } ?: 0
+        val targetIndex = targetRow?.let { lazyKeys.indexOf(it.name) }?.takeIf { it >= 0 } ?: 0
         runCatching { listState.scrollToItem(targetIndex.coerceAtLeast(0)) }
 
         // Only pull focus INTO the Home content when returning from the player (restoreFocus). On a cold
@@ -674,7 +705,16 @@ fun HomeScreen(
                 if (showAppPills) item(key = "launcher_app_pills") {
                     tv.own.owntv.launcher.apps.HomeAppPills(start = contentStart, onFocus = onNonHeroFocused, onAllApps = onOpenApps, track = track)
                 }
-                itemsIndexed(renderRows.take(1), key = { _, row -> row.name }) { _, row -> rowContent(row) }
+                val appRows: @Composable (List<String>?) -> Unit = { keys ->
+                    tv.own.owntv.launcher.apps.AppChannelRows(
+                        start = contentStart, onFocus = onNonHeroFocused, track = track,
+                        only = keys, exclude = placedAppKeys, onArrange = { openArrange(it) },
+                    )
+                }
+                appsAfter[HomeSlots.TOP]?.let { keys -> item(key = "apps_top") { appRows(keys) } }
+                renderRows.forEachIndexed { i, row ->
+                item(key = row.name) { rowContent(row) }
+                if (i == 0) {
                 // Mayo TV as start screen: the Apps row right under the big picture (Jonathan, 1 Nov 2026).
                 if (showAppsRow) item(key = "launcher_apps") {
                     tv.own.owntv.launcher.apps.HomeAppsRow(
@@ -687,14 +727,13 @@ fun HomeScreen(
                     )
                 }
                 // Classic and Stage: the other apps' channels right after the first row.
-                if (earlyChannels) item(key = "launcher_channels") {
-                    tv.own.owntv.launcher.apps.AppChannelRows(start = contentStart, onFocus = onNonHeroFocused, track = track)
+                if (defaultEarly) item(key = "launcher_channels") { appRows(null) }
                 }
-                itemsIndexed(renderRows.drop(1), key = { _, row -> row.name }) { _, row -> rowContent(row) }
+                // The ones the user put after this row.
+                appsAfter[row.name]?.let { keys -> item(key = "apps_after_${row.name}") { appRows(keys) } }
+                }
                 // …and the other apps' channels at the very end.
-                if (launcherConfig.appChannels && !earlyChannels) item(key = "launcher_channels") {
-                    tv.own.owntv.launcher.apps.AppChannelRows(start = contentStart, onFocus = onNonHeroFocused, track = track)
-                }
+                if (launcherConfig.appChannels && (!defaultEarly || renderRows.isEmpty())) item(key = "launcher_channels") { appRows(null) }
             }
         }
     }
@@ -748,11 +787,13 @@ fun HomeScreen(
             channel = catalogMenu,
             onHide = vm::hideFromHome,
             onReorder = vm::reorderOnHome,
-            onArrangeRows = { arrangingRows = state.config.settingsRows.let { it to it.indexOf(HomeRow.RECENT_CHANNELS).coerceAtLeast(0) } },
+            onArrangeRows = { openArrange(null) },
             onClose = {
                 catalogMenu = null
                 homeScope.launch {
                     kotlinx.coroutines.delay(60)
+                    // Closed for "Arrange rows": focus belongs to that window, which opens with the row in hand.
+                    if (arrangingRows != null) return@launch
                     // A hidden channel's card is gone: the row's first card then.
                     val back = runCatching { lastFocus?.requestFocus() == true }.getOrDefault(false)
                     if (!back) rowFocusRequester(HomeRow.RECENT_CHANNELS)?.let { runCatching { it.requestFocus() } }
@@ -761,8 +802,14 @@ fun HomeScreen(
         )
     }
     // Home's rows moved from Home: the same window as Settings › Home › Rows uses.
-    arrangingRows?.let { (rows, index) ->
-        val names = rows.map { r -> if (r == HomeRow.RECENT_CHANNELS) state.catalog?.category?.name ?: r.displayTitle() else r.displayTitle() }
+    arrangingRows?.let { (slots, index) ->
+        val appNames = tv.own.owntv.launcher.apps.appRowNames(appChannelList)
+        val names = slots.map { s ->
+            when (s) {
+                is HomeSlot.Row -> if (s.row == HomeRow.RECENT_CHANNELS) state.catalog?.category?.name ?: s.row.displayTitle() else s.row.displayTitle()
+                is HomeSlot.App -> appNames[s.key] ?: s.key
+            }
+        }
         tv.own.owntv.ui.components.MoveOrderOverlay(
             title = stringResource(R.string.home_arrange_rows),
             itemNames = names,
@@ -773,7 +820,16 @@ fun HomeScreen(
                     arrangingRows = now.toMutableList().apply { add(to, removeAt(from)) } to to
                 }
             },
-            onCommit = { arrangingRows?.first?.let(homeSettingsVm::setRowOrder); arrangingRows = null },
+            onCommit = {
+                arrangingRows?.first?.let { slots ->
+                    homeSettingsVm.setRowOrder(slots.mapNotNull { (it as? HomeSlot.Row)?.row })
+                    val inWindow = slots.mapNotNull { (it as? HomeSlot.App)?.key }.toSet()
+                    if (inWindow.isNotEmpty()) tv.own.owntv.launcher.apps.LauncherPrefs.update(homeContext) { c ->
+                        c.copy(channelSlots = HomeSlots.anchors(slots, keep = c.channelSlots.filter { e -> HomeSlots.decode(e)?.second !in inWindow }))
+                    }
+                }
+                arrangingRows = null
+            },
             onCancel = { arrangingRows = null },
         )
     }

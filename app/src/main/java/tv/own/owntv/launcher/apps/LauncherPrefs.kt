@@ -26,6 +26,11 @@ data class LauncherConfig(
     val appChannels: Boolean = true,
     /** Channels switched off one by one ([AppChannel.key]). */
     val hiddenChannels: Set<String> = emptySet(),
+    /**
+     * Where the user put other apps' rows among Home's own, in order: entries of
+     * tv.own.owntv.features.home.HomeSlots (the Home row each follows). Rows not listed keep their old spot.
+     */
+    val channelSlots: List<String> = emptyList(),
     /** Apps in the menu: the grid of every app. */
     val appsInMenu: Boolean = true,
     /** The grid's own order (moved with a held OK); apps not listed follow by name. */
@@ -91,6 +96,7 @@ object LauncherPrefs {
             putString("row_apps", next.rowApps.joinToString(SEP))
             putBoolean("app_channels", next.appChannels)
             putStringSet("hidden_channels", next.hiddenChannels)
+            putString("channel_slots", next.channelSlots.joinToString(LINES))
             putBoolean("apps_in_menu", next.appsInMenu)
             putString("app_order", next.appOrder.joinToString(SEP))
             putStringSet("hidden_apps", next.hiddenApps)
@@ -113,6 +119,7 @@ object LauncherPrefs {
             rowApps = p.getString("row_apps", null).toList(),
             appChannels = p.getBoolean("app_channels", d.appChannels),
             hiddenChannels = p.getStringSet("hidden_channels", null)?.toSet() ?: emptySet(),
+            channelSlots = p.getString("channel_slots", null)?.split(LINES)?.filter { it.isNotBlank() }.orEmpty(),
             appsInMenu = p.getBoolean("apps_in_menu", d.appsInMenu),
             appOrder = p.getString("app_order", null).toList(),
             hiddenApps = p.getStringSet("hidden_apps", null)?.toSet() ?: emptySet(),
@@ -122,5 +129,7 @@ object LauncherPrefs {
     }
 
     private const val SEP = ","
+    /** Channel keys may hold commas; one slot per line. */
+    private const val LINES = "\n"
     private fun String?.toList(): List<String> = this?.split(SEP)?.filter { it.isNotBlank() }.orEmpty()
 }
