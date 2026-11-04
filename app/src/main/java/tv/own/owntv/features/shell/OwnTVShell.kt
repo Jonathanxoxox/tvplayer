@@ -1012,6 +1012,9 @@ fun OwnTVShell(
         if (openedSeries == null && searchReturn == MainSection.SERIES && selectedSection == MainSection.SERIES) returnToSearch()
     }
 
+    // As the box's home screen there is nothing behind the app to go back to: Back on the menu stays put
+    // instead of asking whether to close it (closing would only reopen it).
+    val shellContext = androidx.compose.ui.platform.LocalContext.current
     BackHandler {
         when {
             playerMode == PlayerMode.FULLSCREEN -> exitBack()
@@ -1027,7 +1030,8 @@ fun OwnTVShell(
             selectedSection == MainSection.SETTINGS && focusedLayer != ShellLayer.SIDEBAR -> focusRail()
             // Reached from a Search result: Back returns to Search once, its query, tab and row kept.
             searchReturn == selectedSection && focusedLayer != ShellLayer.SIDEBAR -> returnToSearch()
-            focusedLayer == ShellLayer.SIDEBAR && railTrulyFocused -> showExit = true
+            focusedLayer == ShellLayer.SIDEBAR && railTrulyFocused ->
+                if (!tv.own.owntv.launcher.apps.LauncherSystem.isDefaultHome(shellContext)) showExit = true
             else -> focusRail()
         }
     }
@@ -1533,7 +1537,9 @@ fun OwnTVShell(
             val clusterAside = selectedSection == MainSection.LIVE_TV || fullPage
             val clusterAlpha by androidx.compose.animation.core.animateFloatAsState(if (clusterAside) 0f else 1f, tv.own.owntv.ui.theme.stageSlide())
             tv.own.owntv.features.shell.components.StageStatusCluster(
-                continuePill = continueTarget?.let { target ->
+                // No "Last channel" pill: Live TV opens on it anyway, and next to the clock it only took room
+                // (Jonathan, 4 Nov 2026). Films and series keep their Resume pill.
+                continuePill = continueTarget?.takeIf { it.kind != tv.own.owntv.features.home.ContinueKind.LIVE }?.let { target ->
                     val live = target.kind == tv.own.owntv.features.home.ContinueKind.LIVE
                     tv.own.owntv.features.shell.components.ContinuePill(
                         icon = if (live) OwnTVIcon.LIVE_TV else OwnTVIcon.PLAY,
@@ -1612,9 +1618,10 @@ fun OwnTVShell(
         )
       }
 
-      // Unobtrusive background-sync pill (bottom middle): visible while any catalog sync runs —
-      // backgrounded first import, remainder worker, auto refresh — but never over fullscreen video.
-      if (playerMode != PlayerMode.FULLSCREEN) {
+      // Background-sync pill (bottom middle): only in Settings, where a sync is started and followed. Over
+      // Home it announced every automatic refresh at start ("… Sender"), which is noise for the viewer
+      // (Jonathan, 4 Nov 2026); the sync itself runs as before.
+      if (playerMode != PlayerMode.FULLSCREEN && selectedSection == MainSection.SETTINGS) {
           tv.own.owntv.features.shell.components.SyncStatusPill(modifier = Modifier.align(Alignment.BottomCenter))
       }
 
