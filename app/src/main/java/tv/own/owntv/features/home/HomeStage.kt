@@ -71,7 +71,8 @@ internal fun HomeStage(
     val shown = channels.firstOrNull { it.id == shownId } ?: channels.first()
     val programme = onNow[shown.id]
     val now = System.currentTimeMillis()
-    Column(modifier) {
+    // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
+    Column(modifier.padding(top = 24.mpx)) {
         Row(
             Modifier.padding(start = start, end = 64.mpx).height(330.mpx),
             verticalAlignment = Alignment.CenterVertically,
