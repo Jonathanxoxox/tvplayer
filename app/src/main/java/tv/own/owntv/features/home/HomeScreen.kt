@@ -558,6 +558,9 @@ fun HomeScreen(
                             firstItemFocusRequester = firstItemFocusRequester,
                             start = contentStart,
                             track = track,
+                            engine = heroPreviewEngine,
+                            engineState = engineState,
+                            onPreview = { channel -> vm.startPreview(HeroItem.LiveHero(channel, 0L)) },
                             modifier = rowModifier,
                         ) else
                         // Mayo TV: a category's channels in place of Recently watched, when one is set.
@@ -1205,7 +1208,7 @@ private fun StillArtwork(still: HomeStill) {
  * square behind it.
  */
 @Composable
-private fun PreviewTexture(engine: HeroPreviewEngine, modifier: Modifier = Modifier) {
+internal fun PreviewTexture(engine: HeroPreviewEngine, modifier: Modifier = Modifier) {
     AndroidView(
         modifier = modifier,
         factory = { ctx ->

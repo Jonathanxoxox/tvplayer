@@ -18,6 +18,8 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -34,11 +36,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import kotlinx.coroutines.delay
 import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
 import tv.own.owntv.core.epg.displayLogoUrl
+import tv.own.owntv.player.HeroPreviewEngine
 import tv.own.owntv.ui.components.ChannelLogoTile
 import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageSurface
@@ -49,9 +53,13 @@ import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
 /**
- * The Stage layout's channel row (Jonathan, 4 Nov 2026): the focused channel's programme large, its logo
- * on a big plate beside it, over a strip of logos. ▲ ▼ leave the strip as from any row; ◀ ▶ walk the
- * channels and the stage follows. A held OK opens the row's Hide / Move menu, as on the cards.
+ * The Stage layout's channel row (Jonathan, 4 Nov 2026): the focused channel's programme large, the
+ * channel itself playing beside it, over a strip of logos. ▲ ▼ leave the strip as from any row; ◀ ▶ walk
+ * the channels and the stage follows. A held OK opens the row's Hide / Move menu, as on the cards.
+ *
+ * The picture is Home's muted preview player ([HeroPreviewEngine]), started only once focus has rested on
+ * a logo for [PREVIEW_DWELL_MS]: walking the strip opens no stream per channel passed. It stops as focus
+ * leaves the strip and before a channel is opened, so the provider's one connection is free again.
  */
 @Composable
 internal fun HomeStage(
@@ -63,12 +71,22 @@ internal fun HomeStage(
     firstItemFocusRequester: FocusRequester?,
     start: Dp,
     track: (FocusRequester) -> Unit,
+    engine: HeroPreviewEngine,
+    engineState: HeroPreviewEngine.State,
+    onPreview: suspend (ChannelEntity) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val channels = row.channels
     if (channels.isEmpty()) return
     var shownId by remember(row) { mutableLongStateOf(channels.first().id) }
+    var stripFocused by remember { mutableStateOf(false) }
     val shown = channels.firstOrNull { it.id == shownId } ?: channels.first()
+    LaunchedEffect(shown.id, stripFocused) {
+        engine.stop()
+        if (!stripFocused) return@LaunchedEffect
+        delay(PREVIEW_DWELL_MS)
+        onPreview(shown)
+    }
     val programme = onNow[shown.id]
     val now = System.currentTimeMillis()
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
@@ -109,21 +127,28 @@ internal fun HomeStage(
                 Modifier.size(540.mpx, 304.mpx).clip(RoundedCornerShape(StageRadii.Poster)).background(StageColors.ControlFill),
                 contentAlignment = Alignment.Center,
             ) {
-                ChannelLogoTile(
-                    logoUrl = shown.displayLogoUrl,
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 150.mpx, vertical = 70.mpx),
-                    fill = Color.Transparent,
-                ) { Initials(shown, 56) }
+                // The video sits under the logo, which gives way once frames arrive. (A TextureView hidden at
+                // alpha 0 is never drawn, so it never gets the surface the engine needs.)
+                if (stripFocused) PreviewTexture(engine, Modifier.fillMaxSize())
+                if (!stripFocused || engineState != HeroPreviewEngine.State.PLAYING) {
+                    Box(Modifier.fillMaxSize().background(StageColors.ControlFill), contentAlignment = Alignment.Center) {
+                        ChannelLogoTile(
+                            logoUrl = shown.displayLogoUrl,
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 150.mpx, vertical = 70.mpx),
+                            fill = Color.Transparent,
+                        ) { Initials(shown, 56) }
+                    }
+                }
             }
         }
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(18.mpx),
             contentPadding = PaddingValues(start = start, end = 64.mpx, top = 10.mpx, bottom = 10.mpx),
-            modifier = Modifier.focusRestorer().focusGroup(),
+            modifier = Modifier.focusRestorer().focusGroup().onFocusChanged { stripFocused = it.hasFocus },
         ) {
             itemsIndexed(channels, key = { _, c -> c.id }) { index, channel ->
                 StageSurface(
-                    onClick = { onChannelClick(channel.id, channels) },
+                    onClick = { engine.stop(); onChannelClick(channel.id, channels) },
                     onLongClick = { onLongClick(channel) },
                     radius = StageRadii.Poster,
                     focusStyle = StageFocus.POSTER,
@@ -145,6 +170,9 @@ internal fun HomeStage(
         }
     }
 }
+
+/** How long focus rests on a logo before its channel starts playing on the stage. */
+private const val PREVIEW_DWELL_MS = 700L
 
 /** A logo's stand-in: the channel's number, else the first letters of its name. */
 @Composable
