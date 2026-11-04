@@ -159,11 +159,11 @@ internal fun HomeStage(
     val art = org.koin.compose.koinInject<ProgrammeArt>()
     val picChannel = if (hl is Highlight.Live) hl.channel else shown
     val picProgramme = if (hl is Highlight.Live) hl.programme else if (hl == null) programme else null
-    val backdrop by androidx.compose.runtime.produceState<String?>(null, picProgramme?.title) {
+    val backdrop by androidx.compose.runtime.produceState<String?>(null, picChannel.id, picProgramme?.startMs) {
         value = null
         val p = picProgramme ?: return@produceState
         delay(ART_DWELL_MS) // walking the strip asks only for where focus stops
-        value = art.backdrop(p)
+        value = art.backdrop(p, picChannel.name)
     }
     val now = System.currentTimeMillis()
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.

@@ -12,19 +12,21 @@ import java.util.concurrent.ConcurrentHashMap
 
 /**
  * A wide picture for a TV programme, for the Spotlight and the Stage (Jonathan, 4 Nov 2026: "it should
- * look good"). The EPG carries no pictures, so the programme's title is looked up on TMDB, as films and
- * series already are: a film or a show gets its backdrop. Only a title that is the same as TMDB's counts,
+ * look good"). The provider's EPG carries no pictures. First choice is MagentaTV's guide ([MagentaGuide]);
+ * when it has none, the programme's title is looked up on TMDB, as films and series already are. Only a title that is the same as TMDB's counts,
  * so a news programme or a match keeps its logo rather than showing someone else's picture.
  *
  * Kept on the device: a picture for [FOUND_TTL_MS], "none" for [NONE_TTL_MS]. A failed lookup (no network,
  * no key) is not kept, and is tried again next time.
  */
-class ProgrammeArt(private val provider: MetadataProvider, context: Context) {
+class ProgrammeArt(private val provider: MetadataProvider, private val magenta: MagentaGuide, context: Context) {
     private val prefs = context.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE)
     /** Title key → picture URL, or "" for none. */
     private val memory = ConcurrentHashMap<String, String>()
 
-    suspend fun backdrop(programme: EpgProgrammeEntity): String? {
+    /** MagentaTV's picture of this very airing on [channelName] first, then TMDB's by title. */
+    suspend fun backdrop(programme: EpgProgrammeEntity, channelName: String? = null): String? {
+        channelName?.let { magenta.picture(it, programme.startMs) }?.let { return it }
         val key = ProgrammeTitles.key(programme.title)
         if (key.isBlank()) return null
         memory[key]?.let { return it.ifEmpty { null } }
