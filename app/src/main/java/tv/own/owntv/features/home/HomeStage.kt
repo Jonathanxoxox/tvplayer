@@ -118,6 +118,9 @@ internal fun HomeStage(
     // Spotlight: the channel focus rests on starts by itself; walking the strip opens no stream per logo passed.
     if (spotlight) LaunchedEffect(shown.id, stripFocused, previewOn) {
         if (!stripFocused || !previewOn || picked?.id == shown.id) return@LaunchedEffect
+        // The channel before stops at once: the shell would go on drawing it here, over this channel's
+        // programme picture, until the new stream starts.
+        if (picked != null) { liveVm.stopPreview(); picked = null }
         delay(SPOTLIGHT_DWELL_MS)
         pickedAudible = false
         picked = shown
@@ -139,6 +142,7 @@ internal fun HomeStage(
         if (stripFocused) return@LaunchedEffect
         when (hl) {
             is Highlight.Live -> if (previewOn && picked?.id != hl.channel.id) {
+                if (picked != null) { liveVm.stopPreview(); picked = null }
                 delay(HIGHLIGHT_DWELL_MS)
                 pickedAudible = false
                 picked = hl.channel
@@ -155,6 +159,32 @@ internal fun HomeStage(
     // A highlight other than a live channel shows no picture; the strip's channel shows the one picked.
     val video = picked?.takeIf { previewOn && (hl == null || (hl is Highlight.Live && hl.channel.id == it.id)) }
     val programme = onNow[shown.id]
+    // The picture until the channel plays: the programme's own, from TMDB (ProgrammeArt), else the logo.
+    val art = org.koin.compose.koinInject<ProgrammeArt>()
+    val picChannel = if (hl is Highlight.Live) hl.channel else shown
+    val picProgramme = if (hl is Highlight.Live) hl.programme else if (hl == null) programme else null
+    // The row's pictures ahead, once Home has settled: browsing then shows them at once. Only their
+    // addresses and the files on disk; decoded, thirty 1080p pictures would take some 240 MB.
+    val artContext = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(row.category.key, onNow.size, highlights.size) {
+        delay(ART_PREFETCH_DELAY_MS)
+        val wanted = highlights.mapNotNull { (it as? Highlight.Live)?.let { h -> h.programme?.let { p -> p to h.channel.name } } } +
+            channels.take(ART_PREFETCH_COUNT).mapNotNull { ch -> onNow[ch.id]?.let { it to ch.name } }
+        val loader = coil3.SingletonImageLoader.get(artContext)
+        for ((p, name) in wanted.distinctBy { it.second }) {
+            val url = art.backdrop(p, name) ?: continue
+            loader.enqueue(
+                coil3.request.ImageRequest.Builder(artContext).data(url)
+                    .memoryCachePolicy(coil3.request.CachePolicy.DISABLED).build(),
+            )
+        }
+    }
+    val backdrop by androidx.compose.runtime.produceState<String?>(null, picChannel.id, picProgramme?.startMs) {
+        value = null
+        val p = picProgramme ?: return@produceState
+        delay(ART_DWELL_MS) // walking the strip asks only for where focus stops
+        value = art.backdrop(p, picChannel.name)
+    }
     val now = System.currentTimeMillis()
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
     Column(modifier.padding(top = 24.mpx)) {
@@ -229,6 +259,22 @@ internal fun HomeStage(
                 )
                 if (video == null && hl != null && hl !is Highlight.Live) {
                     HighlightPicture(hl)
+                } else if (video == null && backdrop != null) {
+                    coil3.compose.AsyncImage(
+                        model = backdrop,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    // Whose programme it is, small in the corner.
+                    Box(
+                        Modifier.align(Alignment.BottomStart).padding(24.mpx).size(96.mpx, 64.mpx)
+                            .clip(RoundedCornerShape(10.mpx)).background(StageColors.ControlFill),
+                    ) {
+                        ChannelLogoTile(logoUrl = picChannel.displayLogoUrl, modifier = Modifier.fillMaxSize().padding(8.mpx), fill = Color.Transparent) {
+                            Initials(picChannel, 18)
+                        }
+                    }
                 } else if (video == null) {
                     ChannelLogoTile(
                         logoUrl = (if (hl is Highlight.Live) hl.channel else shown).displayLogoUrl,
@@ -284,11 +330,18 @@ internal fun HomeStage(
     }
 }
 
+/** Home settles first; then the row's programme pictures are fetched ahead. */
+private const val ART_PREFETCH_DELAY_MS = 4000L
+private const val ART_PREFETCH_COUNT = 30
+
+/** How long focus rests on a channel before its programme's picture is looked up. */
+private const val ART_DWELL_MS = 350L
+
 /** How long a live highlight is shown before its channel starts in the picture. */
-private const val HIGHLIGHT_DWELL_MS = 1200L
+private const val HIGHLIGHT_DWELL_MS = 2000L
 
 /** How long focus rests on a logo before Spotlight starts its channel. */
-private const val SPOTLIGHT_DWELL_MS = 900L
+private const val SPOTLIGHT_DWELL_MS = 1500L
 
 /** A logo's stand-in: the channel's number, else the first letters of its name. */
 @Composable
