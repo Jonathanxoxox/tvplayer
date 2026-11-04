@@ -52,6 +52,8 @@ fun MoveOrderOverlay(
     onMove: (from: Int, to: Int) -> Unit,
     onCommit: () -> Unit,
     onCancel: () -> Unit,
+    /** Opened by a held OK: that press's repeats and release must not put the carried row down at once. */
+    openedByHold: Boolean = false,
 ) {
     val settingsVm: SettingsViewModel = koinViewModel()
     val chNavEnabled by settingsVm.chNavEnabled.collectAsStateWithLifecycle()
@@ -91,6 +93,7 @@ fun MoveOrderOverlay(
         width = 760.mpx,
         scroll = false,
         modifier = Modifier
+            .then(if (openedByHold) Modifier.longPressMenuGuard() else Modifier)
             .chNavPaging(
                 enabled = chNavEnabled,
                 upSkip = chNavUpSkip,
