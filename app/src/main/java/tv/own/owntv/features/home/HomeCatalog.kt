@@ -33,7 +33,14 @@ class HomeCatalog(
 ) {
     class Category(val key: String, val id: Long, val name: String)
 
-    class Row(val category: Category, val channels: List<ChannelEntity>)
+    /**
+     * The category's channels in Home's order ([all]); Home shows the first [SHOWN] of them ([channels]).
+     * Move offers [all], so a channel further down can be brought into the row (Jonathan, 4 Nov 2026:
+     * Romance TV sat at 87 of 110 and was not in the row at all).
+     */
+    class Row(val category: Category, val all: List<ChannelEntity>) {
+        val channels: List<ChannelEntity> = all.take(SHOWN)
+    }
 
     private val prefs = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val _changes = MutableStateFlow(0)
@@ -103,7 +110,10 @@ class HomeCatalog(
         private const val ORDER = "home_catalog_order:"
         // Keys are "sourceId:remoteId"; a remote id never holds a line break.
         private const val SEPARATOR = '\n'
-        private const val LIMIT = 60
+        /** Every channel of the category: Move must reach all of them. */
+        private const val LIMIT = 1000
+        /** How many of them the row shows. */
+        const val SHOWN = 30
 
         /**
          * [channels] without the [hidden] ones, those Home has an [order] for first in that order, the

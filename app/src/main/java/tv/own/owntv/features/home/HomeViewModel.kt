@@ -205,14 +205,27 @@ class HomeViewModel(
     fun hideFromHome(channel: ChannelEntity) {
         val row = _uiState.value.catalog ?: return
         catalog.hide(channel)
-        _uiState.value = _uiState.value.copy(catalog = HomeCatalog.Row(row.category, row.channels - channel))
+        _uiState.value = _uiState.value.copy(catalog = HomeCatalog.Row(row.category, row.all - channel))
+        fillCatalogOnNow()
     }
 
-    /** Keeps [channels] as Home's order for the category row. */
+    /** Keeps [channels], all of the category's, as Home's order for the category row. */
     fun reorderOnHome(channels: List<ChannelEntity>) {
         val row = _uiState.value.catalog ?: return
         catalog.saveOrder(row.category.key, channels)
         _uiState.value = _uiState.value.copy(catalog = HomeCatalog.Row(row.category, channels))
+        fillCatalogOnNow()
+    }
+
+    /** What is on now for the row's channels that just moved into it (hidden or moved ones make room). */
+    private fun fillCatalogOnNow() {
+        viewModelScope.launch {
+            val pid = currentProfileId() ?: return@launch
+            val missing = _uiState.value.catalog?.channels.orEmpty().filter { it.id !in _uiState.value.recentOnNow }
+            if (missing.isEmpty()) return@launch
+            val found = onNowFor(pid, missing, providerFallback = true)
+            if (found.isNotEmpty()) _uiState.value = _uiState.value.copy(recentOnNow = _uiState.value.recentOnNow + found)
+        }
     }
 
     // --- The single most-recent resumable item, for the shared top-bar Continue chip. ---

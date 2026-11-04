@@ -49,4 +49,5 @@
     <string name="launcher_apps_menu_line">Alle Apps im Raster</string>
     <string name="launcher_guard_service_label">Mayo TV Home-Wächter</string>
     <string name="launcher_guard_service_description">Öffnet Mayo TV, sobald der vorinstallierte Startbildschirm in den Vordergrund kommt. Er sieht nur, welche App vorne ist, nichts von dem, was angezeigt wird.</string>
+    <string name="launcher_row_apps_hold_hint">OK auf einer App der Reihe gedrückt halten, um sie zu verschieben.</string>
 </resources>

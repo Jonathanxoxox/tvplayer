@@ -236,26 +236,31 @@ fun HomeAppsRow(
             }
         }
     }
-    menuFor?.let { app ->
-        val shown = row.map { it.pkg }
-        AppMenu(
-            app = app,
-            onDismiss = { menuFor = null },
-            entries = buildList {
-                add(stringResource(R.string.launcher_menu_open) to { LauncherApps.open(context, app); Unit })
-                if (shown.indexOf(app.pkg) > 0) add(stringResource(R.string.launcher_menu_left) to {
-                    LauncherPrefs.update(context) { it.copy(rowApps = shown.moved(app.pkg, -1)) }
-                })
-                if (shown.indexOf(app.pkg) in 0 until shown.size - 1) add(stringResource(R.string.launcher_menu_right) to {
-                    LauncherPrefs.update(context) { it.copy(rowApps = shown.moved(app.pkg, 1)) }
-                })
-                add(stringResource(R.string.launcher_menu_remove_row) to {
-                    LauncherPrefs.update(context) { it.copy(rowApps = shown - app.pkg) }
-                })
-                add(stringResource(R.string.launcher_menu_info) to { LauncherApps.openAppInfo(context, app.pkg) })
-            },
-        )
-    }
+    menuFor?.let { app -> RowAppMenu(app, row, onDismiss = { menuFor = null }) }
+}
+
+/** A held OK on an app of the Apps row (the big cards or the buttons): open, move, out of the row, app info. */
+@Composable
+private fun RowAppMenu(app: LauncherApp, row: List<LauncherApp>, onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val shown = row.map { it.pkg }
+    AppMenu(
+        app = app,
+        onDismiss = onDismiss,
+        entries = buildList {
+            add(stringResource(R.string.launcher_menu_open) to { LauncherApps.open(context, app); Unit })
+            if (shown.indexOf(app.pkg) > 0) add(stringResource(R.string.launcher_menu_left) to {
+                LauncherPrefs.update(context) { it.copy(rowApps = shown.moved(app.pkg, -1)) }
+            })
+            if (shown.indexOf(app.pkg) in 0 until shown.size - 1) add(stringResource(R.string.launcher_menu_right) to {
+                LauncherPrefs.update(context) { it.copy(rowApps = shown.moved(app.pkg, 1)) }
+            })
+            add(stringResource(R.string.launcher_menu_remove_row) to {
+                LauncherPrefs.update(context) { it.copy(rowApps = shown - app.pkg) }
+            })
+            add(stringResource(R.string.launcher_menu_info) to { LauncherApps.openAppInfo(context, app.pkg) })
+        },
+    )
 }
 
 /** A held OK on an app: its name as the title, then the actions. */
@@ -431,6 +436,7 @@ fun HomeAppPills(
     val resumes = rememberResumeCount()
     LaunchedEffect(resumes) { LauncherApps.refreshApps(context) }
     val row = rowApps(config, apps)
+    var menuFor by remember { mutableStateOf<LauncherApp?>(null) }
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(14.mpx),
         contentPadding = PaddingValues(start = start, end = 64.mpx, top = 6.mpx, bottom = 6.mpx),
@@ -441,6 +447,8 @@ fun HomeAppPills(
             AppPill(
                 label = homeLabel(app),
                 onClick = { LauncherApps.open(context, app) },
+                // The same menu as the big cards': open, move left or right, out of the row (Jonathan, 4 Nov 2026).
+                onLongClick = { menuFor = app },
                 modifier = Modifier.focusRequester(requester).onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
             ) { AppBadge(app.pkg, size = 32.mpx) }
         }
@@ -453,6 +461,7 @@ fun HomeAppPills(
             ) { focused -> OwnTVIcon(OwnTVIcon.GRID, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(28.mpx)) }
         }
     }
+    menuFor?.let { app -> RowAppMenu(app, row, onDismiss = { menuFor = null }) }
 }
 
 @Composable
@@ -460,10 +469,12 @@ private fun AppPill(
     label: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
     icon: @Composable (focused: Boolean) -> Unit,
 ) {
     StageSurface(
         onClick = onClick,
+        onLongClick = onLongClick,
         radius = 30.mpx,
         focusStyle = StageFocus.FILLED,
         idle = Modifier.clip(RoundedCornerShape(30.mpx)).background(StageColors.GlassOff),
