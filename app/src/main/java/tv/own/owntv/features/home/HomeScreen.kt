@@ -308,9 +308,10 @@ fun HomeScreen(
         }
         // The Apps row (or the other apps' channels) sits at position 1 when shown, so every row after the
         // first moves down one; the app buttons on top move every row down one.
-        val targetIndex = (targetRow?.let { renderRows.indexOf(it) } ?: 0).let { i ->
+        // No row to return to: the very top, app buttons included.
+        val targetIndex = targetRow?.let { renderRows.indexOf(it) }?.let { i ->
             i + (if (showAppPills) 1 else 0) + (if (i >= 1 && (showAppsRow || earlyChannels)) 1 else 0)
-        }
+        } ?: 0
         runCatching { listState.scrollToItem(targetIndex.coerceAtLeast(0)) }
 
         // Only pull focus INTO the Home content when returning from the player (restoreFocus). On a cold
