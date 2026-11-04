@@ -306,7 +306,9 @@ fun StageSettingsPage(
                         }
                     }
                     // The path before the title shortens first (it is measured last); the tools and the search never move.
-                    Text(group, style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // A long name ("Aussehen & Startseite") steps down a size rather than being cut off beside the preview.
+                    val titleSize = if (group.length > 18) 34 else 42
+                    Text(group, style = stageText(titleSize, 800, (-1f / 46f).em), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(count, style = stageText(17, 700), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 6.mpx))
                 }
                 if (tools != null) Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically, content = tools)

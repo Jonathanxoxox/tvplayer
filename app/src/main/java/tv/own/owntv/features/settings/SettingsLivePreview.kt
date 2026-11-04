@@ -24,40 +24,49 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.em
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
-import coil3.compose.AsyncImage
 import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
 import tv.own.owntv.core.home.TrendingHomeItem
 import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.ui.components.OwnTVIcon
-import tv.own.owntv.ui.stage.StageProgress
 import tv.own.owntv.ui.stage.drawInnerRing
 import tv.own.owntv.ui.stage.drawOuterRing
 import tv.own.owntv.ui.stage.stageBackground
 import tv.own.owntv.ui.stage.stageGlass
 import tv.own.owntv.ui.theme.StageColors
-import tv.own.owntv.ui.theme.dissolveEdges
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
+import tv.own.owntv.core.epg.displayLogoUrl
 
 /**
- * Settings › Appearance's LIVE PREVIEW: a small Home drawn from the first Trending title, at a
- * third of the screen's size. Not a second Home — no data of its own, nothing focusable — but it draws
- * with the live accent, focus colour, glass and font, so a change shows here before the row is left.
+ * Settings › Appearance & Home's LIVE PREVIEW: a small Mayo TV Home at a third of the screen's size, in
+ * the chosen layout (Standard, Classic, Stage) with or without row titles, drawn from Home's own channel
+ * row and Apps row. Not a second Home — nothing focusable — but it draws with the live accent, focus
+ * colour, glass and font, so a change shows here before the row is left. (It showed OwnTV's Trending
+ * hero until 4 Nov 2026, which Mayo TV's Home no longer has.)
  */
 @Composable
 internal fun SettingsLivePreview() {
     val home: HomeViewModel = koinViewModel()
     val state by home.uiState.collectAsStateWithLifecycle()
-    val items = state.trendingItems
-    val lead = items.firstOrNull()
+    val launcher = tv.own.owntv.launcher.apps.rememberLauncherConfig()
+    val apps by tv.own.owntv.launcher.apps.LauncherApps.apps.collectAsStateWithLifecycle()
+    val compact = launcher.homeLayout != tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STANDARD
+    val stage = launcher.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_STAGE
+    val titles = launcher.rowTitles
+    val channels = (state.catalog?.channels ?: state.recentLive).take(6)
+    val onNow = state.recentOnNow
+    val catalogTitle = state.catalog?.category?.name ?: stringResource(R.string.home_row_recent_channels)
+    val appsTitle = stringResource(R.string.launcher_row_apps)
+    val appChannelsTitle = stringResource(R.string.launcher_app_channels)
+    val youtube = stringResource(R.string.launcher_youtube)
+    val appNames = tv.own.owntv.launcher.apps.rowApps(launcher, apps).map { if (tv.own.owntv.launcher.apps.isTizenTube(it.pkg)) youtube else it.label }
     val a = stageAccent
     val ink = tv.own.owntv.ui.theme.LocalStagePalette.current.ink
     SettingPanelHeading(stringResource(R.string.settings_quick_live_preview))
@@ -82,68 +91,27 @@ internal fun SettingsLivePreview() {
                 tv.own.owntv.ui.components.BackgroundPicture(background, tv.own.owntv.ui.theme.LocalBlurredBackdrop.current, Modifier.fillMaxSize())
             }
             Box(Modifier.fillMaxSize().stageBackground(a.accent))
-            if (lead != null) {
-                AsyncImage(
-                    model = backdropOf(lead),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.align(Alignment.TopEnd).size(1240.mpx, 760.mpx).dissolveEdges(start = 0.45f, bottom = 0.35f),
-                )
-            }
             // The rail at rest: a glass capsule of icons.
             Column(
                 Modifier.padding(start = 26.mpx, top = 230.mpx).width(60.mpx).stageGlass(30.mpx).padding(vertical = 18.mpx),
                 verticalArrangement = Arrangement.spacedBy(22.mpx),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                listOf(OwnTVIcon.SEARCH, OwnTVIcon.HOME, OwnTVIcon.LIVE_TV, OwnTVIcon.EPG, OwnTVIcon.MOVIES, OwnTVIcon.SERIES, OwnTVIcon.DOWNLOADS).forEachIndexed { i, icon ->
+                listOf(OwnTVIcon.SEARCH, OwnTVIcon.HOME, OwnTVIcon.LIVE_TV, OwnTVIcon.SPORTS, OwnTVIcon.MOVIES, OwnTVIcon.SERIES, OwnTVIcon.GRID).forEachIndexed { i, icon ->
                     OwnTVIcon(icon, if (i == 1) a.accent else StageColors.Muted, Modifier.size(26.mpx))
                 }
             }
-            Column(Modifier.padding(start = 150.mpx, top = 300.mpx).width(820.mpx)) {
-                Text(stringResource(R.string.home_row_now_trending).uppercase(), style = stageText(15, 800, 0.12.em), color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(
-                    titleOf(lead) ?: stringResource(R.string.home_row_now_trending),
-                    style = stageText(92, 800, (-2.5f / 92f).em), color = StageColors.Text,
-                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 10.mpx),
-                )
-                Row(Modifier.padding(top = 40.mpx), horizontalArrangement = Arrangement.spacedBy(16.mpx)) {
-                    // The hero's Play, drawn focused: the accent fill and the focus ring.
-                    Row(
-                        Modifier
-                            .height(64.mpx)
-                            .drawBehind { drawOuterRing(a.focus, 3.mpx.toPx(), 22.mpx.toPx()) }
-                            .background(a.accent, RoundedCornerShape(22.mpx))
-                            .padding(horizontal = 30.mpx),
-                        horizontalArrangement = Arrangement.spacedBy(12.mpx),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        OwnTVIcon(OwnTVIcon.PLAY, a.onAccent, Modifier.size(22.mpx), filled = true)
-                        Text(stringResource(R.string.home_trending_play), style = stageText(22, 700), color = a.onAccent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    Row(
-                        Modifier.height(64.mpx).stageGlass(22.mpx).padding(horizontal = 30.mpx),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(stringResource(R.string.home_trending_trailer), style = stageText(22, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-            }
-            Column(Modifier.padding(start = 150.mpx, top = 760.mpx)) {
-                Text(stringResource(R.string.home_row_keep_watching), style = stageText(27, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Row(Modifier.padding(top = 18.mpx), horizontalArrangement = Arrangement.spacedBy(24.mpx)) {
-                    items.drop(1).take(5).forEachIndexed { i, item ->
-                        Column(Modifier.width(380.mpx)) {
-                            AsyncImage(
-                                model = backdropOf(item),
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxWidth().height(214.mpx).clip(RoundedCornerShape(16.mpx)).background(ink.copy(alpha = 0.06f)),
-                            )
-                            StageProgress(listOf(0.55f, 0.3f, 0.8f, 0.45f, 0.2f)[i], Modifier.padding(top = 10.mpx).fillMaxWidth())
-                        }
-                    }
-                }
+            Text(
+                android.text.format.DateFormat.getTimeFormat(androidx.compose.ui.platform.LocalContext.current).format(java.util.Date()),
+                style = stageText(44, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.align(Alignment.TopEnd).padding(top = 40.mpx, end = 72.mpx),
+            )
+            Column(Modifier.padding(start = 150.mpx, top = if (compact) 44.mpx else 130.mpx), verticalArrangement = Arrangement.spacedBy(30.mpx)) {
+                if (compact) PreviewPills(appNames, a)
+                if (stage) PreviewStage(channels.firstOrNull(), onNow, a) else PreviewChannelRow(catalogTitle, channels, onNow, titles, a, ink)
+                if (stage) PreviewLogoStrip(channels, a, ink)
+                if (!compact) PreviewAppsRow(appsTitle, appNames, titles, ink)
+                PreviewBlocksRow(appChannelsTitle, titles && compact, ink)
             }
         }
     }
@@ -154,12 +122,117 @@ internal fun SettingsLivePreview() {
     Box(Modifier.padding(top = 22.mpx, bottom = 18.mpx).fillMaxWidth().height(1.mpx).background(ink.copy(alpha = 0.1f)))
 }
 
-private fun titleOf(item: TrendingHomeItem?): String? =
-    item?.snapshot?.let { it.localizedTitle.ifBlank { it.canonicalTitle } }
-
 internal fun backdropOf(item: TrendingHomeItem): String? =
     tv.own.owntv.core.metadata.MetadataImages.backdrop(item.snapshot.backdropPath, size = "w780")
         ?: when (item) {
             is TrendingHomeItem.Movie -> item.movie.backdropUrl ?: item.movie.posterUrl
             is TrendingHomeItem.Series -> item.series.backdropUrl ?: item.series.posterUrl
         }
+
+/** Classic and Stage: the apps as small buttons on top. */
+@Composable
+private fun PreviewPills(names: List<String>, a: tv.own.owntv.ui.theme.StageAccent) {
+    Row(horizontalArrangement = Arrangement.spacedBy(14.mpx)) {
+        (names.take(4) + stringResource(R.string.launcher_all_apps)).forEach { name ->
+            Box(Modifier.height(60.mpx).stageGlass(30.mpx).padding(horizontal = 26.mpx), contentAlignment = Alignment.Center) {
+                Text(name, style = stageText(20, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+        }
+    }
+}
+
+/** Standard and Classic: the channel row, the first card drawn focused, what is on now under each. */
+@Composable
+private fun PreviewChannelRow(
+    title: String,
+    channels: List<tv.own.owntv.core.database.entity.ChannelEntity>,
+    onNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity>,
+    titles: Boolean,
+    a: tv.own.owntv.ui.theme.StageAccent,
+    ink: androidx.compose.ui.graphics.Color,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.mpx)) {
+        if (titles) Text(title, style = stageText(27, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(horizontalArrangement = Arrangement.spacedBy(22.mpx)) {
+            channels.forEachIndexed { i, ch ->
+                Column(Modifier.width(300.mpx), verticalArrangement = Arrangement.spacedBy(10.mpx)) {
+                    Box(
+                        Modifier.fillMaxWidth().height(169.mpx)
+                            .then(if (i == 0) Modifier.drawBehind { drawOuterRing(a.focus, 4.mpx.toPx(), 16.mpx.toPx()) } else Modifier)
+                            .clip(RoundedCornerShape(16.mpx)).background(ink.copy(alpha = 0.08f)),
+                        contentAlignment = Alignment.Center,
+                    ) { PreviewLogo(ch, Modifier.size(150.mpx, 100.mpx)) }
+                    Text(onNow[ch.id]?.title ?: ch.name, style = stageText(19, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+/** Stage: the focused channel's programme large, its picture beside it. */
+@Composable
+private fun PreviewStage(
+    ch: tv.own.owntv.core.database.entity.ChannelEntity?,
+    onNow: Map<Long, tv.own.owntv.core.database.entity.EpgProgrammeEntity>,
+    a: tv.own.owntv.ui.theme.StageAccent,
+) {
+    Row(Modifier.height(330.mpx).width(1680.mpx), verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.mpx)) {
+            Text(stringResource(R.string.home_stage_live), style = stageText(18, 800), color = a.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text((ch?.let { onNow[it.id]?.title ?: it.name }).orEmpty(), style = stageText(64, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        Box(Modifier.size(540.mpx, 304.mpx).clip(RoundedCornerShape(18.mpx)).background(androidx.compose.ui.graphics.Color.Black), contentAlignment = Alignment.Center) {
+            if (ch != null) PreviewLogo(ch, Modifier.size(240.mpx, 160.mpx))
+        }
+    }
+}
+
+/** Stage: the strip of logos under it, the first drawn focused. */
+@Composable
+private fun PreviewLogoStrip(channels: List<tv.own.owntv.core.database.entity.ChannelEntity>, a: tv.own.owntv.ui.theme.StageAccent, ink: androidx.compose.ui.graphics.Color) {
+    Row(horizontalArrangement = Arrangement.spacedBy(18.mpx)) {
+        channels.forEachIndexed { i, ch ->
+            Box(
+                Modifier.size(200.mpx, 112.mpx)
+                    .then(if (i == 0) Modifier.drawBehind { drawOuterRing(a.focus, 4.mpx.toPx(), 16.mpx.toPx()) } else Modifier)
+                    .clip(RoundedCornerShape(16.mpx)).background(ink.copy(alpha = 0.08f)),
+                contentAlignment = Alignment.Center,
+            ) { PreviewLogo(ch, Modifier.size(110.mpx, 76.mpx)) }
+        }
+    }
+}
+
+/** Standard: the Apps row of big cards. */
+@Composable
+private fun PreviewAppsRow(title: String, names: List<String>, titles: Boolean, ink: androidx.compose.ui.graphics.Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.mpx)) {
+        if (titles) Text(title, style = stageText(27, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(horizontalArrangement = Arrangement.spacedBy(22.mpx)) {
+            names.take(4).forEach { name ->
+                Box(Modifier.size(300.mpx, 169.mpx).clip(RoundedCornerShape(16.mpx)).background(ink.copy(alpha = 0.08f)), contentAlignment = Alignment.Center) {
+                    Text(name, style = stageText(28, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+/** The other apps' channels (YouTube, Nuvio …): blocks only, their pictures are the apps' own. */
+@Composable
+private fun PreviewBlocksRow(title: String, titles: Boolean, ink: androidx.compose.ui.graphics.Color) {
+    Column(verticalArrangement = Arrangement.spacedBy(14.mpx)) {
+        if (titles) Text(title, style = stageText(27, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(horizontalArrangement = Arrangement.spacedBy(22.mpx)) {
+            repeat(5) { Box(Modifier.size(356.mpx, 200.mpx).clip(RoundedCornerShape(16.mpx)).background(ink.copy(alpha = 0.06f))) }
+        }
+    }
+}
+
+@Composable
+private fun PreviewLogo(ch: tv.own.owntv.core.database.entity.ChannelEntity, modifier: Modifier) {
+    tv.own.owntv.ui.components.ChannelLogoTile(
+        logoUrl = ch.displayLogoUrl,
+        modifier = modifier,
+        fill = androidx.compose.ui.graphics.Color.Transparent,
+    ) { Text(ch.name.take(2).uppercase(), style = stageText(34, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+}
