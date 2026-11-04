@@ -85,7 +85,7 @@ fun AccentPopup(
     val startPreset = remember { accent }
     val startCustom = remember { customAccent }
     StageColorPopup(
-        eyebrow = stringResource(R.string.settings_group_appearance),
+        eyebrow = stringResource(R.string.settings_group_appearance_home),
         title = stringResource(R.string.settings_accent),
         presets = AccentColor.entries.map { ac ->
             ColorChoice(ac.primary(true), stringResource(ac.labelRes)) { onPickCustom(""); onPickPreset(ac) }

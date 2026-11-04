@@ -78,7 +78,7 @@ fun ContentMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
     // Four menu rows and Reset; the panel lists the focused menu's actions in their order.
     val about = stringResource(R.string.settings_content_menus_description)
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_layout)),
+        parents = listOf(stringResource(R.string.settings_group_controls)),
         title = stringResource(R.string.settings_content_menus_title),
         count = pluralStringResource(R.plurals.settings_setting_count, ContentMenu.entries.size, ContentMenu.entries.size),
         onBack = onBack,

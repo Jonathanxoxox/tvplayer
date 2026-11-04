@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mayo TV (4 Nov 2026): Settings sorted anew — Appearance and Home on one page, Controls as a group of its own. -->
+<resources>
+    <string name="settings_group_appearance_home">Appearance &amp; Home</string>
+    <string name="settings_group_controls">Controls</string>
+    <string name="settings_heading_home">Home</string>
+    <string name="settings_heading_colors_style">Colours &amp; style</string>
+    <string name="settings_heading_clock_weather">Clock &amp; weather</string>
+    <string name="settings_heading_widths">Widths</string>
+    <string name="settings_heading_sidebar">Sidebar</string>
+    <string name="settings_heading_remote">Remote</string>
+    <string name="settings_heading_menus_lists">Menus &amp; lists</string>
+    <string name="settings_home_more">Rows, channel row &amp; apps</string>
+    <string name="settings_home_more_line">Which rows Home shows and in what order, the channel row’s category, the apps and their channels</string>
+    <string name="settings_home_page">Home</string>
+    <string name="settings_heading_home_apps">Apps &amp; app channels</string>
+    <string name="settings_heading_android_tv">Android TV</string>
+</resources>

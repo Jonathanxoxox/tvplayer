@@ -97,12 +97,12 @@ internal fun GlassBackgroundPage(
     val hasFile = background.imagePath.isNotBlank()
     val preview: @Composable () -> Unit = { GlassBackgroundPreview() }
     val change = stringResource(R.string.settings_key_change)
-    val back = stringResource(R.string.common_back) to stringResource(R.string.settings_group_appearance)
+    val back = stringResource(R.string.common_back) to stringResource(R.string.settings_group_appearance_home)
     val stepHints = listOf("◀ ▶" to change, back)
     val okHints = listOf(stringResource(R.string.common_ok) to change, back)
     val previewTitle = stringResource(R.string.settings_glass_live_preview)
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_appearance)),
+        parents = listOf(stringResource(R.string.settings_group_appearance_home)),
         title = stringResource(R.string.settings_glass_bg_title),
         count = pluralStringResource(R.plurals.settings_setting_count, 10, 10),
         onBack = onBack,

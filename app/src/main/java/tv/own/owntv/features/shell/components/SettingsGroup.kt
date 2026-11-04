@@ -15,8 +15,11 @@ internal enum class SettingsGroup(val titleRes: Int, val video: VideoGroup? = nu
     PLAYBACK(R.string.settings_mayo_group_playback, VideoGroup.PLAYBACK),
     PICTURE_SOUND(R.string.settings_mayo_group_picture_sound, VideoGroup.PICTURE_SOUND),
     LANGUAGE(R.string.settings_mayo_group_language, VideoGroup.LANGUAGES, rootFirst = true),
-    APPEARANCE(R.string.settings_group_appearance),
-    /** Mayo TV as the TV's start screen, and Mayo TV's own Home rows. */
+    /** How Mayo TV looks, Home first (Jonathan, 4 Nov 2026: Appearance and Home share one page). */
+    APPEARANCE(R.string.settings_group_appearance_home),
+    /** The sidebar, the remote and the menus: how Mayo TV is worked, apart from how it looks. */
+    CONTROLS(R.string.settings_group_controls),
+    /** Mayo TV as the TV's start screen: the Home button and what opens at power-on. */
     HOMESCREEN(R.string.launcher_settings_group),
     APP(R.string.settings_group_app, VideoGroup.DIAGNOSTICS, rootFirst = true),
     ;

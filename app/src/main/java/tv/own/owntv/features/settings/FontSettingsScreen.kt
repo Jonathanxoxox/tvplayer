@@ -39,7 +39,7 @@ fun FontSettingsScreen(
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
     val percent: @Composable (Int) -> String = { stringResource(R.string.common_percent, it) }
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_appearance)),
+        parents = listOf(stringResource(R.string.settings_group_appearance_home)),
         // The row's own name for it ("Fonts & text size"), so the page is called what opened it.
         title = settingWords("fonts", stringResource(R.string.settings_font_customization), null).title,
         count = pluralStringResource(R.plurals.settings_setting_count, 4, 4),
