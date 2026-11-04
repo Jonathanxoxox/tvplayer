@@ -50,4 +50,5 @@
     <string name="launcher_apps_menu_line">Every app in a grid</string>
     <string name="launcher_guard_service_label">Mayo TV Home guard</string>
     <string name="launcher_guard_service_description">Opens Mayo TV when the TV’s own start screen comes to the front. It sees only which app is in front, nothing that is shown.</string>
+    <string name="launcher_row_apps_hold_hint">Hold OK on an app in the row to move it.</string>
 </resources>

@@ -85,6 +85,8 @@ internal fun LauncherSettingsRows(
     }
     var pickBoot by remember { mutableStateOf(false) }
     var pickRow by remember { mutableStateOf(false) }
+    // The row's apps while the Move window is open, with the carried one's place.
+    var movingApps by remember { mutableStateOf<Pair<List<String>, Int>?>(null) }
     var pickChannels by remember { mutableStateOf(false) }
     fun update(change: (LauncherConfig) -> LauncherConfig) = LauncherPrefs.update(context, change)
 
@@ -204,18 +206,43 @@ internal fun LauncherSettingsRows(
     }
     if (pickRow) {
         val current = inRow.map { it.pkg }
-        StagePopup(onDismiss = { pickRow = false }, title = stringResource(R.string.launcher_row_apps_setting)) {
+        // The row's apps first, in the row's order, then the others: what Move changes is what is listed.
+        val listed = inRow + apps.filter { it.pkg !in current }
+        StagePopup(
+            onDismiss = { pickRow = false },
+            title = stringResource(R.string.launcher_row_apps_setting),
+            body = stringResource(R.string.launcher_row_apps_hold_hint),
+        ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.mpx), modifier = Modifier.padding(top = 18.mpx)) {
-                apps.forEach { app ->
+                listed.forEach { app ->
                     val on = app.pkg in current
                     StagePopupOption(
                         title = nameOf(app),
                         onClick = { update { it.copy(rowApps = if (on) current - app.pkg else current + app.pkg) } },
+                        // Hold OK on an app in the row: move it (Jonathan, 4 Nov 2026: holding OK here did nothing).
+                        onLongClick = if (on) ({ movingApps = current to current.indexOf(app.pkg); pickRow = false }) else null,
                         leading = { f -> StagePopupCheck(on, f) },
                     )
                 }
             }
         }
+    }
+    movingApps?.let { (pkgs, index) ->
+        val byPkg = apps.associateBy { it.pkg }
+        tv.own.owntv.ui.components.MoveOrderOverlay(
+            title = stringResource(R.string.launcher_row_apps_setting),
+            itemNames = pkgs.map { pkg -> byPkg[pkg]?.let(nameOf) ?: pkg },
+            activeIndex = index,
+            onMove = { from, to ->
+                val now = movingApps?.first
+                if (now != null && from in now.indices && to in now.indices && from != to) {
+                    movingApps = now.toMutableList().apply { add(to, removeAt(from)) } to to
+                }
+            },
+            onCommit = { movingApps?.first?.let { order -> update { it.copy(rowApps = order) } }; movingApps = null; pickRow = true },
+            onCancel = { movingApps = null; pickRow = true },
+            openedByHold = true,
+        )
     }
     if (pickChannels) {
         val labels = apps.associate { it.pkg to nameOf(it) }

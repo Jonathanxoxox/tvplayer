@@ -70,7 +70,7 @@ internal fun HomeCatalogMenu(
                     )
                     StageMenuItem(
                         stringResource(R.string.content_move),
-                        onClick = { row.channels.indexOf(channel).takeIf { it >= 0 }?.let { moving = row.channels to it } },
+                        onClick = { row.all.indexOf(channel).takeIf { it >= 0 }?.let { moving = row.all to it } },
                         icon = OwnTVIcon.MOVE,
                     )
                 }
