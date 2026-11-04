@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_group_appearance_home">Aussehen &amp; Startseite</string>
+    <string name="settings_group_controls">Bedienung</string>
+    <string name="settings_heading_home">Startseite</string>
+    <string name="settings_heading_colors_style">Farben &amp; Stil</string>
+    <string name="settings_heading_clock_weather">Uhr &amp; Wetter</string>
+    <string name="settings_heading_widths">Breiten</string>
+    <string name="settings_heading_sidebar">Seitenleiste</string>
+    <string name="settings_heading_remote">Fernbedienung</string>
+    <string name="settings_heading_menus_lists">Menüs &amp; Listen</string>
+    <string name="settings_home_more">Bereiche, Senderreihe &amp; Apps</string>
+    <string name="settings_home_more_line">Welche Reihen die Startseite zeigt und in welcher Reihenfolge, die Kategorie der Senderreihe, die Apps und ihre Kanäle</string>
+    <string name="settings_home_page">Startseite</string>
+    <string name="settings_heading_home_apps">Apps &amp; App-Kanäle</string>
+    <string name="settings_heading_android_tv">Android TV</string>
+</resources>

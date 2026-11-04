@@ -44,7 +44,7 @@ fun NavigationSettingsPopup(
     val eyebrow = stringResource(
         R.string.settings_breadcrumb_eyebrow,
         stringResource(R.string.settings_title),
-        stringResource(R.string.settings_group_layout),
+        stringResource(R.string.settings_group_controls),
     ).uppercase(locale)
 
     StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_navigation), eyebrow = eyebrow) {

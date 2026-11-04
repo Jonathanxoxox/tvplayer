@@ -69,7 +69,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     // The switch, the button assignments as rows, the two skip counts; how it works in the panel.
     val back = stringResource(R.string.common_back)
-    val layout = stringResource(R.string.settings_group_layout)
+    val layout = stringResource(R.string.settings_group_controls)
     val pageHints = listOf(stringResource(R.string.common_ok) to stringResource(R.string.settings_key_change), back to layout)
     val about = stringResource(R.string.settings_remote_shortcuts_description)
     StageFullPage(

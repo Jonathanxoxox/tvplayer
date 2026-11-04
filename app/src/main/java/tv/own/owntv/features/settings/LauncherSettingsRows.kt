@@ -35,19 +35,28 @@ import tv.own.owntv.ui.stage.StagePopupCheck
 import tv.own.owntv.ui.stage.StagePopupOption
 import tv.own.owntv.ui.theme.mpx
 
-/** How many rows Settings › Home screen has, for the page's count. */
-internal const val LAUNCHER_SETTING_COUNT = 9
+/** How many rows Settings › Power-on & Home button has, for the page's count. */
+internal const val LAUNCHER_SETTING_COUNT = 5
+
+/** The parts of these rows, drawn where they belong since Settings were sorted anew (Jonathan, 4 Nov 2026). */
+internal enum class LauncherRowsPart {
+    /** Settings › Power-on & Home button: Mayo TV as start screen, the guard, what opens at power-on. */
+    BOOT,
+    /** Settings › Appearance & Home › Home: the Apps row, its apps, the other apps' channels. */
+    HOME_APPS,
+}
 
 /**
- * Settings › Home screen: Mayo TV as the TV's start screen (Home button, guard, power-on), then what
- * Home shows besides Mayo TV's own rows (the Apps row, other apps' channels) and the Apps section.
+ * Mayo TV as the TV's start screen (Home button, guard, power-on), and what Home shows besides Mayo TV's own
+ * rows (the Apps row, other apps' channels): each [LauncherRowsPart] on its own page.
  */
 @Composable
 internal fun LauncherSettingsRows(
+    part: LauncherRowsPart,
     /** Mayo TV's own App start row (what it opens with), right under Open at power-on. */
     afterBoot: @Composable () -> Unit = {},
-    /** Mayo TV's Home rows page, first under the Home heading. */
-    homeRows: @Composable () -> Unit = {},
+    /** Under the start-screen rows: Android TV's own start screen (Mayo TV's rows there). */
+    androidTvHome: @Composable () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -79,6 +88,13 @@ internal fun LauncherSettingsRows(
     var pickChannels by remember { mutableStateOf(false) }
     fun update(change: (LauncherConfig) -> LauncherConfig) = LauncherPrefs.update(context, change)
 
+    // Shared with the dialogs at the end, whichever part is drawn.
+    val inRow = rowApps(config, apps)
+    // TizenTube is called YouTube here as on Home (Jonathan, 4 Nov 2026).
+    val youtube = stringResource(R.string.launcher_youtube)
+    val nameOf = { app: tv.own.owntv.launcher.apps.LauncherApp -> if (tv.own.owntv.launcher.apps.isTizenTube(app.pkg)) youtube else app.label }
+
+    if (part == LauncherRowsPart.BOOT) {
     StageSettingsHeading(stringResource(R.string.launcher_heading_button), 4, first = true)
     StageSettingRow(
         icon = OwnTVIcon.HOME,
@@ -129,9 +145,11 @@ internal fun LauncherSettingsRows(
     )
 
     afterBoot()
+    androidTvHome()
+    }
 
-    StageSettingsHeading(stringResource(R.string.launcher_heading_home), 5)
-    homeRows()
+    if (part == LauncherRowsPart.HOME_APPS) {
+    StageSettingsHeading(stringResource(R.string.settings_heading_home_apps), 3)
     StageSettingRow(
         icon = OwnTVIcon.TILES,
         title = stringResource(R.string.launcher_apps_row),
@@ -139,10 +157,6 @@ internal fun LauncherSettingsRows(
         value = SettingValue.Switch(config.appsRow),
         onClick = { update { it.copy(appsRow = !it.appsRow) } },
     )
-    val inRow = rowApps(config, apps)
-    // TizenTube is called YouTube here as on Home (Jonathan, 4 Nov 2026).
-    val youtube = stringResource(R.string.launcher_youtube)
-    val nameOf = { app: tv.own.owntv.launcher.apps.LauncherApp -> if (tv.own.owntv.launcher.apps.isTizenTube(app.pkg)) youtube else app.label }
     StageSettingRow(
         icon = OwnTVIcon.MOVE,
         title = stringResource(R.string.launcher_row_apps_setting),
@@ -172,13 +186,7 @@ internal fun LauncherSettingsRows(
             text = stringResource(R.string.launcher_app_channels_help, LauncherSystem.channelsCommand(context)),
         ),
     )
-    StageSettingRow(
-        icon = OwnTVIcon.GRID,
-        title = stringResource(R.string.launcher_apps_menu),
-        desc = stringResource(R.string.launcher_apps_menu_line),
-        value = SettingValue.Switch(config.appsInMenu),
-        onClick = { update { it.copy(appsInMenu = !it.appsInMenu) } },
-    )
+    }
 
     if (pickBoot) {
         val fixed = listOf(

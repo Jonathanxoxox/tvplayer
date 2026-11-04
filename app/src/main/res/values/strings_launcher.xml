@@ -20,7 +20,7 @@
     <string name="launcher_menu_left">Move left</string>
     <string name="launcher_menu_right">Move right</string>
     <string name="launcher_show_hidden">Hidden apps (%1$d)</string>
-    <string name="launcher_settings_group">Home screen</string>
+    <string name="launcher_settings_group">Power-on &amp; Home button</string>
     <string name="launcher_heading_button">Home button</string>
     <string name="launcher_heading_home">Home</string>
     <string name="launcher_as_start">Mayo TV as start screen</string>

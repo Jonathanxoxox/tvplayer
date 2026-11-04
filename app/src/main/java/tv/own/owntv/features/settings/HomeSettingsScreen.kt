@@ -30,8 +30,6 @@ import tv.own.owntv.core.model.HomeRow
 import tv.own.owntv.core.model.HomeTrendingStyle
 import tv.own.owntv.core.trending.TrendingAvailability
 import tv.own.owntv.features.home.HomeCatalog
-import tv.own.owntv.launcher.apps.LauncherConfig
-import tv.own.owntv.launcher.apps.LauncherPrefs
 import tv.own.owntv.features.home.displayLabel
 import tv.own.owntv.features.home.displayTitle
 import tv.own.owntv.features.home.settingsDescription
@@ -48,12 +46,9 @@ import tv.own.owntv.ui.theme.stageText
 @Composable
 fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: HomeSettingsViewModel = koinViewModel()
-    val settingsVm: SettingsViewModel = koinViewModel()
     val config by vm.config.collectAsStateWithLifecycle()
     val trendingAvailability by vm.trendingAvailability.collectAsStateWithLifecycle()
     val heroPreviewEnabled by vm.heroPreviewEnabled.collectAsStateWithLifecycle()
-    val androidTvHomeEnabled by settingsVm.androidTvHomeEnabled.collectAsStateWithLifecycle()
-    val tvHomeRefresh by settingsVm.tvHomeRefresh.collectAsStateWithLifecycle()
     val trendingEnabled = HomeRow.TRENDING !in config.hidden
     val trendingStatus = trendingStatusText(hidden = !trendingEnabled, availability = trendingAvailability)
 
@@ -68,11 +63,11 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     val ok = stringResource(R.string.common_ok)
     val back = stringResource(R.string.common_back)
-    val layout = stringResource(R.string.settings_group_layout)
+    val layout = stringResource(R.string.settings_group_appearance_home)
     val rowCount = (if (trendingEnabled) 2 else 1) + config.settingsRows.size
     StageFullPage(
         parents = listOf(layout),
-        title = stringResource(R.string.settings_home_screen),
+        title = stringResource(R.string.settings_home_page),
         count = pluralStringResource(R.plurals.settings_home_row_count, rowCount, rowCount),
         onBack = onBack,
         modifier = modifier,
@@ -108,48 +103,6 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 onClick = flip,
                 onStep = { step -> vm.setTrendingStyle(if (step < 0) HomeTrendingStyle.HERO else HomeTrendingStyle.POSTERS) },
                 help = settingHelp(null, styleTitle, stringResource(R.string.home_row_trending_description), styleValue, choices = styleValue.options, pinnable = false),
-            )
-        }
-
-        // Mayo TV: Home's layout and its row titles, kept with the launcher's own settings (LauncherPrefs).
-        val context = androidx.compose.ui.platform.LocalContext.current
-        val launcher by remember(context) { LauncherPrefs.config(context) }.collectAsStateWithLifecycle()
-        var pickingLayout by remember { mutableStateOf(false) }
-        StageSettingsHeading(stringResource(R.string.home_layout_heading), 2)
-        val layoutTitle = stringResource(R.string.home_layout_title)
-        val layoutDesc = stringResource(R.string.home_layout_description)
-        val layoutOptions = listOf(
-            LauncherConfig.LAYOUT_STANDARD to stringResource(R.string.home_layout_standard),
-            LauncherConfig.LAYOUT_CLASSIC to stringResource(R.string.home_layout_classic),
-            LauncherConfig.LAYOUT_STAGE to stringResource(R.string.home_layout_stage),
-        )
-        val layoutValue = SettingValue.Choice((layoutOptions.firstOrNull { it.first == launcher.homeLayout } ?: layoutOptions[0]).second)
-        StageSettingRow(
-            icon = OwnTVIcon.GRID,
-            title = layoutTitle,
-            desc = layoutDesc,
-            value = layoutValue,
-            onClick = { pickingLayout = true },
-            help = settingHelp(null, layoutTitle, layoutDesc, layoutValue, layoutOptions.map { it.second }, pinnable = false),
-        )
-        val titlesTitle = stringResource(R.string.home_row_titles)
-        val titlesDesc = stringResource(R.string.home_row_titles_description)
-        val titlesValue = SettingValue.Switch(launcher.rowTitles)
-        StageSettingRow(
-            icon = OwnTVIcon.TEXT_SIZE,
-            title = titlesTitle,
-            desc = titlesDesc,
-            value = titlesValue,
-            onClick = { LauncherPrefs.update(context) { it.copy(rowTitles = !it.rowTitles) } },
-            help = settingHelp(null, titlesTitle, titlesDesc, titlesValue, pinnable = false),
-        )
-        if (pickingLayout) {
-            PickerDialog(
-                title = layoutTitle,
-                options = layoutOptions,
-                selected = launcher.homeLayout,
-                onSelect = { key -> LauncherPrefs.update(context) { it.copy(homeLayout = key) }; pickingLayout = false },
-                onDismiss = { pickingLayout = false },
             )
         }
 
@@ -266,6 +219,9 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             )
         }
 
+        // The Apps row and the other apps' channels, moved here from the start-screen settings.
+        LauncherSettingsRows(part = LauncherRowsPart.HOME_APPS)
+
         StageSettingsHeading(stringResource(R.string.settings_keep_watching), 4)
         HomeSwitchRow(OwnTVIcon.LIVE_TV, R.string.settings_live_keep_watching, R.string.settings_live_keep_watching_description, config.heroIncludeLive) {
             vm.setHeroInclude(HeroKind.LIVE, !config.heroIncludeLive)
@@ -279,30 +235,40 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         HomeSwitchRow(OwnTVIcon.PLAY, R.string.settings_hero_preview, R.string.settings_hero_preview_description, heroPreviewEnabled) {
             vm.setHeroPreviewEnabled(!heroPreviewEnabled)
         }
-
-        StageSettingsHeading(stringResource(R.string.settings_android_tv_home), if (androidTvHomeEnabled) 2 else 1)
-        HomeSwitchRow(OwnTVIcon.HISTORY, R.string.settings_android_tv_home, R.string.settings_android_tv_home_description, androidTvHomeEnabled) {
-            settingsVm.setAndroidTvHomeEnabled(!androidTvHomeEnabled)
-        }
-        if (androidTvHomeEnabled) {
-            val refreshTitle = stringResource(R.string.settings_refresh_now)
-            val refreshValue = when (tvHomeRefresh) {
-                SettingsViewModel.TvHomeRefresh.REFRESHING -> SettingValue.Action(stringResource(R.string.settings_rebuilding))
-                SettingsViewModel.TvHomeRefresh.DONE -> SettingValue.Action(stringResource(R.string.settings_done_check))
-                else -> null
-            }
-            val refreshDesc = stringResource(R.string.settings_refresh_description)
-            StageSettingRow(
-                icon = OwnTVIcon.REFRESH,
-                title = refreshTitle,
-                desc = refreshDesc,
-                value = refreshValue,
-                onClick = { if (tvHomeRefresh == SettingsViewModel.TvHomeRefresh.IDLE) settingsVm.refreshAndroidTvHome() },
-                help = SettingHelp(refreshTitle, refreshDesc, hints = settingHints(null, pinnable = false)),
-            )
-        }
     }
     BackHandler(enabled = moving != null) { moving = null }
+}
+
+/**
+ * Android TV's own start screen: Mayo TV's rows there, and rebuilding them now. Under Settings › Power-on &
+ * Home button since Settings were sorted anew (Jonathan, 4 Nov 2026).
+ */
+@Composable
+internal fun AndroidTvHomeRows() {
+    val settingsVm: SettingsViewModel = koinViewModel()
+    val androidTvHomeEnabled by settingsVm.androidTvHomeEnabled.collectAsStateWithLifecycle()
+    val tvHomeRefresh by settingsVm.tvHomeRefresh.collectAsStateWithLifecycle()
+    StageSettingsHeading(stringResource(R.string.settings_android_tv_home), if (androidTvHomeEnabled) 2 else 1)
+    HomeSwitchRow(OwnTVIcon.HISTORY, R.string.settings_android_tv_home, R.string.settings_android_tv_home_description, androidTvHomeEnabled) {
+        settingsVm.setAndroidTvHomeEnabled(!androidTvHomeEnabled)
+    }
+    if (androidTvHomeEnabled) {
+        val refreshTitle = stringResource(R.string.settings_refresh_now)
+        val refreshValue = when (tvHomeRefresh) {
+            SettingsViewModel.TvHomeRefresh.REFRESHING -> SettingValue.Action(stringResource(R.string.settings_rebuilding))
+            SettingsViewModel.TvHomeRefresh.DONE -> SettingValue.Action(stringResource(R.string.settings_done_check))
+            else -> null
+        }
+        val refreshDesc = stringResource(R.string.settings_refresh_description)
+        StageSettingRow(
+            icon = OwnTVIcon.REFRESH,
+            title = refreshTitle,
+            desc = refreshDesc,
+            value = refreshValue,
+            onClick = { if (tvHomeRefresh == SettingsViewModel.TvHomeRefresh.IDLE) settingsVm.refreshAndroidTvHome() },
+            help = SettingHelp(refreshTitle, refreshDesc, hints = settingHints(null, pinnable = false)),
+        )
+    }
 }
 
 @Composable

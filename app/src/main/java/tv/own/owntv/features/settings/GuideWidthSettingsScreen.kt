@@ -52,7 +52,7 @@ fun GuideWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
     // The TV Guide row and Reset; the panel draws the two columns at their widths.
     val rules = stringResource(R.string.settings_guide_width_help, *NO_ARGS)
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_layout)),
+        parents = listOf(stringResource(R.string.settings_group_appearance_home)),
         title = stringResource(R.string.settings_guide_width),
         count = pluralStringResource(R.plurals.settings_setting_count, 2, 2),
         onBack = onBack,

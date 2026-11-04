@@ -100,7 +100,7 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
         val rules = stringResource(R.string.settings_panel_width_help, *NO_ARGS)
         val sep = stringResource(R.string.content_epg_bits_separator)
         StageFullPage(
-            parents = listOf(stringResource(R.string.settings_group_layout)),
+            parents = listOf(stringResource(R.string.settings_group_appearance_home)),
             title = stringResource(R.string.settings_panel_width),
             count = pluralStringResource(R.plurals.settings_setting_count, PanelSection.entries.size, PanelSection.entries.size),
             onBack = onBack,

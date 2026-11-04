@@ -30,7 +30,7 @@ fun BrowsingListsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifie
     val first = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_layout)),
+        parents = listOf(stringResource(R.string.settings_group_controls)),
         title = stringResource(R.string.settings_browsing_lists),
         count = pluralStringResource(R.plurals.settings_setting_count, 6, 6),
         onBack = onBack,
