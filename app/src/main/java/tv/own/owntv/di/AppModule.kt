@@ -18,6 +18,7 @@ import tv.own.owntv.core.home.HomeFeedReader
 import tv.own.owntv.core.live.GuideReader
 import tv.own.owntv.core.live.LiveEpgReader
 import tv.own.owntv.features.home.HomeCatalog
+import tv.own.owntv.features.home.ProgrammeArt
 import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MovieViewModel
@@ -120,6 +121,8 @@ val appModule = module {
     // Speech to text for the mic button (ElevenLabs Scribe); off without a key.
     singleOf(::ScribeClient)
     singleOf(::WatchProviders)
+    // Pictures for TV programmes (Spotlight, Stage), from TMDB by title.
+    singleOf(::ProgrammeArt)
     // The TMDB catalogs of Movies and Series, matched to the playlist once a day.
     singleOf(::VodCatalogSource)
     viewModelOf(::SearchViewModel)

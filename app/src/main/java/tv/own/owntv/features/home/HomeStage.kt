@@ -155,6 +155,16 @@ internal fun HomeStage(
     // A highlight other than a live channel shows no picture; the strip's channel shows the one picked.
     val video = picked?.takeIf { previewOn && (hl == null || (hl is Highlight.Live && hl.channel.id == it.id)) }
     val programme = onNow[shown.id]
+    // The picture until the channel plays: the programme's own, from TMDB (ProgrammeArt), else the logo.
+    val art = org.koin.compose.koinInject<ProgrammeArt>()
+    val picChannel = if (hl is Highlight.Live) hl.channel else shown
+    val picProgramme = if (hl is Highlight.Live) hl.programme else if (hl == null) programme else null
+    val backdrop by androidx.compose.runtime.produceState<String?>(null, picProgramme?.title) {
+        value = null
+        val p = picProgramme ?: return@produceState
+        delay(ART_DWELL_MS) // walking the strip asks only for where focus stops
+        value = art.backdrop(p)
+    }
     val now = System.currentTimeMillis()
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
     Column(modifier.padding(top = 24.mpx)) {
@@ -229,6 +239,22 @@ internal fun HomeStage(
                 )
                 if (video == null && hl != null && hl !is Highlight.Live) {
                     HighlightPicture(hl)
+                } else if (video == null && backdrop != null) {
+                    coil3.compose.AsyncImage(
+                        model = backdrop,
+                        contentDescription = null,
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    // Whose programme it is, small in the corner.
+                    Box(
+                        Modifier.align(Alignment.BottomStart).padding(24.mpx).size(96.mpx, 64.mpx)
+                            .clip(RoundedCornerShape(10.mpx)).background(StageColors.ControlFill),
+                    ) {
+                        ChannelLogoTile(logoUrl = picChannel.displayLogoUrl, modifier = Modifier.fillMaxSize().padding(8.mpx), fill = Color.Transparent) {
+                            Initials(picChannel, 18)
+                        }
+                    }
                 } else if (video == null) {
                     ChannelLogoTile(
                         logoUrl = (if (hl is Highlight.Live) hl.channel else shown).displayLogoUrl,
@@ -283,6 +309,9 @@ internal fun HomeStage(
         }
     }
 }
+
+/** How long focus rests on a channel before its programme's picture is looked up. */
+private const val ART_DWELL_MS = 350L
 
 /** How long a live highlight is shown before its channel starts in the picture. */
 private const val HIGHLIGHT_DWELL_MS = 1200L
