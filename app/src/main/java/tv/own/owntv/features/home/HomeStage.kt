@@ -118,6 +118,9 @@ internal fun HomeStage(
     // Spotlight: the channel focus rests on starts by itself; walking the strip opens no stream per logo passed.
     if (spotlight) LaunchedEffect(shown.id, stripFocused, previewOn) {
         if (!stripFocused || !previewOn || picked?.id == shown.id) return@LaunchedEffect
+        // The channel before stops at once: the shell would go on drawing it here, over this channel's
+        // programme picture, until the new stream starts.
+        if (picked != null) { liveVm.stopPreview(); picked = null }
         delay(SPOTLIGHT_DWELL_MS)
         pickedAudible = false
         picked = shown
@@ -139,6 +142,7 @@ internal fun HomeStage(
         if (stripFocused) return@LaunchedEffect
         when (hl) {
             is Highlight.Live -> if (previewOn && picked?.id != hl.channel.id) {
+                if (picked != null) { liveVm.stopPreview(); picked = null }
                 delay(HIGHLIGHT_DWELL_MS)
                 pickedAudible = false
                 picked = hl.channel
@@ -314,10 +318,10 @@ internal fun HomeStage(
 private const val ART_DWELL_MS = 350L
 
 /** How long a live highlight is shown before its channel starts in the picture. */
-private const val HIGHLIGHT_DWELL_MS = 1200L
+private const val HIGHLIGHT_DWELL_MS = 2000L
 
 /** How long focus rests on a logo before Spotlight starts its channel. */
-private const val SPOTLIGHT_DWELL_MS = 900L
+private const val SPOTLIGHT_DWELL_MS = 1500L
 
 /** A logo's stand-in: the channel's number, else the first letters of its name. */
 @Composable
