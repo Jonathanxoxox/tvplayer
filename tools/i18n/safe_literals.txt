@@ -1561,6 +1561,8 @@
 1	technical	app/src/main/java/tv/own/owntv/launcher/apps/LauncherUi.kt	TizenTube
 2	technical	app/src/main/java/tv/own/owntv/launcher/apps/LauncherUi.kt	all_apps
 1	technical	app/src/main/java/tv/own/owntv/launcher/apps/LauncherUi.kt	io.gh.reisxd.tizentube
+1	technical	app/src/main/java/tv/own/owntv/launcher/apps/LauncherUi.kt	now_playing
+1	technical	app/src/main/java/tv/own/owntv/launcher/apps/NowPlaying.kt	http
 3	empty	app/src/main/java/tv/own/owntv/perf/DexMetadataHook.kt	\0
 1	file-path	app/src/main/java/tv/own/owntv/perf/DexMetadataHook.kt	$SESSION_ENTRY.dm
 1	technical	app/src/main/java/tv/own/owntv/perf/DexMetadataHook.kt	${state.name} – $why
