@@ -146,7 +146,7 @@ fun AppCard(
                 .background(StageColors.GlassOff),
             contentAlignment = Alignment.Center,
         ) {
-            if (app.pkg == TIZENTUBE) {
+            if (isTizenTube(app.pkg)) {
                 YouTubeFace(height)
             } else if (art != null && LauncherApps.isBanner(art)) {
                 Image(art, contentDescription = app.label, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
@@ -327,7 +327,7 @@ fun AppChannelRows(
     val continueTitle = stringResource(R.string.launcher_row_continue)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(40.mpx)) {
         shown.forEach { channel ->
-            val appLabel = if (channel.pkg == TIZENTUBE) stringResource(R.string.launcher_youtube) else labels[channel.pkg] ?: channel.pkg
+            val appLabel = if (isTizenTube(channel.pkg)) stringResource(R.string.launcher_youtube) else labels[channel.pkg] ?: channel.pkg
             val title = if (channel.key.endsWith("/${LauncherApps.WATCH_NEXT}")) continueTitle else channel.name.ifBlank { appLabel }
             Column {
                 if (config.rowTitles) Row(
@@ -374,7 +374,7 @@ fun AppChannelRows(
 /** The app's icon, small, before a row's name. */
 @Composable
 private fun AppBadge(pkg: String, modifier: Modifier = Modifier, size: Dp = 30.mpx) {
-    if (pkg == TIZENTUBE) {
+    if (isTizenTube(pkg)) {
         Image(painterResource(R.drawable.ic_youtube_mark), contentDescription = null, modifier = modifier.size(size))
         return
     }
@@ -387,13 +387,15 @@ private fun AppBadge(pkg: String, modifier: Modifier = Modifier, size: Dp = 30.m
     Image(icon, contentDescription = null, modifier = modifier.size(size).clip(RoundedCornerShape(8.mpx)))
 }
 
-/** TizenTube's package: Home shows it as YouTube, which it is on the TV (Jonathan, 4 Nov 2026). */
-internal const val TIZENTUBE = "io.gh.reisxd.tizentube"
+/** TizenTube's packages ("….tizentube", "….tizentube.cobalt"): Home shows it as YouTube, which it is on the TV (Jonathan, 4 Nov 2026). */
+private const val TIZENTUBE = "io.gh.reisxd.tizentube"
+
+internal fun isTizenTube(pkg: String): Boolean = pkg.startsWith(TIZENTUBE)
 
 /** What Home calls [app]: TizenTube as YouTube, everything else by its own label. */
 @Composable
 internal fun homeLabel(app: LauncherApp): String =
-    if (app.pkg == TIZENTUBE) stringResource(R.string.launcher_youtube) else app.label
+    if (isTizenTube(app.pkg)) stringResource(R.string.launcher_youtube) else app.label
 
 /** TizenTube's card face: the YouTube mark and name on white, in place of TizenTube's own banner. */
 @Composable
