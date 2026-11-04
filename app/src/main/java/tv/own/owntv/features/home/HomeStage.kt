@@ -24,12 +24,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
@@ -88,6 +95,10 @@ internal fun HomeStage(
     active: Boolean,
     modifier: Modifier = Modifier,
     spotlight: Boolean = false,
+    /** Spotlight: what it shows while focus is not in the strip ([SpotlightHighlights]), best first. */
+    highlights: List<Highlight> = emptyList(),
+    onOpenMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = {},
+    onResume: (tv.own.owntv.core.home.HeroItem) -> Unit = {},
 ) {
     val channels = row.channels
     if (channels.isEmpty()) return
@@ -111,11 +122,38 @@ internal fun HomeStage(
         pickedAudible = false
         picked = shown
     }
+    // Spotlight's highlights: one at a time, ◀ ▶ on its button go through them. They do not turn by themselves:
+    // each would open a stream, and the provider allows one connection.
+    var hlIndex by remember(highlights.map { it.key }) { mutableIntStateOf(0) }
+    val hl = if (spotlight && !stripFocused) highlights.getOrNull(hlIndex) else null
+    // ▲ from the strip goes to the highlights' button, which is only there once the strip has let go of focus.
+    val hlButton = remember { FocusRequester() }
+    var toButton by remember { mutableStateOf(false) }
+    LaunchedEffect(toButton) {
+        if (!toButton) return@LaunchedEffect
+        withFrameNanos { }
+        runCatching { hlButton.requestFocus() }
+        toButton = false
+    }
+    if (spotlight) LaunchedEffect(hl?.key, stripFocused, previewOn) {
+        if (stripFocused) return@LaunchedEffect
+        when (hl) {
+            is Highlight.Live -> if (previewOn && picked?.id != hl.channel.id) {
+                delay(HIGHLIGHT_DWELL_MS)
+                pickedAudible = false
+                picked = hl.channel
+            }
+            // A match or something to watch on has no live picture here: the one from before stops.
+            is Highlight.Sport, is Highlight.Resume -> if (picked != null) { liveVm.stopPreview(); picked = null }
+            null -> Unit
+        }
+    }
     // Back first ends the picture, then (with nothing playing) goes on to the menu as before.
     BackHandler(enabled = active && picked != null) { liveVm.stopPreview(); picked = null }
     // No corner left behind for the shell to draw into once the stage is gone.
     DisposableEffect(Unit) { onDispose { GuidePreviewSpot.rect = null } }
-    val video = picked?.takeIf { previewOn }
+    // A highlight other than a live channel shows no picture; the strip's channel shows the one picked.
+    val video = picked?.takeIf { previewOn && (hl == null || (hl is Highlight.Live && hl.channel.id == it.id)) }
     val programme = onNow[shown.id]
     val now = System.currentTimeMillis()
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
@@ -125,6 +163,27 @@ internal fun HomeStage(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(56.mpx),
         ) {
+            if (hl != null) {
+                HighlightInfo(
+                    hl = hl,
+                    count = highlights.size,
+                    index = hlIndex,
+                    onStep = { d -> hlIndex = (hlIndex + d).coerceIn(0, highlights.lastIndex) },
+                    onOpen = {
+                        when (hl) {
+                            is Highlight.Live -> onPlayFullscreen(hl.channel, channels)
+                            is Highlight.Sport -> onOpenMatch(hl.match)
+                            is Highlight.Resume -> onResume(hl.item)
+                        }
+                    },
+                    onFocus = onFocus,
+                    focusRequester = firstItemFocusRequester,
+                    ownRequester = hlButton,
+                    track = track,
+                    now = now,
+                    modifier = Modifier.weight(1f),
+                )
+            } else
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.mpx)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.mpx)) {
                     Box(Modifier.size(64.mpx).clip(RoundedCornerShape(10.mpx)).background(StageColors.ControlFill)) {
@@ -168,19 +227,28 @@ internal fun HomeStage(
                         GuidePreviewSpot.rect = it.boundsInRoot().translate(-GuidePreviewSpot.shift(), 0f)
                     },
                 )
-                if (video == null) {
+                if (video == null && hl != null && hl !is Highlight.Live) {
+                    HighlightPicture(hl)
+                } else if (video == null) {
                     ChannelLogoTile(
-                        logoUrl = shown.displayLogoUrl,
+                        logoUrl = (if (hl is Highlight.Live) hl.channel else shown).displayLogoUrl,
                         modifier = Modifier.fillMaxSize().padding(horizontal = 150.mpx, vertical = 70.mpx),
                         fill = Color.Transparent,
-                    ) { Initials(shown, 56) }
+                    ) { Initials(if (hl is Highlight.Live) hl.channel else shown, 56) }
                 }
             }
         }
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(18.mpx),
             contentPadding = PaddingValues(start = start, end = 64.mpx, top = 10.mpx, bottom = 10.mpx),
-            modifier = Modifier.focusRestorer().focusGroup().onFocusChanged { stripFocused = it.hasFocus },
+            modifier = Modifier.focusRestorer().focusGroup().onFocusChanged { stripFocused = it.hasFocus }
+                .onPreviewKeyEvent { e ->
+                    if (spotlight && highlights.isNotEmpty() && e.type == KeyEventType.KeyDown && e.key == Key.DirectionUp) {
+                        stripFocused = false
+                        toButton = true
+                        true
+                    } else false
+                },
         ) {
             itemsIndexed(channels, key = { _, c -> c.id }) { index, channel ->
                 StageSurface(
@@ -200,7 +268,8 @@ internal fun HomeStage(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .size(200.mpx, 112.mpx)
-                        .then(if (index == 0 && firstItemFocusRequester != null) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
+                        // With highlights, the row's way in is their button above the strip.
+                        .then(if (index == 0 && firstItemFocusRequester != null && !(spotlight && highlights.isNotEmpty())) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
                         .tracked(track = track)
                         .onFocusChanged { if (it.hasFocus) { onFocus(); shownId = channel.id } },
                 ) { _ ->
@@ -214,6 +283,9 @@ internal fun HomeStage(
         }
     }
 }
+
+/** How long a live highlight is shown before its channel starts in the picture. */
+private const val HIGHLIGHT_DWELL_MS = 1200L
 
 /** How long focus rests on a logo before Spotlight starts its channel. */
 private const val SPOTLIGHT_DWELL_MS = 900L

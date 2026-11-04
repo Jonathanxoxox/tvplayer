@@ -28,3 +28,10 @@
 -keepclassmembers class * extends com.sun.jna.** { public *; }
 -keep class org.vosk.** { *; }
 -dontwarn java.awt.**
+
+# R8 rewrote PlayerHud's signature (unused Compose $changed ints removed) into code ART's verifier rejects
+# ("register has type Reference but expected Integer"), crashing the app on start (v1.0.400, 4 Nov 2026).
+# Keeping the method's signature as written avoids it; renaming and the rest of R8 still apply.
+-keep,allowobfuscation,allowshrinking class tv.own.owntv.player.PlayerHudKt {
+    *** PlayerHud(...);
+}
