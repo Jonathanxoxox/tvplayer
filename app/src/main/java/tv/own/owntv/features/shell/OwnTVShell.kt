@@ -1005,6 +1005,16 @@ fun OwnTVShell(
         if (selectedSection != MainSection.LIVE_TV && playerMode == PlayerMode.NONE && !matchPageNext && !homeStageNext) liveVm.stopPreview()
         if (selectedSection != MainSection.HOME || playerMode != PlayerMode.NONE) homeVm.stopPreview()
     }
+    // Mayo TV plays (full screen, or a channel with its sound in a corner or on the stage): other apps' playback
+    // stops, a paused Spotify included, so the stream has the box's memory and audio to itself.
+    val playbackContext = androidx.compose.ui.platform.LocalContext.current
+    LaunchedEffect(playerMode, previewChannel?.id) {
+        if (playerMode == PlayerMode.FULLSCREEN || previewChannel != null) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                tv.own.owntv.launcher.apps.OtherPlayback.stop(playbackContext)
+            }
+        }
+    }
 
     LaunchedEffect(selectedSection, playerMode, activeProfileId, activePlaylistId) {
         if (selectedSection == MainSection.HOME && playerMode == PlayerMode.NONE && (activeProfileId?.let { it >= 0 } == true)) {
