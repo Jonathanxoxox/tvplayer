@@ -198,7 +198,22 @@ fun ExoPreviewSurface(
             engine.refreshStreamChips()
         }
     }
-    AutoFrameRateEffect(fps, autoFrameRate)
+    // The channel's rate from last time, so the display switches while the channel is still loading rather
+    // than mid-picture once a measurement arrives (FrameRateMemory). A trusted standard reading wins and is
+    // remembered; until one comes, an untrusted or odd reading never overrides the memory.
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val view = androidx.compose.ui.platform.LocalView.current
+    val meta by engine.currentMeta.collectAsStateWithLifecycle()
+    val channelKey = meta.contentKey ?: meta.title
+    val remembered = androidx.compose.runtime.remember(channelKey) { channelKey?.let { FrameRateMemory.get(context, it) } }
+    val measured = fps?.takeIf { FrameRateController.isStandardRate(it) }?.let(FrameRateController::snapFps)
+    val displayHz = view.display?.refreshRate ?: 0f
+    val trusted = measured?.takeIf { FrameRateMemory.trustworthy(it, displayHz) }
+    LaunchedEffect(channelKey, trusted, autoFrameRate) {
+        if (autoFrameRate && channelKey != null && trusted != null) FrameRateMemory.put(context, channelKey, trusted)
+    }
+    val afrFps = trusted ?: remembered ?: fps
+    AutoFrameRateEffect(afrFps, autoFrameRate)
     BoxWithConstraints(modifier.background(Color.Black).clipToBounds(), contentAlignment = Alignment.Center) {
         val aspect by engine.videoAspect.collectAsStateWithLifecycle()
         val videoSize by engine.videoSize.collectAsStateWithLifecycle()
