@@ -45,6 +45,8 @@ internal fun HomeCatalogMenu(
     onReorder: (List<ChannelEntity>) -> Unit,
     /** The menu or the Move window closed; Home puts focus back on the row. */
     onClose: () -> Unit,
+    /** Move Home's rows themselves, from Home (Jonathan, 4 Nov 2026: not only in Settings). */
+    onArrangeRows: () -> Unit = {},
 ) {
     // The row's order while the Move window is open, with the carried channel's place.
     var moving by remember(row) { mutableStateOf<Pair<List<ChannelEntity>, Int>?>(null) }
@@ -72,6 +74,11 @@ internal fun HomeCatalogMenu(
                         stringResource(R.string.content_move),
                         onClick = { row.all.indexOf(channel).takeIf { it >= 0 }?.let { moving = row.all to it } },
                         icon = OwnTVIcon.MOVE,
+                    )
+                    StageMenuItem(
+                        stringResource(R.string.home_arrange_rows),
+                        onClick = { onClose(); onArrangeRows() },
+                        icon = OwnTVIcon.LIST,
                     )
                 }
             }

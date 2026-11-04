@@ -150,6 +150,11 @@ class HomeSettingsViewModel(
         updateConfig { config -> config.copy(hidden = if (hidden) config.hidden + row else config.hidden - row) }
     }
 
+    /** Home's rows in [rows]' order, as the Move window on Home leaves them (Jonathan, 4 Nov 2026). */
+    fun setRowOrder(rows: List<HomeRow>) {
+        updateConfig { config -> config.copy(order = rows + config.order.filterNot { it.implemented }) }
+    }
+
     fun move(row: HomeRow, up: Boolean) {
         updateConfig { config ->
             val rows = config.settingsRows.toMutableList()
