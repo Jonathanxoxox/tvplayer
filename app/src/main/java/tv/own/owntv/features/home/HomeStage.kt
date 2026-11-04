@@ -17,7 +17,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +33,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -39,6 +46,9 @@ import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
 import tv.own.owntv.core.database.entity.EpgProgrammeEntity
 import tv.own.owntv.core.epg.displayLogoUrl
+import tv.own.owntv.features.epg.GuidePreviewSpot
+import tv.own.owntv.features.epg.GuideVideo
+import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.ui.components.ChannelLogoTile
 import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageSurface
@@ -49,26 +59,47 @@ import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
 /**
- * The Stage layout's channel row (Jonathan, 4 Nov 2026): the focused channel's programme large, its logo
- * on a big plate beside it, over a strip of logos. ▲ ▼ leave the strip as from any row; ◀ ▶ walk the
- * channels and the stage follows. A held OK opens the row's Hide / Move menu, as on the cards.
+ * The Stage layout's channel row (Jonathan, 4 Nov 2026): the focused channel's programme large, a picture
+ * beside it, over a strip of logos. ▲ ▼ leave the strip as from any row; ◀ ▶ walk the channels and the
+ * stage follows. A held OK opens the row's Hide / Move menu, as on the cards.
+ *
+ * It plays as the guide and the Sports match page do: OK plays the channel in the picture, with its sound;
+ * OK again on the same channel takes it full screen, and Back from there glides it back into the picture,
+ * still playing. The picture is the shell's (see [GuidePreviewSpot]): this only says where it goes.
  */
 @Composable
 internal fun HomeStage(
     row: HomeCatalog.Row,
     onNow: Map<Long, EpgProgrammeEntity>,
-    onChannelClick: (Long, List<ChannelEntity>) -> Unit,
     onLongClick: (ChannelEntity) -> Unit,
     onFocus: () -> Unit,
     firstItemFocusRequester: FocusRequester?,
     start: Dp,
     track: (FocusRequester) -> Unit,
+    liveVm: LiveViewModel,
+    /** OK on the channel already playing in the picture: full screen, growing out of it. */
+    onPlayFullscreen: (ChannelEntity, List<ChannelEntity>) -> Unit,
+    /** False while the player is full screen over Home: Back then belongs to the player. */
+    active: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val channels = row.channels
     if (channels.isEmpty()) return
     var shownId by remember(row) { mutableLongStateOf(channels.first().id) }
     val shown = channels.firstOrNull { it.id == shownId } ?: channels.first()
+    // The channel in the picture: none until one is picked with OK. It stays while the player is full screen
+    // over Home (the page is kept behind the picture), so Back lands on it playing.
+    var picked by remember(row.category.key) { mutableStateOf<ChannelEntity?>(null) }
+    val previewOn by liveVm.livePreviewEnabled.collectAsStateWithLifecycle()
+    LaunchedEffect(picked?.id, previewOn) {
+        val ch = picked ?: return@LaunchedEffect
+        if (previewOn) liveVm.playPreview(ch, audible = true)
+    }
+    // Back first ends the picture, then (with nothing playing) goes on to the menu as before.
+    BackHandler(enabled = active && picked != null) { liveVm.stopPreview(); picked = null }
+    // No corner left behind for the shell to draw into once the stage is gone.
+    DisposableEffect(Unit) { onDispose { GuidePreviewSpot.rect = null } }
+    val video = picked?.takeIf { previewOn }
     val programme = onNow[shown.id]
     val now = System.currentTimeMillis()
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
@@ -109,11 +140,24 @@ internal fun HomeStage(
                 Modifier.size(540.mpx, 304.mpx).clip(RoundedCornerShape(StageRadii.Poster)).background(StageColors.ControlFill),
                 contentAlignment = Alignment.Center,
             ) {
-                ChannelLogoTile(
-                    logoUrl = shown.displayLogoUrl,
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 150.mpx, vertical = 70.mpx),
-                    fill = Color.Transparent,
-                ) { Initials(shown, 56) }
+                // The picture alone: the shell draws it over this spot with the view full screen uses, so it grows
+                // into full screen and shrinks back here without the stream changing surface.
+                GuideVideo(
+                    channel = video,
+                    previewEngine = liveVm.previewEngine,
+                    showVideo = video != null,
+                    shellDrawsVideo = true,
+                    modifier = Modifier.fillMaxSize().onGloballyPositioned {
+                        GuidePreviewSpot.rect = it.boundsInRoot().translate(-GuidePreviewSpot.shift(), 0f)
+                    },
+                )
+                if (video == null) {
+                    ChannelLogoTile(
+                        logoUrl = shown.displayLogoUrl,
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 150.mpx, vertical = 70.mpx),
+                        fill = Color.Transparent,
+                    ) { Initials(shown, 56) }
+                }
             }
         }
         LazyRow(
@@ -123,7 +167,8 @@ internal fun HomeStage(
         ) {
             itemsIndexed(channels, key = { _, c -> c.id }) { index, channel ->
                 StageSurface(
-                    onClick = { onChannelClick(channel.id, channels) },
+                    // As in the guide: the first OK plays it here, the second takes it full screen.
+                    onClick = { if (previewOn && picked?.id != channel.id) picked = channel else onPlayFullscreen(channel, channels) },
                     onLongClick = { onLongClick(channel) },
                     radius = StageRadii.Poster,
                     focusStyle = StageFocus.POSTER,
