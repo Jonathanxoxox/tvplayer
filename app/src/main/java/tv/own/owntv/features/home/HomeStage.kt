@@ -141,7 +141,10 @@ internal fun HomeStage(
     // Back from full screen: focus to the logo of the channel playing here, not wherever Home would put it.
     val pickedLogo = remember { FocusRequester() }
     LaunchedEffect(active) {
-        if (!active || picked == null) return@LaunchedEffect
+        val back = picked ?: return@LaunchedEffect
+        if (!active) return@LaunchedEffect
+        // The text beside the picture follows: Home may have built the row anew, back on its first channel.
+        shownId = back.id
         delay(RETURN_FOCUS_MS)
         runCatching { pickedLogo.requestFocus() }
     }
