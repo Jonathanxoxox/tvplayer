@@ -24,6 +24,18 @@ class ProgrammeArt(private val provider: MetadataProvider, private val magenta: 
     /** Title key → picture URL, or "" for none. */
     private val memory = ConcurrentHashMap<String, String>()
 
+    /**
+     * The picture as far as it is known now, without asking anyone: its URL, "" when there is none, null when
+     * it still has to be looked up. Lets the Spotlight show a fetched-ahead picture at once.
+     */
+    fun peek(programme: EpgProgrammeEntity, channelName: String? = null): String? {
+        if (channelName != null) {
+            val fromGuide = magenta.peek(channelName, programme.startMs) ?: return null
+            if (fromGuide.isNotEmpty()) return fromGuide
+        }
+        return memory[ProgrammeTitles.key(programme.title)]
+    }
+
     /** MagentaTV's picture of this very airing on [channelName] first, then TMDB's by title. */
     suspend fun backdrop(programme: EpgProgrammeEntity, channelName: String? = null): String? {
         channelName?.let { magenta.picture(it, programme.startMs) }?.let { return it }
