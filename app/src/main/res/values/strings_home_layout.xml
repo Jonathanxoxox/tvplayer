@@ -26,4 +26,24 @@
     <string name="home_arrange_app_row">%1$s · %2$s</string>
     <string name="home_hl_now">ON NOW · %1$s</string>
     <string name="home_arrange_rows_description">Home\'s rows and the other apps\' rows (YouTube, Nuvio …) in one list</string>
+    <string name="home_spotlight_heading">Spotlight</string>
+    <string name="home_spotlight_order">Spotlight order</string>
+    <string name="home_spotlight_hold_hint">Hold OK to change the order.</string>
+    <string name="home_spotlight_sport">Your sport</string>
+    <string name="home_spotlight_sport_desc">Your teams and leagues, live or about to kick off</string>
+    <string name="home_spotlight_tips">Tips of the day</string>
+    <string name="home_spotlight_tips_desc">Highlights and tips from MagentaTV, on now and later today</string>
+    <string name="home_spotlight_docs">arte documentaries</string>
+    <string name="home_spotlight_docs_desc">Documentaries on arte today</string>
+    <string name="home_spotlight_resume">Continue watching</string>
+    <string name="home_spotlight_resume_desc">The film or series you started</string>
+    <string name="home_spotlight_habit">Often on at this time</string>
+    <string name="home_spotlight_habit_desc">The channel you often watch at this hour</string>
+    <string name="home_spotlight_now">On TV now</string>
+    <string name="home_spotlight_now_desc">Longer programmes on your first channels, to fill up</string>
+    <string name="home_hl_highlight">HIGHLIGHT · %1$s</string>
+    <string name="home_hl_tip">TIP · %1$s</string>
+    <string name="home_hl_doc">DOCUMENTARY · %1$s</string>
+    <string name="home_hl_later">TODAY %1$s · %2$s</string>
+    <string name="home_hl_to_channel">To the channel</string>
 </resources>

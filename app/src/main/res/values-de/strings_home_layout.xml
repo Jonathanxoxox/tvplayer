@@ -25,4 +25,24 @@
     <string name="home_arrange_app_row">%1$s · %2$s</string>
     <string name="home_hl_now">JETZT IM TV · %1$s</string>
     <string name="home_arrange_rows_description">Reihen der Startseite und der anderen Apps (YouTube, Nuvio …) in einer Liste</string>
+    <string name="home_spotlight_heading">Spotlight</string>
+    <string name="home_spotlight_order">Spotlight-Reihenfolge</string>
+    <string name="home_spotlight_hold_hint">OK gedrückt halten ändert die Reihenfolge.</string>
+    <string name="home_spotlight_sport">Dein Sport</string>
+    <string name="home_spotlight_sport_desc">Deine Teams und Ligen, live oder kurz vor Anpfiff</string>
+    <string name="home_spotlight_tips">Tipps des Tages</string>
+    <string name="home_spotlight_tips_desc">Highlights und Tipps von MagentaTV, jetzt und heute noch</string>
+    <string name="home_spotlight_docs">arte-Dokus</string>
+    <string name="home_spotlight_docs_desc">Dokumentationen auf arte heute</string>
+    <string name="home_spotlight_resume">Weiterschauen</string>
+    <string name="home_spotlight_resume_desc">Dein angefangener Film oder deine Serie</string>
+    <string name="home_spotlight_habit">Läuft oft um diese Zeit</string>
+    <string name="home_spotlight_habit_desc">Der Sender, den du zu dieser Uhrzeit oft schaust</string>
+    <string name="home_spotlight_now">Jetzt im TV</string>
+    <string name="home_spotlight_now_desc">Längere Sendungen auf deinen ersten Sendern, zum Auffüllen</string>
+    <string name="home_hl_highlight">HIGHLIGHT · %1$s</string>
+    <string name="home_hl_tip">TIPP · %1$s</string>
+    <string name="home_hl_doc">DOKU · %1$s</string>
+    <string name="home_hl_later">HEUTE %1$s · %2$s</string>
+    <string name="home_hl_to_channel">Zum Sender</string>
 </resources>
