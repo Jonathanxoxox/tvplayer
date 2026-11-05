@@ -29,7 +29,7 @@ class MagentaGuide(private val http: OkHttpClient) {
     private var cookies: String = ""
     private var sessionAt = 0L
     /** Channel key (see [MagentaNames.key]) → the guide's channel id. */
-    private var channels: Map<String, String> = emptyMap()
+    @Volatile private var channels: Map<String, String> = emptyMap()
     private var channelsAt = 0L
     /** "channelId@startMs" → picture URL, or "" for none. */
     private val pictures = ConcurrentHashMap<String, String>()
@@ -47,6 +47,17 @@ class MagentaGuide(private val http: OkHttpClient) {
                 url.ifEmpty { null }
             }
         }.getOrNull()
+    }
+
+    /**
+     * What is known already, without asking: the picture's URL, "" when the guide has none for it (or does
+     * not carry the channel), null when it has not been asked yet.
+     */
+    fun peek(channelName: String, startMs: Long): String? {
+        val known = channels
+        if (known.isEmpty()) return null
+        val id = known[MagentaNames.key(channelName)] ?: return ""
+        return pictures["$id@$startMs"]
     }
 
     private fun channelId(name: String): String? {

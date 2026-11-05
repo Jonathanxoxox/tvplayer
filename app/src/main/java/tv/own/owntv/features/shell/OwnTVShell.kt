@@ -560,7 +560,9 @@ fun OwnTVShell(
     // menu does not flash open on the way.
     // [intoLive]: the caller has just chosen Live TV, but this function still sees the section it was composed
     // with, so it must not take that for "leaving Live TV" and tear the live stream down.
-    fun closePlayer(toRail: Boolean, intoLive: Boolean = false) {
+    // [restore] false: the page has put focus where it wants it already (Home's Spotlight, on the playing
+    // channel's logo); Home's own restore would first scroll to its top row and then back (Jonathan, 5 Nov 2026).
+    fun closePlayer(toRail: Boolean, intoLive: Boolean = false, restore: Boolean = true) {
         // Flush the resume position BEFORE the stream is torn down — stop() drops the loaded item's
         // identity, after which neither view model can tell the position was theirs. Both calls are
         // no-ops unless the player is on that section's item.
@@ -574,7 +576,7 @@ fun OwnTVShell(
         player.stop()
         subtitleController.clear() // leaving the player drops the OpenSubtitles item context
         if (!intoLive && selectedSection != MainSection.LIVE_TV) liveVm.clearLiveOnExo()
-        restoreFocus = true
+        restoreFocus = restore
         if (toRail) focusRail()
     }
     val exitPlayer = { closePlayer(toRail = true) }
@@ -621,7 +623,7 @@ fun OwnTVShell(
         if (!intoGuide) {
             if (toHome) {
                 fromHomeStage = false
-                closePlayer(toRail = false, intoLive = livePreviewOn)
+                closePlayer(toRail = false, intoLive = livePreviewOn, restore = false)
                 return@exit
             }
             if (toSports) {
@@ -672,7 +674,7 @@ fun OwnTVShell(
             frames = 0
             while (tv.own.owntv.features.epg.GuidePreviewSpot.rect == null && frames++ < 30) withFrameNanos { }
             if (tv.own.owntv.features.epg.GuidePreviewSpot.rect != null) handoverShrink.animateTo(1f, handoverSpec)
-            closePlayer(toRail = false, intoLive = true)
+            closePlayer(toRail = false, intoLive = true, restore = !toHome)
             // The picture stays where it is until the guide claims it for its corner (inCorner), so the view
             // showing it is never dropped in between.
             frames = 0
@@ -1094,8 +1096,12 @@ fun OwnTVShell(
     // OK and a long Back both come through here, so both glide.
     val openLiveFullscreen: (tv.own.owntv.core.database.entity.ChannelEntity, List<ChannelEntity>) -> Unit = open@{ ch, zap ->
         if (guideHandover) return@open
+        // Also while the channel is still loading: picked in the Spotlight and taken full screen at once (one
+        // channel just replaced by another), the picture used to jump to full screen instead of growing.
+        val previewState = liveVm.previewEngine.state.value
         val grow = playerMode == PlayerMode.NONE && previewChannel?.id == ch.id &&
-            liveVm.previewEngine.state.value == tv.own.owntv.player.LivePreviewEngine.State.PLAYING &&
+            (previewState == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
+                previewState == tv.own.owntv.player.LivePreviewEngine.State.LOADING) &&
             tv.own.owntv.features.epg.GuidePreviewSpot.rect != null && tv.own.owntv.features.epg.GuidePreviewSpot.video
         restoreFocus = false
         liveVm.watchFromGuide(ch, zap)

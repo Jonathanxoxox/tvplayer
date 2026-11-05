@@ -177,11 +177,18 @@ internal fun HomeStage(
             )
         }
     }
-    val backdrop by androidx.compose.runtime.produceState<String?>(null, picChannel.id, picProgramme?.startMs) {
-        value = null
-        val p = picProgramme ?: return@produceState
-        delay(ART_DWELL_MS) // walking the strip asks only for where focus stops
-        value = art.backdrop(p, picChannel.name)
+    // A picture known already shows at once; one still to be looked up waits for focus to rest, and the
+    // picture shown stays meanwhile (SpotlightArt), so walking the strip never flashes a logo.
+    val artState by androidx.compose.runtime.produceState<ArtState>(ArtState.Loading, picChannel.id, picProgramme?.startMs) {
+        val p = picProgramme ?: run { value = ArtState.None; return@produceState }
+        val known = art.peek(p, picChannel.name)
+        if (known != null) {
+            value = if (known.isEmpty()) ArtState.None else ArtState.Picture(known)
+            return@produceState
+        }
+        value = ArtState.Loading
+        delay(ART_DWELL_MS)
+        value = art.backdrop(p, picChannel.name)?.let(ArtState::Picture) ?: ArtState.None
     }
     val now = System.currentTimeMillis()
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
@@ -257,28 +264,31 @@ internal fun HomeStage(
                 )
                 if (video == null && hl != null && hl !is Highlight.Live) {
                     HighlightPicture(hl)
-                } else if (video == null && backdrop != null) {
-                    coil3.compose.AsyncImage(
-                        model = backdrop,
-                        contentDescription = null,
-                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    // Whose programme it is, small in the corner.
-                    Box(
-                        Modifier.align(Alignment.BottomStart).padding(24.mpx).size(96.mpx, 64.mpx)
-                            .clip(RoundedCornerShape(10.mpx)).background(StageColors.ControlFill),
-                    ) {
-                        ChannelLogoTile(logoUrl = picChannel.displayLogoUrl, modifier = Modifier.fillMaxSize().padding(8.mpx), fill = Color.Transparent) {
-                            Initials(picChannel, 18)
-                        }
-                    }
                 } else if (video == null) {
-                    ChannelLogoTile(
-                        logoUrl = (if (hl is Highlight.Live) hl.channel else shown).displayLogoUrl,
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 150.mpx, vertical = 70.mpx),
-                        fill = Color.Transparent,
-                    ) { Initials(if (hl is Highlight.Live) hl.channel else shown, 56) }
+                    SpotlightArt(
+                        state = artState,
+                        channel = picChannel,
+                        logo = { ch ->
+                            ChannelLogoTile(
+                                logoUrl = ch.displayLogoUrl,
+                                modifier = Modifier.fillMaxSize().padding(horizontal = 150.mpx, vertical = 70.mpx),
+                                fill = Color.Transparent,
+                            ) { Initials(ch, 56) }
+                        },
+                        // Whose programme it is, small in the corner.
+                        corner = { ch ->
+                            Box(Modifier.fillMaxSize()) {
+                                Box(
+                                    Modifier.align(Alignment.BottomStart).padding(24.mpx).size(96.mpx, 64.mpx)
+                                        .clip(RoundedCornerShape(10.mpx)).background(StageColors.ControlFill),
+                                ) {
+                                    ChannelLogoTile(logoUrl = ch.displayLogoUrl, modifier = Modifier.fillMaxSize().padding(8.mpx), fill = Color.Transparent) {
+                                        Initials(ch, 18)
+                                    }
+                                }
+                            }
+                        },
+                    )
                 }
             }
         }
