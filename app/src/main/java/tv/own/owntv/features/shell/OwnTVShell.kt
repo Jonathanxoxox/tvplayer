@@ -1108,11 +1108,14 @@ fun OwnTVShell(
             tv.own.owntv.features.epg.GuidePreviewSpot.rect != null && tv.own.owntv.features.epg.GuidePreviewSpot.video
         restoreFocus = false
         liveVm.watchFromGuide(ch, zap)
+        // Diagnosis (5 Nov 2026): channel, mode, preview channel, spot channel, state, rect, video, onExo, multiview, grow.
         android.util.Log.i(
             "ShellGrow",
-            "open ${ch.id}: mode=$playerMode preview=${previewChannel?.id} spot=${tv.own.owntv.features.epg.GuidePreviewSpot.channelId} " +
-                "state=$previewState rect=${tv.own.owntv.features.epg.GuidePreviewSpot.rect != null} " +
-                "video=${tv.own.owntv.features.epg.GuidePreviewSpot.video} onExo=${liveVm.liveOnExo.value} mv=${multiview != null} grow=$grow",
+            listOf(
+                ch.id, playerMode, previewChannel?.id, tv.own.owntv.features.epg.GuidePreviewSpot.channelId, previewState,
+                tv.own.owntv.features.epg.GuidePreviewSpot.rect != null, tv.own.owntv.features.epg.GuidePreviewSpot.video,
+                liveVm.liveOnExo.value, multiview != null, grow,
+            ).toString(),
         )
         zapSource = MainSection.LIVE_TV
         homeVm.stopPreview()
