@@ -825,6 +825,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/setup/SetupWizard.kt	+
 3	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	\0
 1	performance	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	:
+1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	ShellGrow
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	ass
 1	performance	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	epg-preload
 1	performance	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	last-channel
@@ -833,6 +834,7 @@
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	srt
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	ssa
 1	performance	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	start-mode
+1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	state=$previewState rect=${tv.own.owntv.features.epg.GuidePreviewSpot.rect != null}
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	vtt
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	webvtt
 1	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	·

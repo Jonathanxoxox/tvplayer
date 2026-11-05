@@ -1108,6 +1108,12 @@ fun OwnTVShell(
             tv.own.owntv.features.epg.GuidePreviewSpot.rect != null && tv.own.owntv.features.epg.GuidePreviewSpot.video
         restoreFocus = false
         liveVm.watchFromGuide(ch, zap)
+        android.util.Log.i(
+            "ShellGrow",
+            "open ${ch.id}: mode=$playerMode preview=${previewChannel?.id} spot=${tv.own.owntv.features.epg.GuidePreviewSpot.channelId} " +
+                "state=$previewState rect=${tv.own.owntv.features.epg.GuidePreviewSpot.rect != null} " +
+                "video=${tv.own.owntv.features.epg.GuidePreviewSpot.video} onExo=${liveVm.liveOnExo.value} mv=${multiview != null} grow=$grow",
+        )
         zapSource = MainSection.LIVE_TV
         homeVm.stopPreview()
         // Live TV set to play externally → the channel went to another app;
