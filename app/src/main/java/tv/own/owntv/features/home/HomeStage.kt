@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.draw.alpha
 import tv.own.owntv.ui.theme.gradientWash
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.input.key.Key
@@ -317,7 +318,9 @@ internal fun HomeStage(
                     previewEngine = liveVm.previewEngine,
                     showVideo = video != null,
                     shellDrawsVideo = true,
-                    modifier = Modifier.fillMaxSize().onGloballyPositioned {
+                    // Spotlight with nothing playing: unseen (its black would cover the picture behind), but still
+                    // laid out, so the shell knows where to grow full screen from.
+                    modifier = Modifier.fillMaxSize().alpha(if (spotlight && video == null) 0f else 1f).onGloballyPositioned {
                         GuidePreviewSpot.rect = it.boundsInRoot().translate(-GuidePreviewSpot.shift(), 0f)
                     },
                 )
