@@ -24,4 +24,5 @@
     <string name="home_hl_continue">Weiterschauen</string>
     <string name="home_arrange_app_row">%1$s · %2$s</string>
     <string name="home_hl_now">JETZT IM TV · %1$s</string>
+    <string name="home_arrange_rows_description">Reihen der Startseite und der anderen Apps (YouTube, Nuvio …) in einer Liste</string>
 </resources>
