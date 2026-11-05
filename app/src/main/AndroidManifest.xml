@@ -166,6 +166,12 @@
                 android:name="androidx.work.WorkManagerInitializer"
                 android:value="androidx.startup"
                 tools:node="remove" />
+            <!-- No EmojiCompat: it loaded its own emoji font on every start (308 ms in the background, 4 Nov
+                 2026 profile). Android 8+ draws emoji itself; Compose falls back to that when it is not set up. -->
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
         </provider>
 
         <!-- One launcher activity per icon colour (core's AppIcon); AppIconSwitcher keeps exactly one
