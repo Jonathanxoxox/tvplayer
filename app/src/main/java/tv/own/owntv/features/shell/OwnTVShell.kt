@@ -1099,7 +1099,10 @@ fun OwnTVShell(
         // Also while the channel is still loading: picked in the Spotlight and taken full screen at once (one
         // channel just replaced by another), the picture used to jump to full screen instead of growing.
         val previewState = liveVm.previewEngine.state.value
-        val grow = playerMode == PlayerMode.NONE && previewChannel?.id == ch.id &&
+        // The channel in the corner: the guide's preview channel, or (Home's Spotlight, which plays without
+        // moving it) the one the corner reports. Without the second the Spotlight never grew (5 Nov 2026).
+        val inSpot = previewChannel?.id == ch.id || tv.own.owntv.features.epg.GuidePreviewSpot.channelId == ch.id
+        val grow = playerMode == PlayerMode.NONE && inSpot &&
             (previewState == tv.own.owntv.player.LivePreviewEngine.State.PLAYING ||
                 previewState == tv.own.owntv.player.LivePreviewEngine.State.LOADING) &&
             tv.own.owntv.features.epg.GuidePreviewSpot.rect != null && tv.own.owntv.features.epg.GuidePreviewSpot.video

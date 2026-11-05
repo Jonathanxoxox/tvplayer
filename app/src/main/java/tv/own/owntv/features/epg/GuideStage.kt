@@ -110,6 +110,12 @@ object GuidePreviewSpot {
     var video by androidx.compose.runtime.mutableStateOf(false)
 
     /**
+     * The channel in that picture. Home's Spotlight plays through [LiveViewModel.playPreview], which does not
+     * move the guide's preview channel: full screen asks this to know it may grow out of the picture.
+     */
+    @Volatile var channelId: Long? = null
+
+    /**
      * The guide is loaded and standing on the playing channel with its axis at now. Full screen waits for it
      * before the picture glides back, so the glide lands on a grid that does not move any more.
      */
@@ -147,8 +153,13 @@ internal fun GuideVideo(
     val playing = showVideo && previewState != tv.own.owntv.player.LivePreviewEngine.State.ERROR &&
         previewState != tv.own.owntv.player.LivePreviewEngine.State.IDLE
     if (shellDrawsVideo) {
-        androidx.compose.runtime.SideEffect { GuidePreviewSpot.video = playing }
-        androidx.compose.runtime.DisposableEffect(Unit) { onDispose { GuidePreviewSpot.video = false } }
+        androidx.compose.runtime.SideEffect {
+            GuidePreviewSpot.video = playing
+            GuidePreviewSpot.channelId = channel?.id?.takeIf { playing }
+        }
+        androidx.compose.runtime.DisposableEffect(Unit) {
+            onDispose { GuidePreviewSpot.video = false; GuidePreviewSpot.channelId = null }
+        }
     }
     val r = 20.mpx
     val videoShadow = tv.own.owntv.ui.theme.stageShadow(0.55f)
