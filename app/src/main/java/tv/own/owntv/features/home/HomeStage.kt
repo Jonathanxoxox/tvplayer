@@ -102,7 +102,9 @@ internal fun HomeStage(
 ) {
     val channels = row.channels
     if (channels.isEmpty()) return
-    var shownId by remember(row) { mutableLongStateOf(channels.first().id) }
+    // Keyed on the category, not the row object: Home builds the row anew (coming back from full screen) and
+    // that must not put the text back on the first channel.
+    var shownId by remember(row.category.key) { mutableLongStateOf(channels.first().id) }
     val shown = channels.firstOrNull { it.id == shownId } ?: channels.first()
     // The channel in the picture: none until one is picked with OK. It stays while the player is full screen
     // over Home (the page is kept behind the picture), so Back lands on it playing.
