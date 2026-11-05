@@ -1108,15 +1108,6 @@ fun OwnTVShell(
             tv.own.owntv.features.epg.GuidePreviewSpot.rect != null && tv.own.owntv.features.epg.GuidePreviewSpot.video
         restoreFocus = false
         liveVm.watchFromGuide(ch, zap)
-        // Diagnosis (5 Nov 2026): channel, mode, preview channel, spot channel, state, rect, video, onExo, multiview, grow.
-        android.util.Log.i(
-            "ShellGrow",
-            listOf(
-                ch.id, playerMode, previewChannel?.id, tv.own.owntv.features.epg.GuidePreviewSpot.channelId, previewState,
-                tv.own.owntv.features.epg.GuidePreviewSpot.rect != null, tv.own.owntv.features.epg.GuidePreviewSpot.video,
-                liveVm.liveOnExo.value, multiview != null, grow,
-            ).toString(),
-        )
         zapSource = MainSection.LIVE_TV
         homeVm.stopPreview()
         // Live TV set to play externally → the channel went to another app;
