@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
+import tv.own.owntv.ui.theme.gradientWash
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -159,7 +160,13 @@ internal fun HomeStage(
     val programme = onNow[shown.id]
     // The picture until the channel plays: the programme's own, from TMDB (ProgrammeArt), else the logo.
     val art = org.koin.compose.koinInject<ProgrammeArt>()
-    val picChannel = if (hl is Highlight.Live) hl.channel else shown
+    val picChannel = when (hl) {
+        is Highlight.Live -> hl.channel
+        is Highlight.Pick -> hl.pick.channel
+        else -> shown
+    }
+    // A pick from the guide brings its own picture.
+    val pickArt = (hl as? Highlight.Pick)?.pick
     val picProgramme = if (hl is Highlight.Live) hl.programme else if (hl == null) programme else null
     // The row's pictures ahead, once Home has settled: browsing then shows them at once. Only their
     // addresses and the files on disk; decoded, thirty 1080p pictures would take some 240 MB.
@@ -169,6 +176,13 @@ internal fun HomeStage(
         val wanted = highlights.mapNotNull { (it as? Highlight.Live)?.let { h -> h.programme?.let { p -> p to h.channel.name } } } +
             channels.take(ART_PREFETCH_COUNT).mapNotNull { ch -> onNow[ch.id]?.let { it to ch.name } }
         val loader = coil3.SingletonImageLoader.get(artContext)
+        // The picks' own pictures first: they open the carousel.
+        highlights.mapNotNull { (it as? Highlight.Pick)?.pick?.picture }.forEach { url ->
+            loader.enqueue(
+                coil3.request.ImageRequest.Builder(artContext).data(url)
+                    .memoryCachePolicy(coil3.request.CachePolicy.DISABLED).build(),
+            )
+        }
         for ((p, name) in wanted.distinctBy { it.second }) {
             val url = art.backdrop(p, name) ?: continue
             loader.enqueue(
@@ -179,7 +193,11 @@ internal fun HomeStage(
     }
     // A picture known already shows at once; one still to be looked up waits for focus to rest, and the
     // picture shown stays meanwhile (SpotlightArt), so walking the strip never flashes a logo.
-    val artState by androidx.compose.runtime.produceState<ArtState>(ArtState.Loading, picChannel.id, picProgramme?.startMs) {
+    val artState by androidx.compose.runtime.produceState<ArtState>(ArtState.Loading, picChannel.id, picProgramme?.startMs, pickArt?.key) {
+        if (pickArt != null) {
+            value = pickArt.picture?.let(ArtState::Picture) ?: ArtState.None
+            return@produceState
+        }
         val p = picProgramme ?: run { value = ArtState.None; return@produceState }
         val known = art.peek(p, picChannel.name)
         if (known != null) {
@@ -191,8 +209,45 @@ internal fun HomeStage(
         value = art.backdrop(p, picChannel.name)?.let(ArtState::Picture) ?: ArtState.None
     }
     val now = System.currentTimeMillis()
+    Box(modifier) {
+    // Spotlight (Jonathan, 5 Nov 2026, after Netflix): the picture fills the whole width and the text lies over
+    // it, the page's wash fading in from the left for the text and from below for the channel strip.
+    if (spotlight) Box(Modifier.matchParentSize()) {
+        when (hl) {
+            is Highlight.Sport -> Unit
+            is Highlight.Resume -> HighlightPicture(hl)
+            else -> SpotlightArt(
+                state = artState,
+                channel = picChannel,
+                // No picture at all: the channel's logo, large, where the picture would be.
+                logo = { ch ->
+                    Box(Modifier.fillMaxSize()) {
+                        ChannelLogoTile(
+                            logoUrl = ch.displayLogoUrl,
+                            modifier = Modifier.align(Alignment.CenterEnd).padding(end = 300.mpx).size(360.mpx, 200.mpx),
+                            fill = Color.Transparent,
+                        ) { Initials(ch, 56) }
+                    }
+                },
+                corner = {},
+            )
+        }
+        val wash = StageColors.Wash
+        Box(
+            Modifier.fillMaxSize().gradientWash(
+                false,
+                0f to wash.copy(alpha = 0.94f), 0.32f to wash.copy(alpha = 0.78f), 0.6f to wash.copy(alpha = 0.12f), 1f to wash.copy(alpha = 0f),
+            ),
+        )
+        Box(
+            Modifier.fillMaxSize().gradientWash(
+                true,
+                0f to wash.copy(alpha = 0f), 0.58f to wash.copy(alpha = 0f), 0.84f to wash.copy(alpha = 0.88f), 1f to wash,
+            ),
+        )
+    }
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
-    Column(modifier.padding(top = 24.mpx)) {
+    Column(Modifier.padding(top = 24.mpx)) {
         Row(
             Modifier.padding(start = start, end = 64.mpx).height(if (spotlight) 560.mpx else 330.mpx),
             verticalAlignment = Alignment.CenterVertically,
@@ -207,6 +262,8 @@ internal fun HomeStage(
                     onOpen = {
                         when (hl) {
                             is Highlight.Live -> onPlayFullscreen(hl.channel, channels)
+                            // On now or later: to the channel either way.
+                            is Highlight.Pick -> onPlayFullscreen(hl.pick.channel, channels)
                             is Highlight.Sport -> onOpenMatch(hl.match)
                             is Highlight.Resume -> onResume(hl.item)
                         }
@@ -248,7 +305,9 @@ internal fun HomeStage(
             }
             Box(
                 Modifier.size(if (spotlight) 960.mpx else 540.mpx, if (spotlight) 540.mpx else 304.mpx)
-                    .clip(RoundedCornerShape(StageRadii.Poster)).background(StageColors.ControlFill),
+                    .clip(RoundedCornerShape(StageRadii.Poster))
+                    // Spotlight: only the playing channel has a frame here; otherwise the picture behind shows through.
+                    .then(if (!spotlight || video != null) Modifier.background(StageColors.ControlFill) else Modifier),
                 contentAlignment = Alignment.Center,
             ) {
                 // The picture alone: the shell draws it over this spot with the view full screen uses, so it grows
@@ -262,7 +321,10 @@ internal fun HomeStage(
                         GuidePreviewSpot.rect = it.boundsInRoot().translate(-GuidePreviewSpot.shift(), 0f)
                     },
                 )
-                if (video == null && hl != null && hl !is Highlight.Live) {
+                if (spotlight) {
+                    // The picture is the full-width one behind; a match shows its crests here.
+                    if (video == null && hl is Highlight.Sport) HighlightPicture(hl)
+                } else if (video == null && hl != null && hl !is Highlight.Live) {
                     HighlightPicture(hl)
                 } else if (video == null) {
                     SpotlightArt(
@@ -334,6 +396,7 @@ internal fun HomeStage(
                 }
             }
         }
+    }
     }
 }
 

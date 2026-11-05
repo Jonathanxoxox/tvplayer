@@ -31,6 +31,10 @@ data class LauncherConfig(
      * tv.own.owntv.features.home.HomeSlots (the Home row each follows). Rows not listed keep their old spot.
      */
     val channelSlots: List<String> = emptyList(),
+    /** The Spotlight's sources in the user's order (SpotlightSource keys); empty = the default order. */
+    val spotlightOrder: List<String> = emptyList(),
+    /** Spotlight sources switched off. */
+    val spotlightOff: Set<String> = emptySet(),
     /** Apps in the menu: the grid of every app. */
     val appsInMenu: Boolean = true,
     /** The grid's own order (moved with a held OK); apps not listed follow by name. */
@@ -97,6 +101,8 @@ object LauncherPrefs {
             putBoolean("app_channels", next.appChannels)
             putStringSet("hidden_channels", next.hiddenChannels)
             putString("channel_slots", next.channelSlots.joinToString(LINES))
+            putString("spotlight_order", next.spotlightOrder.joinToString(SEP))
+            putStringSet("spotlight_off", next.spotlightOff)
             putBoolean("apps_in_menu", next.appsInMenu)
             putString("app_order", next.appOrder.joinToString(SEP))
             putStringSet("hidden_apps", next.hiddenApps)
@@ -120,6 +126,8 @@ object LauncherPrefs {
             appChannels = p.getBoolean("app_channels", d.appChannels),
             hiddenChannels = p.getStringSet("hidden_channels", null)?.toSet() ?: emptySet(),
             channelSlots = p.getString("channel_slots", null)?.split(LINES)?.filter { it.isNotBlank() }.orEmpty(),
+            spotlightOrder = p.getString("spotlight_order", null).toList(),
+            spotlightOff = p.getStringSet("spotlight_off", null)?.toSet() ?: emptySet(),
             appsInMenu = p.getBoolean("apps_in_menu", d.appsInMenu),
             appOrder = p.getString("app_order", null).toList(),
             hiddenApps = p.getStringSet("hidden_apps", null)?.toSet() ?: emptySet(),

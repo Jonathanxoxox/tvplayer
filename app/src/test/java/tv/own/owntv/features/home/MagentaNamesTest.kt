@@ -46,4 +46,30 @@ class MagentaNamesTest {
     fun `nothing near the start time, no picture`() {
         assertNull(MagentaNames.pictureFor(playbills, utc(20, 20)))
     }
+
+    private val guideDay = JSONArray(
+        """[
+          {"name":"Wunschkind","starttime":"2026-11-05 19:15:00 UTC+00:00","endtime":"2026-11-05 20:45:00 UTC+00:00","tipType":"highlight",
+           "pictures":[{"imageType":"17","href":"http://ngiss.t-online.de/w.jpg"}],"introduce":"Ein Krimi."},
+          {"name":"Europa League","starttime":"2026-11-05 19:15:00 UTC+00:00","endtime":"2026-11-05 21:15:00 UTC+00:00","tipType":"tip","tipCategory":"sports"},
+          {"name":"Tagesschau","starttime":"2026-11-05 19:00:00 UTC+00:00","endtime":"2026-11-05 19:15:00 UTC+00:00","genres":"Nachrichten"},
+          {"name":"Die Alpen von oben","starttime":"2026-11-05 19:15:00 UTC+00:00","endtime":"2026-11-05 20:00:00 UTC+00:00","genres":"Dokumentation, Natur"},
+          {"name":"Kurzdoku","starttime":"2026-11-05 20:00:00 UTC+00:00","endtime":"2026-11-05 20:10:00 UTC+00:00","genres":"Dokumentation"}
+        ]""",
+    )
+
+    private val ch = tv.own.owntv.core.database.entity.ChannelEntity(id = 7, sourceId = 1, categoryId = 9, name = "DE: arte HD", streamUrl = "http://x/7.ts", remoteId = "7")
+
+    @Test
+    fun `tips and highlights are picked, documentaries only where asked and long enough`() {
+        val elsewhere = MagentaNames.picks(guideDay, ch, docs = false)
+        assertEquals(listOf("Wunschkind", "Europa League"), elsewhere.map { it.title })
+        assertEquals(listOf(true, false), elsewhere.map { it.highlight })
+        assertEquals("https://ngiss.t-online.de/w.jpg", elsewhere.first().picture)
+        assertEquals("Ein Krimi.", elsewhere.first().description)
+        val onArte = MagentaNames.picks(guideDay, ch, docs = true)
+        assertEquals(listOf("Wunschkind", "Europa League", "Die Alpen von oben"), onArte.map { it.title })
+        val nov5 = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { clear(); set(2026, 10, 5, 19, 15) }.timeInMillis
+        assertEquals(nov5, onArte.last().startMs)
+    }
 }

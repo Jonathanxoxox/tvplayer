@@ -60,6 +60,36 @@ class MagentaGuide(private val http: OkHttpClient) {
         return pictures["$id@$startMs"]
     }
 
+    /**
+     * Today's picks on [channels] from [fromMs] to [toMs]: MagentaTV's tips and highlights, and on the channels
+     * in [docsOn] (arte) their documentaries. One call per channel; empty when the guide cannot be asked.
+     */
+    suspend fun picks(
+        channels: List<tv.own.owntv.core.database.entity.ChannelEntity>,
+        docsOn: Set<Long>,
+        fromMs: Long,
+        toMs: Long,
+    ): List<GuidePick> = withContext(Dispatchers.IO) {
+        runCatching {
+            lock.withLock {
+                channels.distinctBy { it.id }.flatMap { ch ->
+                    val id = channelId(ch.name) ?: return@flatMap emptyList()
+                    val body = JSONObject()
+                        .put("count", -1)
+                        .put("isFillProgram", 0)
+                        .put("offset", 0)
+                        .put("properties", JSONArray().put(JSONObject().put("include", PICK_FIELDS).put("name", "playbill")))
+                        .put("type", 2)
+                        .put("begintime", utc(fromMs))
+                        .put("channelid", id)
+                        .put("endtime", utc(toMs))
+                    val list = post("PlayBillList", body)?.optJSONArray("playbilllist") ?: return@flatMap emptyList()
+                    MagentaNames.picks(list, ch, docs = ch.id in docsOn)
+                }
+            }
+        }.getOrDefault(emptyList())
+    }
+
     private fun channelId(name: String): String? {
         val now = System.currentTimeMillis()
         if (channels.isEmpty() || now - channelsAt > CHANNELS_TTL_MS) {
@@ -152,6 +182,7 @@ class MagentaGuide(private val http: OkHttpClient) {
         const val CHANNELS_TTL_MS = 24 * 60 * 60_000L
         /** The guide's start times differ from the provider's by a few minutes now and then. */
         const val WINDOW_MS = 20 * 60_000L
+        const val PICK_FIELDS = "name,starttime,endtime,tipType,tipCategory,genres,pictures,introduce"
     }
 }
 
@@ -193,9 +224,55 @@ internal object MagentaNames {
             if (gap < bestGap) { best = p; bestGap = gap }
         }
         if (best == null || bestGap > 20 * 60_000L) return null
-        val pics = best.optJSONArray("pictures") ?: return null
+        return pictureOf(best)
+    }
+
+    /** A programme's 16:9 picture (type 17), else its wide banner (18), else any; over https. */
+    private fun pictureOf(p: JSONObject): String? {
+        val pics = p.optJSONArray("pictures") ?: return null
         val all = (0 until pics.length()).mapNotNull { pics.optJSONObject(it) }
         val pick = listOf("17", "18").firstNotNullOfOrNull { t -> all.firstOrNull { it.optString("imageType") == t } } ?: all.firstOrNull()
         return pick?.optString("href")?.ifBlank { null }?.replaceFirst("http://", "https://")
     }
+
+    private fun startOf(p: JSONObject, field: String): Long? =
+        runCatching { utcFormat.get()!!.parse(p.optString(field).take(19))?.time }.getOrNull()
+
+    /**
+     * The guide's programmes on [channel] worth a Spotlight place: those MagentaTV marks as "highlight" or
+     * "tip", and with [docs] (arte) every documentary of half an hour or more.
+     */
+    fun picks(list: JSONArray, channel: tv.own.owntv.core.database.entity.ChannelEntity, docs: Boolean): List<GuidePick> {
+        val out = ArrayList<GuidePick>()
+        for (i in 0 until list.length()) {
+            val p = list.optJSONObject(i) ?: continue
+            val start = startOf(p, "starttime") ?: continue
+            val stop = startOf(p, "endtime") ?: continue
+            val type = p.optString("tipType")
+            val highlight = type == "highlight"
+            val tip = type == "tip"
+            val genres = p.optString("genres").lowercase()
+            val isDoc = p.optString("tipCategory") == "documentary" ||
+                (docs && stop - start >= DOC_MIN_MS && DOC_WORDS.any { it in genres })
+            if (!highlight && !tip && !isDoc) continue
+            val title = p.optString("name")
+            if (title.isBlank()) continue
+            out += GuidePick(
+                channel = channel,
+                title = title,
+                startMs = start,
+                stopMs = stop,
+                highlight = highlight,
+                tip = tip,
+                doc = isDoc,
+                picture = pictureOf(p),
+                description = p.optString("introduce").ifBlank { null },
+            )
+        }
+        return out
+    }
+
+    private const val DOC_MIN_MS = 30 * 60_000L
+    /** How the guide names documentary genres ("Dokumentation", "Doku-Reihe", "Reportage"). */
+    private val DOC_WORDS = listOf("doku", "reportage")
 }

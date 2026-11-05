@@ -203,6 +203,9 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             )
         }
 
+        // The Spotlight layout's highlights: which sources, in which order.
+        SpotlightSourceRows()
+
         // Mayo TV: which category's channels stand where Recently watched was (HomeCatalog).
         var pickingCatalog by remember { mutableStateOf(false) }
         val recentTitle = HomeRow.RECENT_CHANNELS.displayTitle()

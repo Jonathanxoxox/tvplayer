@@ -244,11 +244,33 @@ fun HomeScreen(
     }
     // The Spotlight's highlights (Jonathan, 4 Nov 2026): followed matches, the evening, habits, watching on.
     val spotlightMatches = if (spotlightLayout) matches else emptyList()
-    val spotlightHighlights = remember(spotlightLayout, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems) {
+    // Today's picks from MagentaTV's guide (its tips and highlights, arte's documentaries), asked once Home has
+    // settled and every half hour after: the shown channels and arte (Jonathan, 5 Nov 2026).
+    val magentaGuide = koinInject<MagentaGuide>()
+    val pickChannels = remember(state.catalog) {
+        val row = state.catalog
+        val arte = row?.all.orEmpty().filter { MagentaNames.key(it.name) == ARTE_KEY }
+        (row?.channels.orEmpty() + arte).distinctBy { it.id }
+    }
+    val docsOn = remember(pickChannels) { pickChannels.filter { MagentaNames.key(it.name) == ARTE_KEY }.map { it.id }.toSet() }
+    val picks by androidx.compose.runtime.produceState(emptyList<GuidePick>(), spotlightLayout, pickChannels.map { it.id }) {
+        if (!spotlightLayout || pickChannels.isEmpty()) { value = emptyList(); return@produceState }
+        kotlinx.coroutines.delay(PICKS_FIRST_DELAY_MS)
+        while (true) {
+            val now = System.currentTimeMillis()
+            val fresh = magentaGuide.picks(pickChannels, docsOn, now - PICKS_BACK_MS, now + PICKS_AHEAD_MS)
+            if (fresh.isNotEmpty() || value.isEmpty()) value = fresh
+            kotlinx.coroutines.delay(PICKS_REFRESH_MS)
+        }
+    }
+    val spotlightSources = remember(launcherConfig.spotlightOrder, launcherConfig.spotlightOff) {
+        SpotlightSource.ordered(launcherConfig.spotlightOrder, launcherConfig.spotlightOff)
+    }
+    val spotlightHighlights = remember(spotlightLayout, spotlightSources, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems, picks) {
         if (!spotlightLayout) emptyList()
         else SpotlightHighlights.rank(
-            System.currentTimeMillis(), spotlightMatches, state.catalog?.channels.orEmpty(), state.recentOnNow,
-            state.spotlightWatched, state.heroItems,
+            System.currentTimeMillis(), spotlightSources, spotlightMatches, state.catalog?.channels.orEmpty(), state.recentOnNow,
+            state.spotlightWatched, state.heroItems, picks,
         )
     }
     val showAllHiddenState = orderedRows.isEmpty()
@@ -1620,3 +1642,11 @@ private fun AllRowsHiddenState(
     }
 }
 
+/** arte, as MagentaTV's guide and the playlist both name it (MagentaNames.key). */
+private const val ARTE_KEY = "arte"
+/** Home settles first; then the guide is asked for today's picks, and again every half hour. */
+private const val PICKS_FIRST_DELAY_MS = 3_000L
+private const val PICKS_REFRESH_MS = 30 * 60_000L
+/** From a little back (programmes on now) to late tonight. */
+private const val PICKS_BACK_MS = 3 * 60 * 60_000L
+private const val PICKS_AHEAD_MS = 12 * 60 * 60_000L
