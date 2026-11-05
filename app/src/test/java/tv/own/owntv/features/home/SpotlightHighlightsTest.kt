@@ -54,10 +54,16 @@ class SpotlightHighlightsTest {
     }
 
     @Test
-    fun `no evening highlight in the afternoon`() {
+    fun `in the afternoon a long programme is on now, not tonight`() {
         val now = at(15, 0)
-        val onNow = mapOf(2L to programme(2, at(14, 0), at(16, 0)))
-        assertEquals(emptyList<Highlight>(), SpotlightHighlights.rank(now, emptyList(), channels, onNow, emptyList(), emptyList(), zone))
+        val onNow = mapOf(
+            2L to programme(2, at(14, 0), at(16, 0)),   // two hours
+            3L to programme(3, at(14, 50), at(15, 10)), // twenty minutes: not a highlight
+            4L to programme(4, at(14, 30), at(15, 30)), // an hour
+        )
+        val h = SpotlightHighlights.rank(now, emptyList(), channels, onNow, emptyList(), emptyList(), zone)
+        assertEquals(listOf(HighlightReason.NOW, HighlightReason.NOW), h.map { it.reason })
+        assertEquals(listOf(2L, 4L), h.map { (it as Highlight.Live).channel.id }) // longest first
     }
 
     @Test

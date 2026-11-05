@@ -140,6 +140,7 @@ private fun reasonLabel(hl: Highlight): String = when (hl.reason) {
     HighlightReason.EVENING -> stringResource(R.string.home_hl_evening, (hl as? Highlight.Live)?.channel?.name.orEmpty())
     HighlightReason.HABIT -> stringResource(R.string.home_hl_habit, (hl as? Highlight.Live)?.channel?.name.orEmpty())
     HighlightReason.RESUME -> stringResource(R.string.home_hl_resume)
+    HighlightReason.NOW -> stringResource(R.string.home_hl_now, (hl as? Highlight.Live)?.channel?.name.orEmpty())
 }
 
 @Composable

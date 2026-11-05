@@ -115,18 +115,9 @@ internal fun HomeStage(
         val ch = picked ?: return@LaunchedEffect
         if (previewOn) liveVm.playPreview(ch, audible = pickedAudible)
     }
-    // Spotlight: the channel focus rests on starts by itself; walking the strip opens no stream per logo passed.
-    if (spotlight) LaunchedEffect(shown.id, stripFocused, previewOn) {
-        if (!stripFocused || !previewOn || picked?.id == shown.id) return@LaunchedEffect
-        // The channel before stops at once: the shell would go on drawing it here, over this channel's
-        // programme picture, until the new stream starts.
-        if (picked != null) { liveVm.stopPreview(); picked = null }
-        delay(SPOTLIGHT_DWELL_MS)
-        pickedAudible = false
-        picked = shown
-    }
-    // Spotlight's highlights: one at a time, ◀ ▶ on its button go through them. They do not turn by themselves:
-    // each would open a stream, and the provider allows one connection.
+    // Spotlight starts nothing by itself (Jonathan, 5 Nov 2026): focus on a logo shows that programme's picture,
+    // OK plays it here with its sound, OK again takes it full screen.
+    // Spotlight's highlights, Netflix-like: one at a time with its picture, ◀ ▶ on its button go through them.
     var hlIndex by remember(highlights.map { it.key }) { mutableIntStateOf(0) }
     val hl = if (spotlight && !stripFocused) highlights.getOrNull(hlIndex) else null
     // ▲ from the strip goes to the highlights' button, which is only there once the strip has let go of focus.
@@ -138,19 +129,13 @@ internal fun HomeStage(
         runCatching { hlButton.requestFocus() }
         toButton = false
     }
-    if (spotlight) LaunchedEffect(hl?.key, stripFocused, previewOn) {
-        if (stripFocused) return@LaunchedEffect
-        when (hl) {
-            is Highlight.Live -> if (previewOn && picked?.id != hl.channel.id) {
-                if (picked != null) { liveVm.stopPreview(); picked = null }
-                delay(HIGHLIGHT_DWELL_MS)
-                pickedAudible = false
-                picked = hl.channel
-            }
-            // A match or something to watch on has no live picture here: the one from before stops.
-            is Highlight.Sport, is Highlight.Resume -> if (picked != null) { liveVm.stopPreview(); picked = null }
-            null -> Unit
-        }
+    // Focus out of the strip (to the highlights, or on to other rows): the channel playing here stops, and the
+    // highlights show their pictures again. A moment's grace, so coming back from full screen keeps it playing.
+    if (spotlight) LaunchedEffect(stripFocused) {
+        if (stripFocused || picked == null) return@LaunchedEffect
+        delay(STRIP_LEFT_GRACE_MS)
+        liveVm.stopPreview()
+        picked = null
     }
     // Back first ends the picture, then (with nothing playing) goes on to the menu as before.
     BackHandler(enabled = active && picked != null) { liveVm.stopPreview(); picked = null }
@@ -301,8 +286,6 @@ internal fun HomeStage(
                     // As in the guide: the first OK plays it here, the second takes it full screen.
                     onClick = {
                         when {
-                            // Spotlight: straight to full screen, growing out of the picture when it is this channel.
-                            spotlight -> onPlayFullscreen(channel, channels)
                             previewOn && picked?.id != channel.id -> { pickedAudible = true; picked = channel }
                             else -> onPlayFullscreen(channel, channels)
                         }
@@ -337,11 +320,8 @@ private const val ART_PREFETCH_COUNT = 30
 /** How long focus rests on a channel before its programme's picture is looked up. */
 private const val ART_DWELL_MS = 350L
 
-/** How long a live highlight is shown before its channel starts in the picture. */
-private const val HIGHLIGHT_DWELL_MS = 2000L
-
-/** How long focus rests on a logo before Spotlight starts its channel. */
-private const val SPOTLIGHT_DWELL_MS = 1500L
+/** Focus that leaves the strip only to come straight back (full screen and Back) does not stop the channel. */
+private const val STRIP_LEFT_GRACE_MS = 800L
 
 /** A logo's stand-in: the channel's number, else the first letters of its name. */
 @Composable
