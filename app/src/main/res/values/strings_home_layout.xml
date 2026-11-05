@@ -24,4 +24,5 @@
     <string name="home_hl_to_match">To the match</string>
     <string name="home_hl_continue">Continue</string>
     <string name="home_arrange_app_row">%1$s · %2$s</string>
+    <string name="home_hl_now">ON NOW · %1$s</string>
 </resources>

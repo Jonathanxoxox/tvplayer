@@ -102,7 +102,9 @@ internal fun HomeStage(
 ) {
     val channels = row.channels
     if (channels.isEmpty()) return
-    var shownId by remember(row) { mutableLongStateOf(channels.first().id) }
+    // Keyed on the category, not the row object: Home builds the row anew (coming back from full screen) and
+    // that must not put the text back on the first channel.
+    var shownId by remember(row.category.key) { mutableLongStateOf(channels.first().id) }
     val shown = channels.firstOrNull { it.id == shownId } ?: channels.first()
     // The channel in the picture: none until one is picked with OK. It stays while the player is full screen
     // over Home (the page is kept behind the picture), so Back lands on it playing.
@@ -115,18 +117,9 @@ internal fun HomeStage(
         val ch = picked ?: return@LaunchedEffect
         if (previewOn) liveVm.playPreview(ch, audible = pickedAudible)
     }
-    // Spotlight: the channel focus rests on starts by itself; walking the strip opens no stream per logo passed.
-    if (spotlight) LaunchedEffect(shown.id, stripFocused, previewOn) {
-        if (!stripFocused || !previewOn || picked?.id == shown.id) return@LaunchedEffect
-        // The channel before stops at once: the shell would go on drawing it here, over this channel's
-        // programme picture, until the new stream starts.
-        if (picked != null) { liveVm.stopPreview(); picked = null }
-        delay(SPOTLIGHT_DWELL_MS)
-        pickedAudible = false
-        picked = shown
-    }
-    // Spotlight's highlights: one at a time, ◀ ▶ on its button go through them. They do not turn by themselves:
-    // each would open a stream, and the provider allows one connection.
+    // Spotlight starts nothing by itself (Jonathan, 5 Nov 2026): focus on a logo shows that programme's picture,
+    // OK plays it here with its sound, OK again takes it full screen.
+    // Spotlight's highlights, Netflix-like: one at a time with its picture, ◀ ▶ on its button go through them.
     var hlIndex by remember(highlights.map { it.key }) { mutableIntStateOf(0) }
     val hl = if (spotlight && !stripFocused) highlights.getOrNull(hlIndex) else null
     // ▲ from the strip goes to the highlights' button, which is only there once the strip has let go of focus.
@@ -138,19 +131,24 @@ internal fun HomeStage(
         runCatching { hlButton.requestFocus() }
         toButton = false
     }
-    if (spotlight) LaunchedEffect(hl?.key, stripFocused, previewOn) {
-        if (stripFocused) return@LaunchedEffect
-        when (hl) {
-            is Highlight.Live -> if (previewOn && picked?.id != hl.channel.id) {
-                if (picked != null) { liveVm.stopPreview(); picked = null }
-                delay(HIGHLIGHT_DWELL_MS)
-                pickedAudible = false
-                picked = hl.channel
-            }
-            // A match or something to watch on has no live picture here: the one from before stops.
-            is Highlight.Sport, is Highlight.Resume -> if (picked != null) { liveVm.stopPreview(); picked = null }
-            null -> Unit
-        }
+    // Focus out of the strip (to the highlights, or on to other rows): the channel playing here stops, and the
+    // highlights show their pictures again. A moment's grace, so coming back from full screen keeps it playing.
+    // Only while Home is in front: full screen takes the focus too, and must keep its picture.
+    if (spotlight) LaunchedEffect(stripFocused, active) {
+        if (!active || stripFocused || picked == null) return@LaunchedEffect
+        delay(STRIP_LEFT_GRACE_MS)
+        liveVm.stopPreview()
+        picked = null
+    }
+    // Back from full screen: focus to the logo of the channel playing here, not wherever Home would put it.
+    val pickedLogo = remember { FocusRequester() }
+    LaunchedEffect(active) {
+        val back = picked ?: return@LaunchedEffect
+        if (!active) return@LaunchedEffect
+        // The text beside the picture follows: Home may have built the row anew, back on its first channel.
+        shownId = back.id
+        delay(RETURN_FOCUS_MS)
+        runCatching { pickedLogo.requestFocus() }
     }
     // Back first ends the picture, then (with nothing playing) goes on to the menu as before.
     BackHandler(enabled = active && picked != null) { liveVm.stopPreview(); picked = null }
@@ -301,8 +299,6 @@ internal fun HomeStage(
                     // As in the guide: the first OK plays it here, the second takes it full screen.
                     onClick = {
                         when {
-                            // Spotlight: straight to full screen, growing out of the picture when it is this channel.
-                            spotlight -> onPlayFullscreen(channel, channels)
                             previewOn && picked?.id != channel.id -> { pickedAudible = true; picked = channel }
                             else -> onPlayFullscreen(channel, channels)
                         }
@@ -316,6 +312,7 @@ internal fun HomeStage(
                         .size(200.mpx, 112.mpx)
                         // With highlights, the row's way in is their button above the strip.
                         .then(if (index == 0 && firstItemFocusRequester != null && !(spotlight && highlights.isNotEmpty())) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
+                        .then(if (channel.id == picked?.id) Modifier.focusRequester(pickedLogo) else Modifier)
                         .tracked(track = track)
                         .onFocusChanged { if (it.hasFocus) { onFocus(); shownId = channel.id } },
                 ) { _ ->
@@ -337,11 +334,11 @@ private const val ART_PREFETCH_COUNT = 30
 /** How long focus rests on a channel before its programme's picture is looked up. */
 private const val ART_DWELL_MS = 350L
 
-/** How long a live highlight is shown before its channel starts in the picture. */
-private const val HIGHLIGHT_DWELL_MS = 2000L
+/** Focus that leaves the strip only to come straight back (full screen and Back) does not stop the channel. */
+private const val STRIP_LEFT_GRACE_MS = 800L
 
-/** How long focus rests on a logo before Spotlight starts its channel. */
-private const val SPOTLIGHT_DWELL_MS = 1500L
+/** After Home puts focus back on its own (60 ms), the stage takes it to the playing channel's logo. */
+private const val RETURN_FOCUS_MS = 150L
 
 /** A logo's stand-in: the channel's number, else the first letters of its name. */
 @Composable

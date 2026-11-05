@@ -23,4 +23,5 @@
     <string name="home_hl_to_match">Zum Spiel</string>
     <string name="home_hl_continue">Weiterschauen</string>
     <string name="home_arrange_app_row">%1$s · %2$s</string>
+    <string name="home_hl_now">JETZT IM TV · %1$s</string>
 </resources>

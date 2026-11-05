@@ -11,7 +11,7 @@ import kotlin.math.abs
 import kotlin.math.min
 
 /** Why something is in the Spotlight; its label says so on screen. */
-enum class HighlightReason { SPORT_LIVE, SPORT_SOON, EVENING, HABIT, RESUME }
+enum class HighlightReason { SPORT_LIVE, SPORT_SOON, EVENING, HABIT, RESUME, NOW }
 
 /** One of the Spotlight's highlights: a match, a channel, or something to watch on. */
 sealed interface Highlight {
@@ -35,7 +35,9 @@ sealed interface Highlight {
  * What the Spotlight layout shows before focus goes into its channel strip (Jonathan, 4 Nov 2026), in this
  * order: the followed teams' and leagues' matches live now, a match kicking off within a quarter of an hour,
  * the evening's big programme on the row's leading channels, the channel usually on at this time of day,
- * and something to watch on. At most [MAX] of them, no channel twice.
+ * and something to watch on. At most [MAX] of them, no channel twice. What is left is filled with what runs
+ * now on the row's leading channels (Jonathan, 5 Nov 2026: the Spotlight is a carousel of highlights all
+ * day, not a channel), longest first, so it is never down to one or two.
  */
 object SpotlightHighlights {
     const val MAX = 5
@@ -47,6 +49,8 @@ object SpotlightHighlights {
     /** A channel last watched within this much of the time of day now, in the last [HABIT_DAYS]. */
     private const val HABIT_WINDOW_MIN = 60
     private const val HABIT_DAYS = 8
+    /** "On now" fills with programmes at least this long: a show or a film, not the news. */
+    private const val NOW_MIN_MS = 40 * 60_000L
     private const val DAY_MS = 24 * 60 * 60_000L
 
     fun rank(
@@ -85,6 +89,12 @@ object SpotlightHighlights {
             ?.let { (ch, _) -> add(Highlight.Live(ch, onNow[ch.id], HighlightReason.HABIT)) }
         // 5: a film or an episode to watch on.
         resume.firstOrNull { it !is HeroItem.LiveHero }?.let { add(Highlight.Resume(it)) }
+        // 6: on now, to fill the carousel.
+        channels.take(EVENING_CHANNELS)
+            .mapNotNull { ch -> onNow[ch.id]?.let { ch to it } }
+            .filter { (ch, p) -> ch.id !in seenChannels && p.startMs <= now && p.stopMs > now && p.stopMs - p.startMs >= NOW_MIN_MS }
+            .sortedByDescending { (_, p) -> p.stopMs - p.startMs }
+            .forEach { (ch, p) -> add(Highlight.Live(ch, p, HighlightReason.NOW)) }
         return out
     }
 
