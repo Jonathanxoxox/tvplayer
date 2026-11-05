@@ -131,11 +131,19 @@ internal fun HomeStage(
     }
     // Focus out of the strip (to the highlights, or on to other rows): the channel playing here stops, and the
     // highlights show their pictures again. A moment's grace, so coming back from full screen keeps it playing.
-    if (spotlight) LaunchedEffect(stripFocused) {
-        if (stripFocused || picked == null) return@LaunchedEffect
+    // Only while Home is in front: full screen takes the focus too, and must keep its picture.
+    if (spotlight) LaunchedEffect(stripFocused, active) {
+        if (!active || stripFocused || picked == null) return@LaunchedEffect
         delay(STRIP_LEFT_GRACE_MS)
         liveVm.stopPreview()
         picked = null
+    }
+    // Back from full screen: focus to the logo of the channel playing here, not wherever Home would put it.
+    val pickedLogo = remember { FocusRequester() }
+    LaunchedEffect(active) {
+        if (!active || picked == null) return@LaunchedEffect
+        delay(RETURN_FOCUS_MS)
+        runCatching { pickedLogo.requestFocus() }
     }
     // Back first ends the picture, then (with nothing playing) goes on to the menu as before.
     BackHandler(enabled = active && picked != null) { liveVm.stopPreview(); picked = null }
@@ -299,6 +307,7 @@ internal fun HomeStage(
                         .size(200.mpx, 112.mpx)
                         // With highlights, the row's way in is their button above the strip.
                         .then(if (index == 0 && firstItemFocusRequester != null && !(spotlight && highlights.isNotEmpty())) Modifier.focusRequester(firstItemFocusRequester) else Modifier)
+                        .then(if (channel.id == picked?.id) Modifier.focusRequester(pickedLogo) else Modifier)
                         .tracked(track = track)
                         .onFocusChanged { if (it.hasFocus) { onFocus(); shownId = channel.id } },
                 ) { _ ->
@@ -322,6 +331,9 @@ private const val ART_DWELL_MS = 350L
 
 /** Focus that leaves the strip only to come straight back (full screen and Back) does not stop the channel. */
 private const val STRIP_LEFT_GRACE_MS = 800L
+
+/** After Home puts focus back on its own (60 ms), the stage takes it to the playing channel's logo. */
+private const val RETURN_FOCUS_MS = 150L
 
 /** A logo's stand-in: the channel's number, else the first letters of its name. */
 @Composable
