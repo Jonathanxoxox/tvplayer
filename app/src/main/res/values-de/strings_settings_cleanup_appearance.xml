@@ -10,9 +10,9 @@
     <string name="settings_ca_home_rows">Reihen der Startseite</string>
     <string name="settings_ca_help_home_rows">Wähle, welche Reihen die Startseite zeigt und in welcher Reihenfolge. ▶ auf einer Reihe zeigt ihre eigenen Optionen, etwa was „Weiterschauen“ enthält oder welche Kategorie die Senderreihe zeigt.</string>
     <string name="settings_ca_rows_heading">Reihen</string>
-    <string name="settings_ca_spotlight_sources">Spotlight-Quellen</string>
-    <string name="settings_ca_line_spotlight_sources">Wähle, woher die Tipps im Spotlight kommen</string>
-    <string name="settings_ca_help_spotlight_sources">Das Spotlight-Layout zeigt immer einen Tipp. Schalte jede Quelle an oder aus; OK gedrückt halten ändert die Reihenfolge.</string>
+    <string name="settings_ca_spotlight_sources">Spotlight</string>
+    <string name="settings_ca_line_spotlight_sources">Quellen, Reihenfolge, Filme und Bewertungen</string>
+    <string name="settings_ca_help_spotlight_sources">Das Spotlight-Layout zeigt immer einen Tipp. Lege fest, wie viele es sind, ob sie von selbst weiterblättern, ob Filme ihre Bewertung zeigen und ob Serien draußen bleiben. Schalte jede Quelle an oder aus; OK gedrückt halten ändert die Reihenfolge.</string>
     <string name="settings_ca_bg_glass">Hintergrund &amp; Glas</string>
     <string name="settings_ca_line_bg_glass">Hintergrundbild, Farben und Glaseffekt</string>
     <string name="settings_ca_line_theme">Dunkel, hell oder wie der Fernseher</string>

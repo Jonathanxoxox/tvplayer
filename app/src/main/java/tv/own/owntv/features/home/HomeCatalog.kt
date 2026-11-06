@@ -75,6 +75,28 @@ class HomeCatalog(
         return Row(category, arrange(channels, { CustomizeKeys.channel(it) }, hidden(), order(category.key)))
     }
 
+    /**
+     * The playlist's film channels for the Spotlight's Films (Jonathan, 6 Nov 2026): Sky Cinema's and the other
+     * "Kino" / "Cinema" / "Movie" channels ([MagentaNames.isFilmChannel]), one of each (not its HD and SD both),
+     * at most [FILM_CHANNELS]. Looked for in the row's own channels and in the categories whose name speaks of
+     * Sky, cinema or films; only when those have none, among all of the profile's channels.
+     */
+    suspend fun filmChannels(row: Row?): List<ChannelEntity> {
+        val found = ArrayList<ChannelEntity>()
+        row?.all?.filterTo(found) { MagentaNames.isFilmChannel(it.name) }
+        val profile = activeProfileSources(settings, sourceDao).first { it.profileId >= 0 }
+        val custom = customize.observe(profile.profileId, MediaType.LIVE).first()
+        categories().filter { c -> FILM_CATEGORY_WORDS.any { it in c.name.lowercase() } }.take(FILM_CATEGORIES).forEach { c ->
+            channelDao.snapshotByCategoryManual(c.id, profile.profileId, c.key, LIMIT)
+                .filterTo(found) { MagentaNames.isFilmChannel(it.name) && CustomizeKeys.channel(it) !in custom.hiddenItems }
+        }
+        if (found.isEmpty()) {
+            channelDao.allForSources(profile.sourceIdsFor(MediaType.LIVE), ALL_LIMIT)
+                .filterTo(found) { MagentaNames.isFilmChannel(it.name) && CustomizeKeys.channel(it) !in custom.hiddenItems }
+        }
+        return found.distinctBy { MagentaNames.key(it.name) }.take(FILM_CHANNELS)
+    }
+
     /** Of [all], the category the row shows: the chosen one, else Magenta TV's; null for recently watched. */
     fun current(all: List<Category>): Category? = when (val chosen = chosen()) {
         RECENT -> null
@@ -114,6 +136,12 @@ class HomeCatalog(
         private const val LIMIT = 1000
         /** How many of them the row shows. */
         const val SHOWN = 30
+        /** The Spotlight's film channels: Sky Cinema has some ten, with MagentaTV's a dozen. */
+        private const val FILM_CHANNELS = 14
+        private const val FILM_CATEGORIES = 6
+        private val FILM_CATEGORY_WORDS = listOf("sky", "cinema", "kino", "film", "movie", "magenta")
+        /** The last resort's reach through the whole playlist. */
+        private const val ALL_LIMIT = 20_000
 
         /**
          * [channels] without the [hidden] ones, those Home has an [order] for first in that order, the

@@ -255,12 +255,21 @@ fun HomeScreen(
         (row?.channels.orEmpty() + arte).distinctBy { it.id }
     }
     val docsOn = remember(pickChannels) { pickChannels.filter { MagentaNames.key(it.name) == ARTE_KEY }.map { it.id }.toSet() }
-    val picks by androidx.compose.runtime.produceState(emptyList<GuidePick>(), spotlightLayout, pickChannels.map { it.id }) {
-        if (!spotlightLayout || pickChannels.isEmpty()) { value = emptyList(); return@produceState }
+    // The film channels (Sky Cinema …) for the Spotlight's Films, wherever they are in the playlist (Jonathan,
+    // 6 Nov 2026). Looked for once per row, and only while Films is on.
+    val homeCatalog = koinInject<HomeCatalog>()
+    val filmsWanted = SpotlightSource.FILMS.key !in launcherConfig.spotlightOff
+    val filmChannels by androidx.compose.runtime.produceState(emptyList<tv.own.owntv.core.database.entity.ChannelEntity>(), spotlightLayout, filmsWanted, state.catalog?.category?.key) {
+        value = if (!spotlightLayout || !filmsWanted) emptyList() else runCatching { homeCatalog.filmChannels(state.catalog) }.getOrDefault(emptyList())
+    }
+    val guideChannels = remember(pickChannels, filmChannels) { (pickChannels + filmChannels).distinctBy { it.id } }
+    val filmsOn = remember(filmChannels) { filmChannels.map { it.id }.toSet() }
+    val picks by androidx.compose.runtime.produceState(emptyList<GuidePick>(), spotlightLayout, guideChannels.map { it.id }) {
+        if (!spotlightLayout || guideChannels.isEmpty()) { value = emptyList(); return@produceState }
         kotlinx.coroutines.delay(PICKS_FIRST_DELAY_MS)
         while (true) {
             val now = System.currentTimeMillis()
-            val fresh = magentaGuide.picks(pickChannels, docsOn, now - PICKS_BACK_MS, now + PICKS_AHEAD_MS)
+            val fresh = magentaGuide.picks(guideChannels, docsOn, now - PICKS_BACK_MS, now + PICKS_AHEAD_MS, filmsOn)
             if (fresh.isNotEmpty() || value.isEmpty()) value = fresh
             // Nothing came back (no network yet, e.g. just woken): ask again soon, not in half an hour.
             kotlinx.coroutines.delay(if (fresh.isEmpty()) PICKS_RETRY_MS else PICKS_REFRESH_MS)
@@ -269,11 +278,29 @@ fun HomeScreen(
     val spotlightSources = remember(launcherConfig.spotlightOrder, launcherConfig.spotlightOff) {
         SpotlightSource.ordered(launcherConfig.spotlightOrder, launcherConfig.spotlightOff)
     }
-    val spotlightHighlights = remember(spotlightLayout, spotlightSources, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems, picks) {
+    // The films' TMDB ratings (Jonathan, 6 Nov 2026): known ones at once, the rest looked up one by one, and the
+    // Spotlight ranks again as they come in. Asked for while ratings show or Films is on (they also rank them).
+    val programmeArt = koinInject<ProgrammeArt>()
+    val filmPicks = remember(picks) { picks.filter { it.film } }
+    val wantRatings = launcherConfig.spotlightRatings || filmsWanted
+    val filmRatings by androidx.compose.runtime.produceState(emptyMap<String, Double>(), filmPicks.map { it.key }, wantRatings) {
+        if (!wantRatings) { value = emptyMap(); return@produceState }
+        value = filmPicks.mapNotNull { p -> programmeArt.peekRating(p.title)?.let { p.key to it } }.toMap()
+        for (p in filmPicks.distinctBy { ProgrammeTitles.key(it.title) }) {
+            if (programmeArt.peekRating(p.title) != null) continue
+            val r = programmeArt.rating(p.title, p.year) ?: continue
+            value = value + filmPicks.filter { ProgrammeTitles.key(it.title) == ProgrammeTitles.key(p.title) }.associate { it.key to r }
+        }
+    }
+    val spotlightHighlights = remember(
+        spotlightLayout, spotlightSources, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems, picks,
+        launcherConfig.spotlightMax, launcherConfig.spotlightHideSeries, filmRatings,
+    ) {
         if (!spotlightLayout) emptyList()
         else SpotlightHighlights.rank(
             System.currentTimeMillis(), spotlightSources, spotlightMatches, state.catalog?.channels.orEmpty(), state.recentOnNow,
             state.spotlightWatched, state.heroItems, picks,
+            max = launcherConfig.spotlightMax, hideSeries = launcherConfig.spotlightHideSeries, ratings = filmRatings,
         )
     }
     // The Spotlight is where Home starts and where the Home button lands (Jonathan, 6 Nov 2026): once per
@@ -645,6 +672,8 @@ fun HomeScreen(
                             modifier = rowModifier,
                             spotlight = spotlightLayout,
                             highlights = spotlightHighlights,
+                            ratings = if (launcherConfig.spotlightRatings) filmRatings else emptyMap(),
+                            autoAdvanceSecs = launcherConfig.spotlightAutoSecs,
                             spotlightFocusRequest = spotlightFocusRequest,
                             onOpenMatch = onOpenMatch,
                             onResume = { item ->

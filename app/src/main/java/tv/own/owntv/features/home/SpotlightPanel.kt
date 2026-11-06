@@ -41,7 +41,8 @@ import tv.own.owntv.ui.theme.stageText
 
 /**
  * The Spotlight's text side for a [Highlight]: why it is there, what it is, and its one button — Watch, To
- * the match, Watch on. ◀ ▶ on the button go through the highlights; the dots say how many there are.
+ * the match, Watch on. ◀ ▶ on the button go through the highlights, round from the last to the first; the
+ * dots say how many there are. A film shows its [rating] (TMDB), year and kind.
  */
 @Composable
 internal fun HighlightInfo(
@@ -58,11 +59,13 @@ internal fun HighlightInfo(
     track: (FocusRequester) -> Unit,
     now: Long,
     modifier: Modifier = Modifier,
+    rating: Double? = null,
 ) {
     val accent = stageAccent.accent
     Column(modifier, verticalArrangement = Arrangement.spacedBy(14.mpx)) {
         Text(reasonLabel(hl, now), style = stageText(17, 800), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        FilmFacts(hl, rating)
         lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         // What it is about, from the guide: two lines, as the streaming apps show it.
         (hl as? Highlight.Pick)?.pick?.description?.let {
@@ -84,8 +87,8 @@ internal fun HighlightInfo(
                     .onPreviewKeyEvent { e ->
                         if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                         when {
-                            e.key == Key.DirectionRight && index < count - 1 -> { onStep(1); true }
-                            e.key == Key.DirectionLeft && index > 0 -> { onStep(-1); true }
+                            e.key == Key.DirectionRight && count > 1 -> { onStep(1); true }
+                            e.key == Key.DirectionLeft && count > 1 -> { onStep(-1); true }
                             else -> false
                         }
                     },
@@ -155,12 +158,42 @@ private fun reasonLabel(hl: Highlight, now: Long): String {
         R.string.home_hl_soon,
         android.text.format.DateFormat.getTimeFormat(LocalContext.current).format(java.util.Date((hl as? Highlight.Sport)?.match?.startMs ?: 0L)),
     )
+    HighlightReason.FILM -> stringResource(R.string.home_hl_film, pick?.channel?.name.orEmpty())
+    HighlightReason.PREMIERE -> stringResource(R.string.home_hl_premiere, pick?.channel?.name.orEmpty())
     HighlightReason.HIGHLIGHT -> stringResource(R.string.home_hl_highlight, pick?.channel?.name.orEmpty())
     HighlightReason.TIP -> stringResource(R.string.home_hl_tip, pick?.channel?.name.orEmpty())
     HighlightReason.DOC -> stringResource(R.string.home_hl_doc, pick?.channel?.name.orEmpty())
     HighlightReason.HABIT -> stringResource(R.string.home_hl_habit, (hl as? Highlight.Live)?.channel?.name.orEmpty())
     HighlightReason.RESUME -> stringResource(R.string.home_hl_resume)
     HighlightReason.NOW -> stringResource(R.string.home_hl_now, (hl as? Highlight.Live)?.channel?.name.orEmpty())
+    }
+}
+
+/**
+ * A film's facts under its title: ★ 7,8 (TMDB, in the rating chips' gold) · 2023 · Thriller. Nothing for a
+ * highlight that is not a film, nor for a film the guide and TMDB say nothing more about.
+ */
+@Composable
+private fun FilmFacts(hl: Highlight, rating: Double?) {
+    val pick = (hl as? Highlight.Pick)?.pick?.takeIf { it.film } ?: return
+    val rest = listOfNotNull(pick.year?.toString(), pick.genre).joinToString(" · ")
+    if (rating == null && rest.isEmpty()) return
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
+        if (rating != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.mpx)) {
+                OwnTVIcon(OwnTVIcon.STAR, StageColors.RatingStar, Modifier.size(20.mpx), filled = true)
+                Text(
+                    tv.own.owntv.features.shell.components.vodRating(rating),
+                    style = stageText(20, 800), color = StageColors.Text, maxLines = 1,
+                )
+            }
+        }
+        if (rest.isNotEmpty()) {
+            Text(
+                if (rating != null) "·  $rest" else rest,
+                style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 

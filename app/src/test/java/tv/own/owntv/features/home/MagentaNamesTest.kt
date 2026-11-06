@@ -3,6 +3,7 @@ package tv.own.owntv.features.home
 import org.json.JSONArray
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Calendar
 import java.util.TimeZone
@@ -71,6 +72,40 @@ class MagentaNamesTest {
         assertEquals(listOf("Wunschkind", "Europa League", "Die Alpen von oben"), onArte.map { it.title })
         val nov5 = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { clear(); set(2026, 10, 5, 19, 15) }.timeInMillis
         assertEquals(nov5, onArte.last().startMs)
+    }
+
+    private val cinemaDay = JSONArray(
+        """[
+          {"name":"Dune: Part Two","starttime":"2026-11-05 19:15:00 UTC+00:00","endtime":"2026-11-05 22:00:00 UTC+00:00",
+           "genres":"Spielfilm, Science-Fiction","producedate":"2024-01-01","introduce":"TV-Premiere: Paul Atreides …"},
+          {"name":"Kino-News","starttime":"2026-11-05 19:00:00 UTC+00:00","endtime":"2026-11-05 19:15:00 UTC+00:00","genres":"Magazin"},
+          {"name":"The Last of Us","starttime":"2026-11-05 22:00:00 UTC+00:00","endtime":"2026-11-05 23:20:00 UTC+00:00",
+           "genres":"Serie, Drama","seasonNO":"2","sitcomNO":"3"},
+          {"name":"Ein Film ohne Genre","starttime":"2026-11-05 23:20:00 UTC+00:00","endtime":"2026-11-06 01:00:00 UTC+00:00"}
+        ]""",
+    )
+
+    private val cinema = tv.own.owntv.core.database.entity.ChannelEntity(id = 8, sourceId = 1, categoryId = 9, name = "DE: Sky Cinema Highlights HD", streamUrl = "http://x/8.ts", remoteId = "8")
+
+    @Test
+    fun `on a film channel its films are picked, with year, kind and premiere, not its series or magazines`() {
+        val picks = MagentaNames.picks(cinemaDay, cinema, docs = false, films = true)
+        assertEquals(listOf("Dune: Part Two", "Ein Film ohne Genre"), picks.map { it.title })
+        val dune = picks.first()
+        assertTrue(dune.film && dune.premiere && !dune.series)
+        assertEquals(2024, dune.year)
+        assertEquals("Science-Fiction", dune.genre)
+        // Elsewhere only MagentaTV's own tips count: none here.
+        assertEquals(emptyList<String>(), MagentaNames.picks(cinemaDay, ch, docs = false).map { it.title })
+    }
+
+    @Test
+    fun `film channels by name`() {
+        assertTrue(MagentaNames.isFilmChannel("DE: Sky Cinema Premiere HD"))
+        assertTrue(MagentaNames.isFilmChannel("Sky Cinema Action"))
+        assertTrue(MagentaNames.isFilmChannel("MagentaTV Kino"))
+        assertTrue(!MagentaNames.isFilmChannel("Sky Sport Bundesliga 1"))
+        assertTrue(!MagentaNames.isFilmChannel("DE: arte HD"))
     }
 
     @Test
