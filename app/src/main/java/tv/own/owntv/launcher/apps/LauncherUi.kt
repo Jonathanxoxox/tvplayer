@@ -387,7 +387,6 @@ fun AppChannelRows(
 /** What the arrange window calls each app row: "Recommended · YouTube", or the app's name alone. */
 @Composable
 fun appRowNames(channels: List<AppChannel>): Map<String, String> {
-    val context = LocalContext.current
     val apps by LauncherApps.apps.collectAsStateWithLifecycle()
     val labels = apps.associate { it.pkg to it.label }
     val youtube = stringResource(R.string.launcher_youtube)
@@ -396,7 +395,7 @@ fun appRowNames(channels: List<AppChannel>): Map<String, String> {
         val label = labels[c.pkg] ?: c.pkg
         val app = if (isTizenTube(c.pkg) || label.contains("TizenTube", ignoreCase = true)) youtube else label
         val title = if (c.isWatchNext()) continueTitle else c.name.ifBlank { app }
-        c.key to if (title.contains(app, ignoreCase = true)) title else context.getString(R.string.home_arrange_app_row, title, app)
+        c.key to if (title.contains(app, ignoreCase = true)) title else stringResource(R.string.home_arrange_app_row, title, app)
     }
 }
 
