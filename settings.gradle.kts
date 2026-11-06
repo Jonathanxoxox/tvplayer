@@ -29,23 +29,28 @@ dependencyResolutionManagement {
         }
         google()
         mavenCentral()
-        // OwnTV's own Maven repository — public, no login: tv.own.owntv:core and :player-core
-        // (built from https://github.com/ahXN00/OwnTV_Core) and tv.own.owntv:libmpv, the mpv engine
-        // (https://github.com/ahXN00/OwnTV_libmpv). Served from OwnTV_Core's gh-pages branch.
+        // Mayo TV's own Maven repository: the core fork's gh-pages branch, read straight from GitHub
+        // (public, no login). Here for tv.own.owntv:libmpv, the mpv engine that :player-core brings in.
+        // Nothing is fetched from the original OwnTV repositories (6 Nov 2026).
         maven {
-            name = "OwnTV"
-            url = uri("https://ahxn00.github.io/OwnTV_Core/maven")
+            name = "MayoCore"
+            url = uri("https://raw.githubusercontent.com/Jonathanxoxox/OwnTV_Core/gh-pages/maven")
             content { includeGroup("tv.own.owntv") }
         }
     }
 }
 
-// Local development: build against core's own source instead of the published artifact, so a core
-// edit reaches this app with no publish step. Gradle substitutes the dependency automatically
-// because OwnTV_Core publishes under the same group and artifact ids this app asks for. CI leaves
-// owntv.corePath unset and resolves the pinned version instead.
-// Set it in ~/.gradle/gradle.properties, never here:  owntv.corePath=E:/MEGA/CODE/AI/OwnTV_Core
-providers.gradleProperty("owntv.corePath").orNull?.takeIf { it.isNotBlank() }?.let { includeBuild(it) }
+// The core is always built from the fork's source (Jonathanxoxox/OwnTV_Core, see core-fork.properties):
+// Gradle substitutes tv.own.owntv:core and :player-core with that build, so a core change on the fork
+// reaches the app with no publish step. CI sets owntv.corePath through tools/ci/core-fork.sh; locally
+// put it in ~/.gradle/gradle.properties, never here:  owntv.corePath=C:/path/to/OwnTV_Core
+// Without it the build stops, rather than quietly resolving a published core that is not Mayo TV's.
+val corePath = providers.gradleProperty("owntv.corePath").orNull?.takeIf { it.isNotBlank() }
+    ?: throw GradleException(
+        "Mayo TV builds against its core fork only: set owntv.corePath to a checkout of " +
+            "Jonathanxoxox/OwnTV_Core (CI: tools/ci/core-fork.sh).",
+    )
+includeBuild(corePath)
 
 rootProject.name = "OwnTV"
 include(":app")

@@ -81,10 +81,9 @@ orgJson = "20260814"
 junitExt = "1.3.0"
 espressoCore = "3.7.0"
 
-# --- OwnTV core library (https://github.com/ahXN00/OwnTV_Core) ---
-# Both artifacts always ship on the same version; never split them. Bumping this is how the TV app
-# takes a core change. For local work, owntv.corePath in ~/.gradle/gradle.properties substitutes
-# core's source for these artifacts, and this number is then ignored.
+# --- Core library: Mayo TV's fork, https://github.com/Jonathanxoxox/OwnTV_Core ---
+# Always built from the fork's source (core-fork.properties, owntv.corePath in settings.gradle.kts), which
+# substitutes both artifacts; this number is only the coordinate Gradle substitutes and is never fetched.
 owntvCore = "1.0.69"
 
 [libraries]

@@ -7,7 +7,7 @@ name: i18n
 #   validate  — the Kotlin-side checks: locale-stable number formatting and bounded text overflow.
 #               The strings themselves live in the core repository now, so locales.json schema,
 #               placeholder/plural parity, translation coverage and the toolkit's own regression
-#               tests run there — see ahXN00/OwnTV_Core's i18n workflow.
+#               tests run there — see the core fork's (Jonathanxoxox/OwnTV_Core) i18n workflow.
 #   pseudo    — inspects the BUILT debug and release APKs and proves pseudolocales survived
 #               localeFilters in debug and are absent in release. The flag being set is not proof.
 #
@@ -131,6 +131,9 @@ jobs:
           # 'tools' is obsolete and Google removed it from the SDK repository; the
           # action still asks for it by default, which fails the whole setup step.
           packages: 'platform-tools'
+      - name: Core fork
+        run: bash tools/ci/core-fork.sh
+
       - name: Assemble standard debug + release APKs
         run: ./gradlew :app:assembleStandardDebug :app:assembleStandardRelease --console=plain
       - name: Verify pseudolocale packaging
