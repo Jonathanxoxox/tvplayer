@@ -116,12 +116,7 @@ internal val SETTING_LINE: Map<String, Int> = mapOf(
 /** A row's name where the page words it differently from the app's older screens. */
 internal val SETTING_TITLE: Map<String, Int> = mapOf(
     "tab_WEATHER" to R.string.settings_heading_clock_weather,
-    "vp_reset_live_pins" to R.string.settings_title_saved_live_choices,
-    "vp_reset_pins" to R.string.settings_title_saved_choices,
-    "vp_tunneled" to R.string.settings_title_tunneled,
-    "vp_reset_zoom" to R.string.settings_title_saved_zoom,
-    "vp_reset_volume" to R.string.settings_title_saved_volume,
-    "vp_reset_audio_delay" to R.string.settings_title_saved_audio_sync,
+    // The Video player rows say their own titles now, the same ones search shows (one name per row).
 )
 
 /** The context panel's explanation, where the row's own description is not already one. */
@@ -154,6 +149,8 @@ internal val SETTING_HELP: Map<String, Int> = mapOf(
     "tab_CUSTOMIZE" to R.string.settings_help_customize,
     "tab_METADATA" to R.string.settings_metadata_root_description,
     "tab_OPEN_SUBTITLES" to R.string.settings_open_subtitles_description,
+    "tab_LANGUAGE" to R.string.settings_language_description,
+    "tab_DELETE_SUBTITLES" to R.string.player_subtitles_delete_description,
     "app_icon" to R.string.settings_help_app_icon,
     "brand_accent" to R.string.settings_help_brand_accent,
     "app_startup" to R.string.settings_help_startup,

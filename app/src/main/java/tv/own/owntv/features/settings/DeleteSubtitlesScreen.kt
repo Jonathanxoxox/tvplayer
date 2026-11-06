@@ -25,7 +25,7 @@ import tv.own.owntv.ui.components.rememberDialogFocusRestore
 import tv.own.owntv.ui.components.OwnTVIcon
 
 /**
- * Settings → OpenSubtitles account → Delete subtitles. A Movies/Series toggle at
+ * Settings › Sprache & Untertitel › Heruntergeladene Untertitel. A Movies/Series toggle at
  * the top, the downloaded subtitles for the selected section below (tap to delete one), and a
  * Delete all action (all / all movies / all series).
  */
@@ -54,12 +54,12 @@ fun DeleteSubtitlesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     // Movies | Series and Delete all in the tool row, the files as rows, Delete in the panel.
     val total = movieCount + seriesCount
-    val openSubtitles = stringResource(R.string.settings_open_subtitles)
+    // Settings › Sprache & Untertitel › Heruntergeladene Untertitel: its own row there now, no longer under OpenSubtitles.
+    val parent = stringResource(tv.own.owntv.features.shell.components.SettingsGroup.LANGUAGE.titleRes)
     val sections = DeleteSubtitlesViewModel.Section.entries
     StageFullPage(
-        parents = listOf(openSubtitles),
-        settingsRoot = false,
-        title = stringResource(R.string.settings_delete_subtitles),
+        parents = listOf(parent),
+        title = stringResource(R.string.settings_pb_downloaded_subtitles),
         count = pluralStringResource(R.plurals.settings_subtitle_file_count, total, total),
         onBack = onBack,
         modifier = modifier,
@@ -98,7 +98,7 @@ fun DeleteSubtitlesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         val help = stringResource(R.string.settings_subtitle_delete_help)
         val hints = listOf(
             stringResource(R.string.common_ok) to stringResource(R.string.common_delete),
-            stringResource(R.string.common_back) to openSubtitles,
+            stringResource(R.string.common_back) to parent,
         )
         val separator = dotSeparator()
         items.forEach { item ->

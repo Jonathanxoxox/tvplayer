@@ -102,7 +102,7 @@ import tv.own.owntv.ui.theme.primary
 
 internal enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS, FONTS, BROWSING, SUBTITLE_STYLE, SPORTS, PER_PLAYLIST, RESETS, SPOTLIGHT }
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS, FONTS, BROWSING, SUBTITLE_STYLE, SPORTS, PER_PLAYLIST, RESETS, SPOTLIGHT, DELETE_SUBTITLES }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -396,6 +396,7 @@ fun SettingsScreen(
             // Rows on their group's page now (6 Nov 2026): a restored BROWSING or FONTS lands back there.
             SettingsTab.BROWSING, SettingsTab.FONTS -> LaunchedEffect(tab) { toRoot() }
             SettingsTab.SPOTLIGHT -> tv.own.owntv.features.settings.SpotlightSourcesScreen(onBack = { toRoot() }, modifier = modifier)
+            SettingsTab.DELETE_SUBTITLES -> tv.own.owntv.features.settings.DeleteSubtitlesScreen(onBack = { toRoot() }, modifier = modifier)
             SettingsTab.SPORTS -> tv.own.owntv.features.sports.SportsSettingsScreen(onBack = { toRoot() }, modifier = modifier)
             // Mayo TV: the gathered pages (1 Nov 2026).
             SettingsTab.PER_PLAYLIST -> tv.own.owntv.features.settings.VideoGatherPage(
@@ -466,22 +467,9 @@ fun SettingsScreen(
         ),
         RootGroup("group_playback", stringResource(R.string.settings_mayo_group_playback), OwnTVIcon.PLAY, ""),
         RootGroup("group_picture_sound", stringResource(R.string.settings_mayo_group_picture_sound), OwnTVIcon.VIDEO, ""),
+        // Settings clean-up (6 Nov 2026): App-Sprache, OpenSubtitles and Heruntergeladene Untertitel are drawn
+        // with the group's other rows, under its Sprache / Untertitel headings (LanguageSubtitleRows.kt).
         RootGroup("group_language", stringResource(R.string.settings_mayo_group_language), OwnTVIcon.LANGUAGE, ""),
-        RootRow(
-            tabRowKey(SettingsTab.LANGUAGE), TileTone.PRIMARY, OwnTVIcon.LANGUAGE,
-            title = stringResource(R.string.settings_language),
-            desc = stringResource(R.string.settings_language_description),
-            chip = languageChip,
-            chipTone = TileTone.PRIMARY,
-            focus = rowFocus.getValue(SettingsTab.LANGUAGE),
-            onClick = { open(SettingsTab.LANGUAGE) },
-        ),
-        RootRow(
-            tabRowKey(SettingsTab.OPEN_SUBTITLES), TileTone.PRIMARY, OwnTVIcon.SUBTITLE,
-            title = stringResource(R.string.settings_open_subtitles), desc = stringResource(R.string.settings_open_subtitles_description),
-            focus = rowFocus.getValue(SettingsTab.OPEN_SUBTITLES),
-            onClick = { open(SettingsTab.OPEN_SUBTITLES) },
-        ),
         RootGroup("group_appearance", stringResource(R.string.settings_group_appearance_home), OwnTVIcon.PALETTE, stringResource(R.string.settings_group_summary_appearance)),
         // Home first: its layout and row titles here, everything else about its rows one page further.
         RootRow(
@@ -683,7 +671,7 @@ fun SettingsScreen(
         // stay translated rather than hard-coded here.
     val searchResults: List<SettingsSearchEntry> = if (searchQuery.isBlank()) emptyList() else {
         val entries = listOfNotNull(
-            SettingsSearchEntry(stringResource(R.string.settings_mayo_group_language), stringResource(R.string.settings_language), stringResource(R.string.settings_search_keywords_language), OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
+            SettingsSearchEntry(stringResource(R.string.settings_mayo_group_language), stringResource(R.string.settings_pb_app_language), stringResource(R.string.settings_search_keywords_language), OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
                 chip = languageChip, chipTone = TileTone.PRIMARY) { open(SettingsTab.LANGUAGE) },
             SettingsSearchEntry(stringResource(R.string.more_group_your_things), stringResource(R.string.profiles_title), stringResource(R.string.settings_search_keywords_profiles), OwnTVIcon.PERSON, TileTone.SECONDARY) { searchQuery = ""; searchMode = false; side.more = null; selectedGroup = SettingsGroup.PROFILE.ordinal },
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_playlists), stringResource(R.string.settings_search_keywords_playlists), OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { open(SettingsTab.SOURCES) },
@@ -818,6 +806,7 @@ fun SettingsScreen(
         // Subtitle appearance is a page of its own, opened from the Sound & subtitles rows.
         tv.own.owntv.features.settings.LocalOpenSubtitleStyle provides { saveScroll(); open(SettingsTab.SUBTITLE_STYLE) },
         tv.own.owntv.features.settings.LocalSubtitleStyleRowFocus provides rowFocus.getValue(SettingsTab.SUBTITLE_STYLE),
+        tv.own.owntv.features.settings.LocalLanguagePageLinks provides languagePageLinks(rowFocus) { saveScroll(); open(it) },
     ) {
         StageSettingsPage(
             panel = panel,
@@ -870,7 +859,6 @@ fun SettingsScreen(
                     val videoFirst = group.video != null && !group.rootFirst
                     if (videoFirst) {
                         VideoPlayerGroupRows(group.video!!, pageScroll, focusRowKey = videoRowKey)
-                        if (group == SettingsGroup.PLAYBACK) tv.own.owntv.features.settings.RecordingSettingsRows(pageScroll)
                     }
                     selectedRows.forEachIndexed { i, row ->
                         row.heading?.let { heading ->
@@ -1970,9 +1958,10 @@ private fun subScreenSearchEntries(open: (SettingsTab) -> Unit): List<SettingsSe
         SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_custom_location), stringResource(R.string.settings_search_keywords_weather), OwnTVIcon.WEATHER, TileTone.SECONDARY) { open(SettingsTab.WEATHER) },
         SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_metadata_source), stringResource(R.string.settings_search_keywords_metadata), OwnTVIcon.IMAGE, TileTone.SECONDARY) { open(SettingsTab.METADATA) },
         SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.settings_metadata_language), stringResource(R.string.settings_search_keywords_metadata), OwnTVIcon.IMAGE, TileTone.SECONDARY) { open(SettingsTab.METADATA) },
-        SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.player_subtitles_search_language), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.SECONDARY) { open(SettingsTab.OPEN_SUBTITLES) },
-        SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.player_subtitles_filter_title), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.SECONDARY) { open(SettingsTab.OPEN_SUBTITLES) },
-        SettingsSearchEntry(stringResource(R.string.settings_group_content_metadata), stringResource(R.string.player_subtitles_stay_signed_in), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.SECONDARY) { open(SettingsTab.OPEN_SUBTITLES) },
+        SettingsSearchEntry(openSubtitlesPath(), stringResource(R.string.player_subtitles_search_language), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.SECONDARY) { open(SettingsTab.OPEN_SUBTITLES) },
+        SettingsSearchEntry(openSubtitlesPath(), stringResource(R.string.player_subtitles_filter_title), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.SECONDARY) { open(SettingsTab.OPEN_SUBTITLES) },
+        SettingsSearchEntry(openSubtitlesPath(), stringResource(R.string.player_subtitles_stay_signed_in), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.SECONDARY) { open(SettingsTab.OPEN_SUBTITLES) },
+        SettingsSearchEntry(stringResource(SettingsGroup.LANGUAGE.titleRes), stringResource(R.string.settings_pb_downloaded_subtitles), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.TRASH, TileTone.SECONDARY) { open(SettingsTab.DELETE_SUBTITLES) },
 )
 
 /** The rows of Live-TV & Sport › Sport, findable by their own names; each opens the Sport page. */
@@ -1988,6 +1977,24 @@ private fun sportsSearchEntries(openSports: () -> Unit): List<SettingsSearchEntr
         R.string.sports_channel_match_reminders, R.string.sports_remembered_channels, R.string.sports_show_likely,
         R.string.sports_auto_rebuild, R.string.sports_live_refresh,
     ).map { SettingsSearchEntry(group, stringResource(it), keywords, OwnTVIcon.SPORTS, TileTone.TERTIARY, onClick = openSports) }
+}
+
+/** "Sprache & Untertitel › OpenSubtitles", from the group's own title. */
+@Composable
+private fun openSubtitlesPath(): String =
+    stringResource(R.string.settings_breadcrumb, stringResource(SettingsGroup.LANGUAGE.titleRes), stringResource(R.string.settings_open_subtitles))
+
+/** How the Sprache & Untertitel rows open their pages, and the row each page gives focus back to. */
+private fun languagePageLinks(rowFocus: Map<SettingsTab, FocusRequester>, open: (SettingsTab) -> Unit) =
+    tv.own.owntv.features.settings.LanguagePageLinks(
+        open = { open(languageTab(it)) },
+        focus = { rowFocus.getValue(languageTab(it)) },
+    )
+
+private fun languageTab(page: tv.own.owntv.features.settings.LanguagePage): SettingsTab = when (page) {
+    tv.own.owntv.features.settings.LanguagePage.APP_LANGUAGE -> SettingsTab.LANGUAGE
+    tv.own.owntv.features.settings.LanguagePage.OPEN_SUBTITLES -> SettingsTab.OPEN_SUBTITLES
+    tv.own.owntv.features.settings.LanguagePage.DOWNLOADED_SUBTITLES -> SettingsTab.DELETE_SUBTITLES
 }
 
 /** The list key of the row that opens [tab], so a Back from that sub-screen can find its index. */
@@ -2162,7 +2169,6 @@ private fun stageRowExtras(
     val popupStep: (Int) -> Unit = { step ->
         onSetFont(font.copy(popupSizePercent = tv.own.owntv.core.theme.PopupSizeScale.clamp(font.popupSizePercent + step * tv.own.owntv.core.theme.PopupSizeScale.STEP)))
     }
-    val languages = tv.own.owntv.core.i18n.SupportedLocales.all.count { it.packaged }
     val valueStyle = tv.own.owntv.ui.theme.stageText(18, 700)
     return mapOf(
         "tab_SOURCES" to RowExtra(
@@ -2214,11 +2220,10 @@ private fun stageRowExtras(
         "app_icon" to RowExtra(SettingValue.Opens(stringResource(appIcon.label))),
         "brand_accent" to RowExtra(SettingValue.Switch(brandAccent), onClick = { vm.setBrandAccentTriangle(!brandAccent) }),
         "check_updates" to RowExtra(SettingValue.Action(stringResource(R.string.settings_check_now))),
-        "tab_LANGUAGE" to RowExtra(help = pluralStringResource(R.plurals.settings_help_language, languages, languages)),
     ) + serviceRowExtras(vm)
 }
 
-/** EPG Sources, Metadata, OpenSubtitles, Proxy and DNS: what each is set to, and the details in the panel. */
+/** EPG Sources, Metadata, Proxy and DNS: what each is set to, and the details in the panel. */
 @Composable
 private fun serviceRowExtras(vm: SettingsViewModel): Map<String, RowExtra> {
     val epgVm: tv.own.owntv.features.settings.EpgSourcesViewModel = org.koin.androidx.compose.koinViewModel()
@@ -2227,8 +2232,6 @@ private fun serviceRowExtras(vm: SettingsViewModel): Map<String, RowExtra> {
     val tier by vm.metadataTier.collectAsStateWithLifecycle()
     val budget by vm.metadataBudgetStatus.collectAsStateWithLifecycle()
     LaunchedEffect(tier) { if (tier == tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER) vm.refreshMetadataBudget() }
-    val osVm: tv.own.owntv.features.settings.OpenSubtitlesViewModel = org.koin.androidx.compose.koinViewModel()
-    val os by osVm.state.collectAsStateWithLifecycle()
     val proxy by vm.proxyConfig.collectAsStateWithLifecycle()
     val dns by vm.dnsConfig.collectAsStateWithLifecycle()
     val on = stringResource(R.string.common_on)
@@ -2238,7 +2241,6 @@ private fun serviceRowExtras(vm: SettingsViewModel): Map<String, RowExtra> {
         Text(label, style = small, color = tv.own.owntv.ui.theme.StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
         Text(value, style = small, color = tv.own.owntv.ui.theme.StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
-    val signedIn = os as? tv.own.owntv.features.settings.OpenSubtitlesViewModel.UiState.SignedIn
     val dnsHost = dns.dohUrl.ifBlank { dns.host }.removePrefix("https://").substringBefore('/')
     return mapOf(
         "tab_EPG" to RowExtra(
@@ -2278,19 +2280,6 @@ private fun serviceRowExtras(vm: SettingsViewModel): Map<String, RowExtra> {
                     // The shared service has a daily allowance; an own key or self-host has none to show.
                     if (tier == tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER && b != null) {
                         line(stringResource(R.string.settings_allowance_day), pluralStringResource(R.plurals.settings_allowance_value, b.remainingDay, b.remainingDay, b.limitDay))
-                    }
-                }
-            },
-        ),
-        "tab_OPEN_SUBTITLES" to RowExtra(
-            SettingValue.Opens(stringResource(if (signedIn != null) R.string.settings_open_subtitles_connected else R.string.settings_signed_out)),
-            extra = {
-                signedIn?.session?.let { s ->
-                    Column(Modifier.padding(top = 8.mpx)) {
-                        line(stringResource(R.string.player_subtitles_connected_as), s.username)
-                        s.remainingDownloads?.let { r ->
-                            line(stringResource(R.string.player_subtitles_downloads), pluralStringResource(R.plurals.player_subtitles_remaining_short, r, r))
-                        }
                     }
                 }
             },

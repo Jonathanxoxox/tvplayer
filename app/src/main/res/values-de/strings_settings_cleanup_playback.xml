@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Einstellungen aufräumen (6. Nov. 2026), Wiedergabe / Bild & Ton / Sprache & Untertitel: neue Schlüssel
+     und Overrides von Core-Texten (gleicher Name). Wandern später in den Core-Fork (mayo). -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Überschriften -->
+    <string name="settings_pb_heading_movies_series">Filme &amp; Serien</string>
+    <string name="settings_pb_heading_advanced">Erweitert</string>
+    <string name="settings_pb_heading_language">Sprache</string>
+    <string name="settings_pb_heading_subtitles">Untertitel</string>
+
+    <!-- Zeilen, die früher Hauptzeilen waren oder eine Seite tiefer lagen -->
+    <string name="settings_pb_app_language">App-Sprache</string>
+    <string name="settings_pb_line_app_language">Die Sprache der Menüs und Texte von Mayo TV</string>
+    <string name="settings_pb_downloaded_subtitles">Heruntergeladene Untertitel</string>
+    <string name="settings_pb_os_signed_in">Angemeldet</string>
+    <string name="settings_pb_os_signed_out">Nicht angemeldet</string>
+
+    <!-- Overrides: eine Bezeichnung pro Sache (Bildformat, A/V-Synchronisierung, gemerkt) -->
+    <string name="settings_default_zoom">Bildformat</string>
+    <string name="settings_line_saved_zoom">Im Player geändertes Bildformat</string>
+    <string name="settings_default_volume">Lautstärke beim Start</string>
+    <string name="settings_audio_sync">A/V-Synchronisierung</string>
+    <string name="settings_output_audio_delay_description">Kommt zur „A/V-Synchronisierung“ hinzu und wird für jeden Ausgang getrennt gemerkt – HDMI, eine Soundbar über HDMI ARC, Bluetooth, die eingebauten Lautsprecher, Kopfhörer. Stelle sie ein, während du über diesen Ausgang hörst.</string>
+    <string name="settings_preferred_audio_language">Audiosprache</string>
+    <string name="settings_preferred_subtitle_language">Untertitelsprache</string>
+    <string name="settings_autoplay_next">Nächste Folge automatisch abspielen</string>
+    <string name="settings_movies_series_player">Player für Filme &amp; Serien</string>
+    <string name="settings_recording_reserve">Eine Verbindung frei halten</string>
+    <string name="settings_line_rec_watching">Fügt dem Player eine Aufnahmetaste hinzu</string>
+    <string name="settings_vod_network_auto">Automatisch</string>
+    <string name="settings_afr_pause">Pause beim Umschalten</string>
+
+    <string name="settings_title_saved_live_choices">Player-Wahl pro Sender</string>
+    <string name="settings_title_saved_choices">Player-Wahl pro Film/Folge</string>
+    <string name="settings_title_saved_zoom">Gemerktes Bildformat</string>
+    <string name="settings_title_saved_volume">Gemerkte Lautstärke</string>
+    <string name="settings_title_saved_audio_sync">Gemerkte A/V-Synchronisierung</string>
+    <string name="settings_reset_player_choices_none">Nichts gemerkt</string>
+    <plurals name="settings_reset_player_choices_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> gemerkt</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> gemerkt</item>
+    </plurals>
+    <string name="settings_reset_live_player_choices_confirm">Gemerkte Player-Wahl pro Sender zurücksetzen?</string>
+    <string name="settings_reset_live_player_choices_confirm_description">Jeder Sender folgt wieder der Einstellung „Player für Live-TV“. Du kannst einzelne Sender jederzeit wieder im Player umschalten.</string>
+    <string name="settings_reset_player_choices_confirm">Gemerkte Player-Wahl pro Film/Folge zurücksetzen?</string>
+    <string name="settings_reset_player_choices_confirm_description">Jeder Film und jede Folge folgt wieder der Einstellung „Player für Filme &amp; Serien“. Du kannst einzelne Titel jederzeit wieder im Player umschalten.</string>
+    <string name="settings_reset_saved_zoom_confirm">Gemerktes Bildformat zurücksetzen?</string>
+    <string name="settings_reset_saved_zoom_confirm_description">Jeder Sender, jeder Film und jede Folge kehrt zum „Bildformat“ oben zurück. Gemerkte Lautstärken bleiben erhalten. Einzelne Titel kannst du jederzeit wieder im Player einstellen.</string>
+    <string name="settings_reset_saved_volume_confirm">Gemerkte Lautstärke zurücksetzen?</string>
+    <string name="settings_reset_saved_volume_confirm_description">Jeder Sender, jeder Film und jede Folge kehrt zur „Lautstärke beim Start“ zurück. Gemerkte Bildformate bleiben erhalten. Einzelne Titel kannst du jederzeit wieder im Player einstellen.</string>
+    <string name="settings_reset_saved_audio_delay_confirm">Gemerkte A/V-Synchronisierung zurücksetzen?</string>
+    <string name="settings_reset_saved_audio_delay_confirm_description">Jeder Sender, jeder Film und jede Folge kehrt zur „A/V-Synchronisierung“ oben zurück. Gemerktes Bildformat und gemerkte Lautstärke bleiben erhalten. Einzelne Werte kannst du jederzeit wieder im Player setzen.</string>
+</resources>

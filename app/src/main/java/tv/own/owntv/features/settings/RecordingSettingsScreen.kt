@@ -32,8 +32,8 @@ internal val RECORDING_SEARCH_ROWS: List<Int> = listOf(
 )
 
 /**
- * The three things recording can be told, and one thing it has to tell the user — the RECORDING part
- * of Settings › Watching & recording, drawn inside that page under its own sub-heading.
+ * The things recording can be told, and one thing it has to tell the user — Settings › Wiedergabe ›
+ * Aufnahme. The sub-heading is the page's ([VideoGroup.PLAYBACK]); these are only the rows under it.
  *
  * There is deliberately **no** "what to do when space runs low": that behaviour is fixed — a
  * recording stops with 500 MB free, keeps what it captured, and never deletes anything to make room.
@@ -66,7 +66,6 @@ internal fun RecordingSettingsRows(
         dialogReturn = null
     }
 
-    StageSettingsHeading(stringResource(R.string.recording_settings_group), 4)
     // Said here and nowhere else, because this is where a user wonders why a recording began at
     // 20:03. Not a setting — the app cannot grant itself the permission — but the one place the
     // consequence belongs.
@@ -103,7 +102,9 @@ internal fun RecordingSettingsRows(
         icon = OwnTVIcon.HISTORY,
         title = stringResource(R.string.settings_recording_pre_roll),
         desc = stringResource(R.string.settings_recording_pre_roll_description),
-        value = SettingValue.Choice(pluralStringResource(R.plurals.recording_minutes, preRoll, preRoll)),
+        // A number: ◀ ▶ change it in place, OK opens it in the panel (with its reset).
+        value = SettingValue.Stepper(pluralStringResource(R.plurals.recording_minutes, preRoll, preRoll)),
+        onStep = { vm.setRecordingPreRollMinutes((preRoll + it).coerceIn(0, MAX_ROLL_MINUTES)) },
         helpKey = "rec_pre_roll",
         onClick = { dialogReturn = preRollFocus; dialog = RecordingDialog.PRE_ROLL },
         modifier = Modifier.focusRequester(preRollFocus),
@@ -112,7 +113,8 @@ internal fun RecordingSettingsRows(
         icon = OwnTVIcon.HISTORY,
         title = stringResource(R.string.settings_recording_post_roll),
         desc = stringResource(R.string.settings_recording_post_roll_description),
-        value = SettingValue.Choice(pluralStringResource(R.plurals.recording_minutes, postRoll, postRoll)),
+        value = SettingValue.Stepper(pluralStringResource(R.plurals.recording_minutes, postRoll, postRoll)),
+        onStep = { vm.setRecordingPostRollMinutes((postRoll + it).coerceIn(0, MAX_ROLL_MINUTES)) },
         helpKey = "rec_post_roll",
         onClick = { dialogReturn = postRollFocus; dialog = RecordingDialog.POST_ROLL },
         modifier = Modifier.focusRequester(postRollFocus),
