@@ -160,6 +160,9 @@ internal fun HomeStage(
     // full-screen refocus above, which the Home button's way out of the player would otherwise win.
     LaunchedEffect(spotlightFocusRequest) {
         if (spotlightFocusRequest == 0L || !spotlight || highlights.isEmpty()) return@LaunchedEffect
+        // Once per request: the stage leaves the list's composition when scrolled away, and coming back must
+        // not pull focus up to the Spotlight (or stop its channel) for a request already served.
+        if (!StageOnce.first("focus", spotlightFocusRequest)) return@LaunchedEffect
         if (picked != null) { liveVm.stopPreview(); picked = null }
         stripFocused = false
         hlIndex = 0
@@ -171,6 +174,7 @@ internal fun HomeStage(
     val wake by tv.own.owntv.launcher.apps.LauncherSystem.wake.collectAsState()
     LaunchedEffect(wake) {
         if (wake == 0L || picked == null) return@LaunchedEffect
+        if (!StageOnce.first("wake", wake)) return@LaunchedEffect
         liveVm.stopPreview()
         picked = null
     }
@@ -451,4 +455,16 @@ private fun Initials(channel: ChannelEntity, size: Int) {
 private fun timeSpan(programme: EpgProgrammeEntity): String {
     val format = android.text.format.DateFormat.getTimeFormat(LocalContext.current)
     return stringResource(R.string.home_stage_time_span, format.format(java.util.Date(programme.startMs)), format.format(java.util.Date(programme.stopMs)))
+}
+
+/** Tokens the stage has acted on, per kind, for the app's lifetime: a re-composed stage does not act on one again. */
+private object StageOnce {
+    private val last = HashMap<String, Long>()
+
+    @Synchronized
+    fun first(kind: String, token: Long): Boolean {
+        if (last[kind] == token) return false
+        last[kind] = token
+        return true
+    }
 }
