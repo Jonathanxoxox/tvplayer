@@ -3,7 +3,12 @@ package tv.own.owntv.features.settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.focus.focusRequester
+import tv.own.owntv.ui.components.trapAllFocusExit
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -97,7 +102,8 @@ internal fun LauncherSettingsRows(
     val nameOf = { app: tv.own.owntv.launcher.apps.LauncherApp -> if (tv.own.owntv.launcher.apps.isTizenTube(app.pkg)) youtube else app.label }
 
     if (part == LauncherRowsPart.BOOT) {
-    StageSettingsHeading(stringResource(R.string.launcher_heading_button), 4, first = true)
+    // Settings › Einschalten & Home-Taste (6 Nov 2026): Home-Taste, Beim Einschalten, Android TV.
+    StageSettingsHeading(stringResource(R.string.launcher_heading_button), 2, first = true)
     StageSettingRow(
         icon = OwnTVIcon.HOME,
         title = stringResource(R.string.launcher_as_start),
@@ -137,6 +143,7 @@ internal fun LauncherSettingsRows(
         LauncherConfig.BOOT_OFF -> stringResource(R.string.launcher_boot_off)
         else -> apps.firstOrNull { it.pkg == config.boot }?.label ?: config.boot
     }
+    StageSettingsHeading(stringResource(R.string.settings_ca_heading_power_on), 2)
     StageSettingRow(
         icon = OwnTVIcon.POWER,
         title = stringResource(R.string.launcher_boot),
@@ -208,22 +215,22 @@ internal fun LauncherSettingsRows(
         val current = inRow.map { it.pkg }
         // The row's apps first, in the row's order, then the others: what Move changes is what is listed.
         val listed = inRow + apps.filter { it.pkg !in current }
-        StagePopup(
-            onDismiss = { pickRow = false },
+        // In the page's panel (6 Nov 2026), a popup only off a settings page.
+        PanelChecklist(
             title = stringResource(R.string.launcher_row_apps_setting),
             body = stringResource(R.string.launcher_row_apps_hold_hint),
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.mpx), modifier = Modifier.padding(top = 18.mpx)) {
-                listed.forEach { app ->
-                    val on = app.pkg in current
-                    StagePopupOption(
-                        title = nameOf(app),
-                        onClick = { update { it.copy(rowApps = if (on) current - app.pkg else current + app.pkg) } },
-                        // Hold OK on an app in the row: move it (Jonathan, 4 Nov 2026: holding OK here did nothing).
-                        onLongClick = if (on) ({ movingApps = current to current.indexOf(app.pkg); pickRow = false }) else null,
-                        leading = { f -> StagePopupCheck(on, f) },
-                    )
-                }
+            onDismiss = { pickRow = false },
+        ) { first ->
+            listed.forEachIndexed { i, app ->
+                val on = app.pkg in current
+                StagePopupOption(
+                    title = nameOf(app),
+                    onClick = { update { it.copy(rowApps = if (on) current - app.pkg else current + app.pkg) } },
+                    // Hold OK on an app in the row: move it (Jonathan, 4 Nov 2026: holding OK here did nothing).
+                    onLongClick = if (on) ({ movingApps = current to current.indexOf(app.pkg); pickRow = false }) else null,
+                    leading = { f -> StagePopupCheck(on, f) },
+                    modifier = if (i == 0) first else Modifier,
+                )
             }
         }
     }
@@ -247,12 +254,12 @@ internal fun LauncherSettingsRows(
     if (pickChannels) {
         val labels = apps.associate { it.pkg to nameOf(it) }
         val continueTitle = stringResource(R.string.launcher_row_continue)
-        StagePopup(onDismiss = { pickChannels = false }, title = stringResource(R.string.launcher_app_channels)) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.mpx), modifier = Modifier.padding(top = 18.mpx)) {
+        PanelChecklist(title = stringResource(R.string.launcher_app_channels), body = null, onDismiss = { pickChannels = false }) { first ->
                 StagePopupOption(
                     title = stringResource(R.string.launcher_app_channels),
                     onClick = { update { it.copy(appChannels = !it.appChannels) } },
                     leading = { f -> StagePopupCheck(config.appChannels, f) },
+                    modifier = first,
                 )
                 channels.forEach { ch ->
                     val on = ch.key !in config.hiddenChannels
@@ -267,8 +274,40 @@ internal fun LauncherSettingsRows(
                         leading = { f -> StagePopupCheck(on, f) },
                     )
                 }
+        }
+    }
+}
+
+/**
+ * A list of ticks (the row's apps, the other apps' channels) in the page's panel, with Done under it; a
+ * popup only where there is no panel. [content] puts [first][Modifier] on its first option, which takes focus.
+ */
+@Composable
+private fun PanelChecklist(
+    title: String,
+    body: String?,
+    onDismiss: () -> Unit,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.(first: Modifier) -> Unit,
+) {
+    val focus = remember { androidx.compose.ui.focus.FocusRequester() }
+    val first = Modifier.focusRequester(focus)
+    val shown = panelEditor(onDismiss) {
+        LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { focus.requestFocus() } }
+        Column(Modifier.weight(1f, fill = false).trapAllFocusExit().focusGroup()) {
+            if (body != null) androidx.tv.material3.Text(body, style = tv.own.owntv.ui.theme.stageText(15, 500), color = tv.own.owntv.ui.theme.StageColors.Muted, modifier = Modifier.padding(bottom = 10.mpx))
+            // The ticks scroll inside the panel; Done stays under them, on screen.
+            Column(
+                Modifier.weight(1f, fill = false).verticalScroll(androidx.compose.foundation.rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.mpx),
+            ) { content(first) }
+            androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth().padding(top = 14.mpx), horizontalArrangement = Arrangement.End) {
+                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_done), onClick = onDismiss, height = 52.mpx, textSize = 18, tinted = true)
             }
         }
+    }
+    if (shown) return
+    StagePopup(onDismiss = onDismiss, title = title, body = body) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.mpx), modifier = Modifier.padding(top = 18.mpx)) { content(first) }
     }
 }
 

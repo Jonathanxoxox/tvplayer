@@ -1,6 +1,5 @@
 package tv.own.owntv.features.settings
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -13,11 +12,6 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -39,9 +33,11 @@ import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
 /**
- * Settings › Layout › Home screen: Now trending and its layout, the Home rows (shown or hidden,
- * in Home's order; the focused row's Hide / Move / Mode in the panel, Hold OK = Move), then Keep watching
- * and Android TV home.
+ * Settings › Aussehen & Startseite › Reihen der Startseite (6 Nov 2026): Now trending and its layout, then
+ * Home's rows (shown or hidden, in Home's order). ▶ on a row reaches its own options in the panel: Hide /
+ * Move for every row, Keep watching's Live / Movies / Series / video preview, the channel row's category.
+ * Moving opens the one arrange window, Home's rows and the other apps' rows together (Hold OK = Move).
+ * Then the Apps row and the other apps' channels.
  */
 @Composable
 fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
@@ -55,26 +51,29 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val rowsFocus = remember { FocusRequester() }
     val actionsFocus = remember { FocusRequester() }
     val rowFocus = remember { HomeRow.entries.associateWith { FocusRequester() } }
-    // The row being moved with ▲ ▼ (Hold OK, or Move in the panel); OK or Back ends it.
-    var moving by remember { mutableStateOf<HomeRow?>(null) }
+    // The arrange window, opened on a row; true when a held OK opened it (its release must not commit).
+    var arranging by remember { mutableStateOf<Pair<HomeRow, Boolean>?>(null) }
     // The row whose actions the panel shows while focus is in them.
     var acting by remember { mutableStateOf<HomeRow?>(null) }
+    var pickingCatalog by remember { mutableStateOf(false) }
+    val panel = LocalSettingsPanel.current
     LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { rowsFocus.requestFocus() } }
 
     val ok = stringResource(R.string.common_ok)
     val back = stringResource(R.string.common_back)
     val layout = stringResource(R.string.settings_group_appearance_home)
-    val rowCount = (if (trendingEnabled) 2 else 1) + config.settingsRows.size
+    val rowCount = (if (trendingEnabled) 1 else 0) + config.settingsRows.count { it !in config.hidden }
+    val catalogChoice by vm.catalogChoice.collectAsStateWithLifecycle()
+    val recentTitle = HomeRow.RECENT_CHANNELS.displayTitle()
     StageFullPage(
         parents = listOf(layout),
-        title = stringResource(R.string.settings_home_page),
+        title = stringResource(R.string.settings_ca_home_rows),
         count = pluralStringResource(R.plurals.settings_home_row_count, rowCount, rowCount),
         onBack = onBack,
         modifier = modifier,
         rowsFocus = rowsFocus,
-        handleBack = moving == null,
     ) {
-        StageSettingsHeading(stringResource(R.string.home_row_now_trending), null, first = true)
+        StageSettingsHeading(stringResource(R.string.home_row_now_trending), if (trendingEnabled) 2 else 1, first = true)
         val trendingTitle = stringResource(R.string.home_row_now_trending)
         val trendingValue = SettingValue.Switch(trendingEnabled)
         StageSettingRow(
@@ -106,9 +105,11 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             )
         }
 
-        StageSettingsHeading(stringResource(R.string.settings_sections), config.settingsRows.size)
+        StageSettingsHeading(stringResource(R.string.settings_ca_rows_heading), config.settingsRows.size)
         val hiddenNote = stringResource(R.string.settings_hidden_sections)
-        val catalogChoice by vm.catalogChoice.collectAsStateWithLifecycle()
+        val on = stringResource(R.string.common_on)
+        val off = stringResource(R.string.common_off)
+        val state: @Composable (Int, Boolean) -> String = { label, value -> stringResource(R.string.settings_ca_action_value, stringResource(label), if (value) on else off) }
         config.settingsRows.forEach { row ->
             key(row) {
                 val hidden = row in config.hidden
@@ -118,17 +119,35 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                     else -> null
                 }
                 val focus = rowFocus.getValue(row)
-                val startMove: () -> Unit = { moving = row; acting = null; runCatching { focus.requestFocus() } }
-                val actions = listOfNotNull(
-                    StageAction(
-                        if (hidden) OwnTVIcon.PLAY_CIRCLE else OwnTVIcon.EYE_OFF,
-                        stringResource(if (hidden) R.string.settings_home_show_row else R.string.settings_home_hide_row),
-                        { vm.setRowHidden(row, !hidden) },
-                    ),
-                    StageAction(OwnTVIcon.MOVE, stringResource(R.string.settings_home_move_row), startMove),
-                    liveMode?.let { mode -> StageAction(OwnTVIcon.GRID, mode.displayLabel(), { vm.setLiveRowMode(row, mode.toggled()) }) },
-                )
-                val isMoving = moving == row
+                val actions = buildList {
+                    add(
+                        StageAction(
+                            if (hidden) OwnTVIcon.PLAY_CIRCLE else OwnTVIcon.EYE_OFF,
+                            stringResource(if (hidden) R.string.settings_home_show_row else R.string.settings_home_hide_row),
+                            { vm.setRowHidden(row, !hidden) },
+                        ),
+                    )
+                    add(StageAction(OwnTVIcon.MOVE, stringResource(R.string.settings_home_move_row), { acting = null; arranging = row to false }))
+                    liveMode?.let { mode -> add(StageAction(OwnTVIcon.GRID, mode.displayLabel(), { vm.setLiveRowMode(row, mode.toggled()) })) }
+                    // Keep watching's own options (6 Nov 2026: were a section of their own under the rows).
+                    if (row == HomeRow.HERO) {
+                        add(StageAction(OwnTVIcon.LIVE_TV, state(R.string.settings_ca_keep_live, config.heroIncludeLive), { vm.setHeroInclude(HeroKind.LIVE, !config.heroIncludeLive) }))
+                        add(StageAction(OwnTVIcon.MOVIES, state(R.string.settings_ca_keep_movies, config.heroIncludeMovies), { vm.setHeroInclude(HeroKind.MOVIES, !config.heroIncludeMovies) }))
+                        add(StageAction(OwnTVIcon.SERIES, state(R.string.settings_ca_keep_series, config.heroIncludeSeries), { vm.setHeroInclude(HeroKind.SERIES, !config.heroIncludeSeries) }))
+                        add(StageAction(OwnTVIcon.PLAY, state(R.string.settings_ca_keep_video, heroPreviewEnabled), { vm.setHeroPreviewEnabled(!heroPreviewEnabled) }))
+                    }
+                    // The channel row's category (6 Nov 2026: was the Senderreihe section).
+                    if (row == HomeRow.RECENT_CHANNELS) {
+                        add(
+                            StageAction(
+                                OwnTVIcon.LIVE_TV,
+                                stringResource(R.string.settings_ca_action_value, stringResource(R.string.home_catalog_title), catalogChoice.current?.name ?: recentTitle),
+                                { panel?.opener = focus; acting = null; pickingCatalog = true },
+                            ),
+                        )
+                        if (catalogChoice.hidden > 0) add(StageAction(OwnTVIcon.EYE_OFF, stringResource(R.string.home_catalog_show_hidden), vm::showHiddenOnHome))
+                    }
+                }
                 // The channel row is named after the category it shows (Magenta TV), not "Recently watched".
                 val title = if (row == HomeRow.RECENT_CHANNELS) catalogChoice.current?.name ?: row.displayTitle() else row.displayTitle()
                 val hiddenWord = stringResource(R.string.settings_hidden)
@@ -145,98 +164,35 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                             maxLines = 1, overflow = TextOverflow.Ellipsis,
                         )
                     },
-                    onClick = { if (isMoving) moving = null else { acting = row; runCatching { actionsFocus.requestFocus() } } },
-                    onLongClick = startMove,
-                    marked = isMoving,
+                    onClick = { acting = row; runCatching { actionsFocus.requestFocus() } },
+                    onLongClick = { acting = null; arranging = row to true },
                     keepPanel = acting == row,
                     help = SettingHelp(
                         title = title,
                         text = row.settingsDescription() + "\n" + hiddenNote,
-                        hints = if (isMoving) {
-                            listOf("▲ ▼" to stringResource(R.string.content_move), ok to stringResource(R.string.settings_done))
-                        } else {
-                            listOf(
-                                "▶" to stringResource(R.string.settings_key_actions),
-                                stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_move),
-                                back to layout,
-                            )
-                        },
-                        extra = { if (!isMoving) StageActionColumn(actions, focus, actionsFocus) },
+                        hints = listOf(
+                            "▶" to stringResource(R.string.settings_key_actions),
+                            stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_move),
+                            back to layout,
+                        ),
+                        extra = { StageActionColumn(actions, focus, actionsFocus) },
                     ),
                     modifier = Modifier
                         .focusRequester(focus)
-                        .focusProperties { if (!isMoving) right = actionsFocus }
-                        .onFocusChanged { if (it.isFocused) acting = null }
-                        .onPreviewKeyEvent { e ->
-                            if (!isMoving) return@onPreviewKeyEvent false
-                            val up = when (e.key) {
-                                Key.DirectionUp -> true
-                                Key.DirectionDown -> false
-                                else -> return@onPreviewKeyEvent e.key == Key.DirectionLeft || e.key == Key.DirectionRight
-                            }
-                            if (e.type == KeyEventType.KeyDown) vm.move(row, up)
-                            true
-                        },
+                        .focusProperties { right = actionsFocus }
+                        .onFocusChanged { if (it.isFocused) acting = null },
                 )
             }
         }
 
-        // Home's rows together with the other apps' rows (YouTube, Nuvio …), in one window (Jonathan, 4 Nov 2026).
-        var arranging by remember { mutableStateOf(false) }
-        val arrangeTitle = stringResource(R.string.home_arrange_rows)
-        val arrangeDesc = stringResource(R.string.home_arrange_rows_description)
-        StageSettingRow(
-            icon = OwnTVIcon.MOVE,
-            title = arrangeTitle,
-            desc = arrangeDesc,
-            value = null,
-            onClick = { arranging = true },
-            help = SettingHelp(arrangeTitle, arrangeDesc, hints = settingHints(null, pinnable = false)),
-        )
-        if (arranging) {
-            tv.own.owntv.features.home.ArrangeRowsWindow(
-                rows = config.settingsRows,
-                catalogName = catalogChoice.current?.name,
-                startAt = tv.own.owntv.features.home.HomeSlot.Row(HomeRow.RECENT_CHANNELS),
-                onSaveRows = vm::setRowOrder,
-                onClose = { arranging = false },
-            )
-        }
+        // The Apps row and the other apps' channels, moved here from the start-screen settings.
+        LauncherSettingsRows(part = LauncherRowsPart.HOME_APPS)
 
-        // The Spotlight layout's highlights: which sources, in which order.
-        SpotlightSourceRows()
-
-        // Mayo TV: which category's channels stand where Recently watched was (HomeCatalog).
-        var pickingCatalog by remember { mutableStateOf(false) }
-        val recentTitle = HomeRow.RECENT_CHANNELS.displayTitle()
-        StageSettingsHeading(stringResource(R.string.home_catalog_heading), if (catalogChoice.hidden > 0) 2 else 1)
-        val catalogTitle = stringResource(R.string.home_catalog_title)
-        val catalogDesc = stringResource(R.string.home_catalog_description)
-        val catalogValue = SettingValue.Choice(catalogChoice.current?.name ?: recentTitle)
-        val catalogOptions = listOf(HomeCatalog.RECENT to recentTitle) + catalogChoice.categories.map { it.key to it.name }
-        StageSettingRow(
-            icon = OwnTVIcon.LIVE_TV,
-            title = catalogTitle,
-            desc = catalogDesc,
-            value = catalogValue,
-            onClick = { pickingCatalog = true },
-            help = settingHelp(null, catalogTitle, catalogDesc, catalogValue, catalogOptions.map { it.second }, pinnable = false),
-        )
-        if (catalogChoice.hidden > 0) {
-            val showTitle = stringResource(R.string.home_catalog_show_hidden)
-            val showDesc = pluralStringResource(R.plurals.home_catalog_hidden_count, catalogChoice.hidden, catalogChoice.hidden)
-            StageSettingRow(
-                icon = OwnTVIcon.EYE_OFF,
-                title = showTitle,
-                desc = showDesc,
-                value = null,
-                onClick = vm::showHiddenOnHome,
-                help = SettingHelp(showTitle, showDesc, hints = settingHints(null, pinnable = false)),
-            )
-        }
+        // In the page's panel, so drawn inside the page.
         if (pickingCatalog) {
+            val catalogOptions = listOf(HomeCatalog.RECENT to recentTitle) + catalogChoice.categories.map { it.key to it.name }
             PickerDialog(
-                title = catalogTitle,
+                title = stringResource(R.string.home_catalog_title),
                 options = catalogOptions,
                 selected = catalogChoice.current?.key ?: HomeCatalog.RECENT,
                 onSelect = { key -> vm.chooseCatalog(key); pickingCatalog = false },
@@ -244,25 +200,19 @@ fun HomeSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 searchable = catalogOptions.size > 12,
             )
         }
-
-        // The Apps row and the other apps' channels, moved here from the start-screen settings.
-        LauncherSettingsRows(part = LauncherRowsPart.HOME_APPS)
-
-        StageSettingsHeading(stringResource(R.string.settings_keep_watching), 4)
-        HomeSwitchRow(OwnTVIcon.LIVE_TV, R.string.settings_live_keep_watching, R.string.settings_live_keep_watching_description, config.heroIncludeLive) {
-            vm.setHeroInclude(HeroKind.LIVE, !config.heroIncludeLive)
-        }
-        HomeSwitchRow(OwnTVIcon.MOVIES, R.string.settings_movies_keep_watching, R.string.settings_movies_keep_watching_description, config.heroIncludeMovies) {
-            vm.setHeroInclude(HeroKind.MOVIES, !config.heroIncludeMovies)
-        }
-        HomeSwitchRow(OwnTVIcon.SERIES, R.string.settings_series_keep_watching, R.string.settings_series_keep_watching_description, config.heroIncludeSeries) {
-            vm.setHeroInclude(HeroKind.SERIES, !config.heroIncludeSeries)
-        }
-        HomeSwitchRow(OwnTVIcon.PLAY, R.string.settings_hero_preview, R.string.settings_hero_preview_description, heroPreviewEnabled) {
-            vm.setHeroPreviewEnabled(!heroPreviewEnabled)
+        // Home's rows together with the other apps' rows (YouTube, Nuvio …), in one window (Jonathan, 4 Nov 2026):
+        // the only way to move a row since 6 Nov 2026.
+        arranging?.let { (row, byHold) ->
+            tv.own.owntv.features.home.ArrangeRowsWindow(
+                rows = config.settingsRows,
+                catalogName = catalogChoice.current?.name,
+                startAt = tv.own.owntv.features.home.HomeSlot.Row(row),
+                onSaveRows = vm::setRowOrder,
+                onClose = { arranging = null; runCatching { rowFocus.getValue(row).requestFocus() } },
+                openedByHold = byHold,
+            )
         }
     }
-    BackHandler(enabled = moving != null) { moving = null }
 }
 
 /**
@@ -274,10 +224,17 @@ internal fun AndroidTvHomeRows() {
     val settingsVm: SettingsViewModel = koinViewModel()
     val androidTvHomeEnabled by settingsVm.androidTvHomeEnabled.collectAsStateWithLifecycle()
     val tvHomeRefresh by settingsVm.tvHomeRefresh.collectAsStateWithLifecycle()
-    StageSettingsHeading(stringResource(R.string.settings_android_tv_home), if (androidTvHomeEnabled) 2 else 1)
-    HomeSwitchRow(OwnTVIcon.HISTORY, R.string.settings_android_tv_home, R.string.settings_android_tv_home_description, androidTvHomeEnabled) {
-        settingsVm.setAndroidTvHomeEnabled(!androidTvHomeEnabled)
-    }
+    StageSettingsHeading(stringResource(R.string.settings_ca_heading_android_tv), if (androidTvHomeEnabled) 2 else 1)
+    val cardsTitle = stringResource(R.string.settings_ca_tv_cards)
+    val cardsValue = SettingValue.Switch(androidTvHomeEnabled)
+    StageSettingRow(
+        icon = OwnTVIcon.HISTORY,
+        title = cardsTitle,
+        desc = stringResource(R.string.settings_ca_line_tv_cards),
+        value = cardsValue,
+        onClick = { settingsVm.setAndroidTvHomeEnabled(!androidTvHomeEnabled) },
+        help = settingHelp(null, cardsTitle, stringResource(R.string.settings_android_tv_home_description), cardsValue, pinnable = false),
+    )
     if (androidTvHomeEnabled) {
         val refreshTitle = stringResource(R.string.settings_refresh_now)
         val refreshValue = when (tvHomeRefresh) {
@@ -289,27 +246,12 @@ internal fun AndroidTvHomeRows() {
         StageSettingRow(
             icon = OwnTVIcon.REFRESH,
             title = refreshTitle,
-            desc = refreshDesc,
+            desc = stringResource(R.string.settings_ca_line_refresh),
             value = refreshValue,
             onClick = { if (tvHomeRefresh == SettingsViewModel.TvHomeRefresh.IDLE) settingsVm.refreshAndroidTvHome() },
             help = SettingHelp(refreshTitle, refreshDesc, hints = settingHints(null, pinnable = false)),
         )
     }
-}
-
-@Composable
-private fun HomeSwitchRow(icon: OwnTVIcon, titleRes: Int, descRes: Int, on: Boolean, onClick: () -> Unit) {
-    val title = stringResource(titleRes)
-    val desc = stringResource(descRes)
-    val value = SettingValue.Switch(on)
-    StageSettingRow(
-        icon = icon,
-        title = title,
-        desc = desc,
-        value = value,
-        onClick = onClick,
-        help = settingHelp(null, title, desc, value, pinnable = false),
-    )
 }
 
 private val HomeRow.icon: OwnTVIcon get() = when (this) {
