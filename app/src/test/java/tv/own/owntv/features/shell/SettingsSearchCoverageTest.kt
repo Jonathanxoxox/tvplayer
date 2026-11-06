@@ -47,7 +47,11 @@ class SettingsSearchCoverageTest {
             .orEmpty()
         assertTrue("could not read the SettingsTab enum", declared.size > 10)
 
-        val reachable = Regex("""SettingsTab\.([A-Z_]+)""").findAll(searchBlock)
+        // The search block and the sub-screen entries it spreads in (Heruntergeladene Untertitel lives there).
+        val helperFrom = source.indexOf("private fun subScreenSearchEntries")
+        val helperTo = Regex("""\n\)\r?\n""").find(source, helperFrom.coerceAtLeast(0))?.range?.first ?: -1
+        val helper = if (helperFrom in 0 until helperTo) source.substring(helperFrom, helperTo) else ""
+        val reachable = Regex("""SettingsTab\.([A-Z_]+)""").findAll(searchBlock + helper)
             .map { it.groupValues[1] }.toSet()
         assertEquals(
             "settings screens with no search entry — nothing on them is findable by name",
@@ -155,6 +159,8 @@ class SettingsSearchCoverageTest {
         "settings_sources_test_title", "player_subtitles_sign_in_title", "settings_open_subtitles_setup_title",
         "settings_panel_width_dialog_title", "settings_panel_width_disable_preview_title",
         "settings_record_watching_warning_title",
+        // The setup wizard's Language row and its popup; in Settings the row is "App-Sprache" (settings_pb_app_language).
+        "settings_language",
     )
 
     @Test
