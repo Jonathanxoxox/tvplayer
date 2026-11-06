@@ -184,6 +184,20 @@ class SportsViewModel(
         )
     }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    /**
+     * The Spotlight's matches: the same followed ones as [homeRow], in the same order, but also when none is
+     * near yet, so a match tonight is a highlight in the afternoon (Jonathan, 6 Nov 2026: HSV was missing).
+     */
+    val spotlightRow: StateFlow<List<Match>> = flow {
+        delay(HOME_ROW_DELAY_MS)
+        emitAll(
+            combine(repository.observe(Demand.HomeRow), config) { b, c ->
+                SportsHomeRow.followed(b, c, c.leagues.toSet(), System.currentTimeMillis())
+                    .sortedWith(compareBy<Match>({ c.rankOf(it.sport, it.feed).first }, { c.rankOf(it.sport, it.feed).second }, { !it.isLive }, { it.startMs }))
+            },
+        )
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     // --- The match page ------------------------------------------------------------------------------
 
     private val openMatch = MutableStateFlow<Match?>(null)

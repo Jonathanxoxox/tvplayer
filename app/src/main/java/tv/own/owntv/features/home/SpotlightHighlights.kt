@@ -11,14 +11,14 @@ import kotlin.math.abs
 import kotlin.math.min
 
 /** Why something is in the Spotlight; its label says so on screen. */
-enum class HighlightReason { SPORT_LIVE, SPORT_SOON, HIGHLIGHT, TIP, DOC, HABIT, RESUME, NOW }
+enum class HighlightReason { SPORT_LIVE, SPORT_SOON, SPORT_LATER, HIGHLIGHT, TIP, DOC, HABIT, RESUME, NOW }
 
 /**
  * Where the Spotlight takes its highlights from, in the order the user puts them (Settings › Home ›
  * Spotlight; Jonathan, 5 Nov 2026). Each can be switched off.
  */
 enum class SpotlightSource(val key: String) {
-    /** The followed teams' and leagues' matches, live or kicking off within a quarter of an hour. */
+    /** The followed teams' and leagues' matches: live, kicking off within a quarter of an hour, or later today. */
     SPORT("sport"),
     /** MagentaTV's own tips and highlights of the day: on now, and still to come today. */
     TIPS("tips"),
@@ -137,6 +137,10 @@ object SpotlightHighlights {
                     matches.filter { it.isLive }.take(2).forEach { add(Highlight.Sport(it, HighlightReason.SPORT_LIVE)) }
                     matches.firstOrNull { !it.isLive && it.startMs in now..now + SOON_MS }
                         ?.let { add(Highlight.Sport(it, HighlightReason.SPORT_SOON)) }
+                    // The followed team playing tonight is the day's highlight already in the afternoon, not only a
+                    // quarter of an hour before kick-off (Jonathan, 6 Nov 2026: HSV in the evening was missing).
+                    matches.firstOrNull { !it.isLive && it.startMs > now + SOON_MS && sameDay(it.startMs, now, zone) }
+                        ?.let { add(Highlight.Sport(it, HighlightReason.SPORT_LATER)) }
                 }
                 SpotlightSource.TIPS -> ahead.filter { it.highlight || it.tip }.take(TIPS_MAX).forEach {
                     add(Highlight.Pick(it, if (it.highlight) HighlightReason.HIGHLIGHT else HighlightReason.TIP))
@@ -155,6 +159,12 @@ object SpotlightHighlights {
             }
         }
         return out
+    }
+
+    private fun sameDay(a: Long, b: Long, zone: TimeZone): Boolean {
+        val ca = Calendar.getInstance(zone).apply { timeInMillis = a }
+        val cb = Calendar.getInstance(zone).apply { timeInMillis = b }
+        return ca.get(Calendar.YEAR) == cb.get(Calendar.YEAR) && ca.get(Calendar.DAY_OF_YEAR) == cb.get(Calendar.DAY_OF_YEAR)
     }
 
     private fun minuteOfDay(ms: Long, zone: TimeZone): Int =

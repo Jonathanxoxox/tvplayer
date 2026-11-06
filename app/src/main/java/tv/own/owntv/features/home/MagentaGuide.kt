@@ -90,6 +90,48 @@ class MagentaGuide(private val http: OkHttpClient) {
         }.getOrDefault(emptyList())
     }
 
+    /** Match key → picture URL, or "" when the sports channels were all asked and none shows it. */
+    private val matchPictures = ConcurrentHashMap<String, String>()
+
+    /**
+     * A picture for a match, from the programme that shows it on one of the guide's sports channels (Sky Sport,
+     * DAZN, MagentaSport …): "Live BL: Hamburger SV - Borussia M'gladbach" on Sky Sport Bundesliga 1 for HSV
+     * against Gladbach (Jonathan, 6 Nov 2026). The guide's search is closed to guests, so the likely channels
+     * are asked one by one around the kick-off, stopping at the first that has it. [home] and [away] are each
+     * team's names (full, short, abbreviation). Null when none shows it or the guide cannot be asked.
+     */
+    suspend fun matchPicture(key: String, home: List<String>, away: List<String>, kickoffMs: Long): String? =
+        withContext(Dispatchers.IO) {
+            matchPictures[key]?.let { return@withContext it.ifEmpty { null } }
+            runCatching {
+                lock.withLock {
+                    channelId("") // fills the channel list
+                    val known = channels
+                    if (known.isEmpty()) return@withLock null
+                    var answered = true
+                    var found: String? = null
+                    for (id in MagentaNames.sportChannels(known)) {
+                        val body = JSONObject()
+                            .put("count", -1)
+                            .put("isFillProgram", 0)
+                            .put("offset", 0)
+                            .put("properties", JSONArray().put(JSONObject().put("include", "starttime,name,pictures").put("name", "playbill")))
+                            .put("type", 2)
+                            .put("begintime", utc(kickoffMs - MatchPictures.BEFORE_MS))
+                            .put("channelid", id)
+                            .put("endtime", utc(kickoffMs + MatchPictures.AFTER_MS))
+                        val list = post("PlayBillList", body)?.optJSONArray("playbilllist")
+                        if (list == null) { answered = false; continue }
+                        found = MagentaNames.matchPicture(list, home, away, kickoffMs) ?: continue
+                        break
+                    }
+                    // Remembered only when every channel answered: a network hiccup asks again next time.
+                    if (found != null || answered) matchPictures[key] = found.orEmpty()
+                    found
+                }
+            }.getOrNull()
+        }
+
     private fun channelId(name: String): String? {
         val now = System.currentTimeMillis()
         if (channels.isEmpty() || now - channelsAt > CHANNELS_TTL_MS) {
@@ -186,8 +228,63 @@ class MagentaGuide(private val http: OkHttpClient) {
     }
 }
 
+/** How far around the kick-off a match's broadcast is looked for (pre-match shows start up to an hour early). */
+internal object MatchPictures {
+    const val BEFORE_MS = 90 * 60_000L
+    const val AFTER_MS = 20 * 60_000L
+}
+
 /** Matching the playlist's channel names to the guide's, and picking a programme's picture. */
 internal object MagentaNames {
+    /** The guide's sports channels, the ones most likely to carry a football match first. */
+    fun sportChannels(index: Map<String, String>): List<String> {
+        val hints = listOf("sky sport", "dazn", "magentasport", "magenta sport", "sport1", "sport 1", "eurosport", "sky showcase")
+        return index.entries
+            .filter { (k, _) -> hints.any { k.startsWith(it) } }
+            .sortedBy { (k, _) ->
+                when {
+                    "bundesliga" in k || "top event" in k -> 0
+                    k.startsWith("dazn") -> 1
+                    k.startsWith("sky sport") -> 2
+                    else -> 3
+                }
+            }
+            .map { it.value }
+    }
+
+    /** Lower case, umlauts folded, so "Mönchengladbach" and "M'gladbach" meet on "gladbach". */
+    private fun fold(s: String): String = s.lowercase(Locale.ROOT)
+        .replace("ä", "a").replace("ö", "o").replace("ü", "u").replace("ß", "ss")
+
+    /** A team's long name parts (4+ letters) to find inside a title, and its short codes as whole words. */
+    private fun teamMatches(names: List<String>, title: String, words: Set<String>): Boolean {
+        val parts = names.flatMap { fold(it).split(' ', '-', '.', '\'', '/').filter { p -> p.length >= 4 } }
+        val codes = names.map { fold(it).trim() }.filter { it.length in 2..4 && ' ' !in it }
+        return parts.any { it in title } || codes.any { it in words }
+    }
+
+    /**
+     * The picture of the programme that shows the match: both teams named, starting from an hour and a half
+     * before to 20 minutes after [kickoffMs]; the live broadcast before a countdown, conference or highlights.
+     */
+    fun matchPicture(playbills: JSONArray, home: List<String>, away: List<String>, kickoffMs: Long): String? {
+        if (home.isEmpty() || away.isEmpty()) return null
+        var best: JSONObject? = null
+        var bestScore = Long.MAX_VALUE
+        for (i in 0 until playbills.length()) {
+            val p = playbills.optJSONObject(i) ?: continue
+            val title = fold(p.optString("name"))
+            val words = title.split(Regex("[^a-z0-9]+")).filter { it.isNotEmpty() }.toSet()
+            if (!teamMatches(home, title, words) || !teamMatches(away, title, words)) continue
+            val start = runCatching { utcFormat.get()!!.parse(p.optString("starttime").take(19))?.time }.getOrNull() ?: continue
+            if (start < kickoffMs - MatchPictures.BEFORE_MS || start > kickoffMs + MatchPictures.AFTER_MS) continue
+            val aside = listOf("countdown", "fantasy", "konferenz", "highlights", "vorbericht", "analyse").any { it in title }
+            val score = kotlin.math.abs(start - kickoffMs) + if (aside) 6 * 60 * 60_000L else 0L
+            if (score < bestScore) { best = p; bestScore = score }
+        }
+        return best?.let(::pictureOf)
+    }
+
     /** Words that say nothing about which channel it is: country tags, quality, codec. */
     private val noise = setOf("de", "ger", "germany", "hd", "fhd", "uhd", "sd", "4k", "hevc", "h265", "raw", "50fps", "tv")
     private val utcFormat = ThreadLocal.withInitial {

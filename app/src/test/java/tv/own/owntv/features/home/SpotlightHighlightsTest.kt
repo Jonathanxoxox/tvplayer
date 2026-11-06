@@ -45,10 +45,19 @@ class SpotlightHighlightsTest {
     ) = SpotlightHighlights.rank(now, sources, matches, channels, onNow, watched, emptyList(), picks, zone)
 
     @Test
-    fun `live matches come first, then one kicking off soon`() {
+    fun `live matches come first, then one kicking off soon, then one later today`() {
         val now = at(15, 30)
         val h = rank(now, matches = listOf(match("1", true, now - 30 * min), match("2", false, now + 10 * min), match("3", false, now + 60 * min)))
-        assertEquals(listOf(HighlightReason.SPORT_LIVE, HighlightReason.SPORT_SOON), h.map { it.reason })
+        // The one at 16:30 counts as later today.
+        assertEquals(listOf(HighlightReason.SPORT_LIVE, HighlightReason.SPORT_SOON, HighlightReason.SPORT_LATER), h.map { it.reason })
+    }
+
+    @Test
+    fun `a followed match later today is a highlight, tomorrow's is not`() {
+        val now = at(15, 30)
+        val h = rank(now, matches = listOf(match("1", false, at(20, 30)), match("2", false, at(20, 30) + 24 * 60 * min)))
+        assertEquals(listOf(HighlightReason.SPORT_LATER), h.map { it.reason })
+        assertEquals("sport:${match("1", false, at(20, 30)).key}", h.single().key)
     }
 
     @Test

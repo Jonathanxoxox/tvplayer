@@ -102,6 +102,8 @@ internal fun HomeStage(
     highlights: List<Highlight> = emptyList(),
     onOpenMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = {},
     onResume: (tv.own.owntv.core.home.HeroItem) -> Unit = {},
+    /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
+    spotlightFocusRequest: Long = 0L,
 ) {
     val channels = row.channels
     if (channels.isEmpty()) return
@@ -153,10 +155,26 @@ internal fun HomeStage(
         delay(RETURN_FOCUS_MS)
         runCatching { pickedLogo.requestFocus() }
     }
+    // Start and the Home button land on the Spotlight, not on the first channel (Jonathan, 6 Nov 2026): the
+    // channel playing here stops, the first highlight shows, focus goes to its button. After the Back-from-
+    // full-screen refocus above, which the Home button's way out of the player would otherwise win.
+    LaunchedEffect(spotlightFocusRequest) {
+        if (spotlightFocusRequest == 0L || !spotlight || highlights.isEmpty()) return@LaunchedEffect
+        // Once per request: the stage leaves the list's composition when scrolled away, and coming back must
+        // not pull focus up to the Spotlight (or stop its channel) for a request already served.
+        if (!StageOnce.first("focus", spotlightFocusRequest)) return@LaunchedEffect
+        if (picked != null) { liveVm.stopPreview(); picked = null }
+        stripFocused = false
+        hlIndex = 0
+        delay(RETURN_FOCUS_MS + 50)
+        withFrameNanos { }
+        runCatching { hlButton.requestFocus() }
+    }
     // Woken from standby: the channel picked here is not coming back; the highlights show again.
     val wake by tv.own.owntv.launcher.apps.LauncherSystem.wake.collectAsState()
     LaunchedEffect(wake) {
         if (wake == 0L || picked == null) return@LaunchedEffect
+        if (!StageOnce.first("wake", wake)) return@LaunchedEffect
         liveVm.stopPreview()
         picked = null
     }
@@ -176,6 +194,16 @@ internal fun HomeStage(
     }
     // A pick from the guide brings its own picture.
     val pickArt = (hl as? Highlight.Pick)?.pick
+    // A match: its programme's picture from the guide's sports channels, when one shows it.
+    val magenta = org.koin.compose.koinInject<MagentaGuide>()
+    val sportMatch = (hl as? Highlight.Sport)?.match
+    val sportArt by androidx.compose.runtime.produceState<String?>(null, sportMatch?.key) {
+        value = null
+        val m = sportMatch ?: return@produceState
+        fun names(c: tv.own.owntv.core.sports.model.Competitor?) =
+            listOfNotNull(c?.team?.name, c?.team?.shortName, c?.team?.abbreviation).filter { it.isNotBlank() }
+        value = magenta.matchPicture(m.key, names(m.home), names(m.away), m.startMs)
+    }
     val picProgramme = if (hl is Highlight.Live) hl.programme else if (hl == null) programme else null
     // The row's pictures ahead, once Home has settled: browsing then shows them at once. Only their
     // addresses and the files on disk; decoded, thirty 1080p pictures would take some 240 MB.
@@ -223,7 +251,10 @@ internal fun HomeStage(
     // it, the page's wash fading in from the left for the text and from below for the channel strip.
     if (spotlight) Box(Modifier.matchParentSize()) {
         when (hl) {
-            is Highlight.Sport -> Unit
+            // A match with a picture shows it full width like any highlight; without one, its crests (below).
+            is Highlight.Sport -> sportArt?.let { url ->
+                SpotlightArt(state = ArtState.Picture(url), channel = picChannel, logo = {}, corner = {})
+            }
             is Highlight.Resume -> HighlightPicture(hl)
             else -> SpotlightArt(
                 state = artState,
@@ -333,7 +364,7 @@ internal fun HomeStage(
                 )
                 if (spotlight) {
                     // The picture is the full-width one behind; a match shows its crests here.
-                    if (video == null && hl is Highlight.Sport) HighlightPicture(hl)
+                    if (video == null && hl is Highlight.Sport && sportArt == null) HighlightPicture(hl)
                 } else if (video == null && hl != null && hl !is Highlight.Live) {
                     HighlightPicture(hl)
                 } else if (video == null) {
@@ -437,4 +468,16 @@ private fun Initials(channel: ChannelEntity, size: Int) {
 private fun timeSpan(programme: EpgProgrammeEntity): String {
     val format = android.text.format.DateFormat.getTimeFormat(LocalContext.current)
     return stringResource(R.string.home_stage_time_span, format.format(java.util.Date(programme.startMs)), format.format(java.util.Date(programme.stopMs)))
+}
+
+/** Tokens the stage has acted on, per kind, for the app's lifetime: a re-composed stage does not act on one again. */
+private object StageOnce {
+    private val last = HashMap<String, Long>()
+
+    @Synchronized
+    fun first(kind: String, token: Long): Boolean {
+        if (last[kind] == token) return false
+        last[kind] = token
+        return true
+    }
 }
