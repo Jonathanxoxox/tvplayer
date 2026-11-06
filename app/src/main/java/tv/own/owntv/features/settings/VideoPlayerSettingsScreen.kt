@@ -158,13 +158,6 @@ internal fun videoSectionCounts(vm: SettingsViewModel): List<Int> {
     )
 }
 
-/** Rows a [VideoGroup] shows right now. Recording's rows are left to the caller, which counts them itself. */
-@Composable
-internal fun videoGroupCount(group: VideoGroup, vm: SettingsViewModel): Int {
-    val counts = videoSectionCounts(vm)
-    return group.parts.sumOf { (_, sections) -> sections.filter { it != SECTION_RECORDING }.sumOf { counts[it] } }
-}
-
 /**
  * One row of this screen as Quick can show it: which section it lives in, and what to draw for it.
  * Quick pins keys, and a key pinned from in here has no row on the Settings root to borrow a title

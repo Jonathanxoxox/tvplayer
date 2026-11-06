@@ -1959,57 +1959,6 @@ private fun RootRowStage(
         modifier = (focus ?: item.focus)?.let { Modifier.focusRequester(it) } ?: Modifier,
     )
 }
-/**
- * Hold OK on a sheet row: pin it to Quick, take it back out, or move it within Quick. Actions that
- * cannot apply are left out rather than greyed — a focusable row that refuses to do anything is worse
- * on a remote than one that is simply not there.
- */
-@Composable
-internal fun SettingsRowMenu(
-    title: String,
-    pinned: Boolean,
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
-    onPinToggle: () -> Unit,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    BackHandler { onDismiss() }
-    val first = remember { FocusRequester() }
-    LaunchedEffect(Unit) { withFrameNanos { }; runCatching { first.requestFocus() } }
-    // The Stage menu (playbook 11), as every other hold-OK menu.
-    tv.own.owntv.ui.components.OwnTVPopup(onDismissRequest = onDismiss, stageLayout = true) {
-        Box(
-            Modifier.fillMaxSize().background(tv.own.owntv.ui.theme.StageColors.Scrim).longPressMenuGuard(),
-            contentAlignment = Alignment.Center,
-        ) {
-            tv.own.owntv.ui.stage.StageMenu(Modifier.width(520.mpx).trapAllFocusExit().focusGroup()) {
-                tv.own.owntv.ui.stage.StageMenuHeader(title = title, subtitle = null)
-                tv.own.owntv.ui.stage.StageMenuItem(
-                    stringResource(if (pinned) R.string.settings_row_menu_unpin else R.string.settings_row_menu_pin),
-                    onClick = { onPinToggle(); onDismiss() },
-                    icon = OwnTVIcon.SPARKLE,
-                    modifier = Modifier.focusRequester(first),
-                )
-                if (canMoveUp) {
-                    tv.own.owntv.ui.stage.StageMenuItem(
-                        stringResource(R.string.settings_row_menu_move_up),
-                        onClick = { onMoveUp(); onDismiss() },
-                        icon = OwnTVIcon.CHEVRON_UP,
-                    )
-                }
-                if (canMoveDown) {
-                    tv.own.owntv.ui.stage.StageMenuItem(
-                        stringResource(R.string.settings_row_menu_move_down),
-                        onClick = { onMoveDown(); onDismiss() },
-                        icon = OwnTVIcon.CHEVRON_DOWN,
-                    )
-                }
-            }
-        }
-    }
-}
 
 /** One searchable settings row: its group breadcrumb, title, extra keywords, and action. */
 private class SettingsSearchEntry(

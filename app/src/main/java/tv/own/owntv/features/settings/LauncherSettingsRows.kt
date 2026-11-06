@@ -40,9 +40,6 @@ import tv.own.owntv.ui.stage.StagePopupCheck
 import tv.own.owntv.ui.stage.StagePopupOption
 import tv.own.owntv.ui.theme.mpx
 
-/** How many rows Settings › Power-on & Home button has, for the page's count. */
-internal const val LAUNCHER_SETTING_COUNT = 5
-
 /** The parts of these rows, drawn where they belong since Settings were sorted anew (Jonathan, 4 Nov 2026). */
 internal enum class LauncherRowsPart {
     /** Settings › Power-on & Home button: Mayo TV as start screen, the guard, what opens at power-on. */
