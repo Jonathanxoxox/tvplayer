@@ -72,4 +72,29 @@ class MagentaNamesTest {
         val nov5 = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { clear(); set(2026, 10, 5, 19, 15) }.timeInMillis
         assertEquals(nov5, onArte.last().startMs)
     }
+
+    @Test
+    fun `a match's picture comes from the live broadcast naming both teams, not the countdown`() {
+        val list = JSONArray(
+            """[
+              {"starttime":"2026-11-06 18:30:00 UTC+00:00","name":"Live BL: HSV - BMG: Countdown","pictures":[
+                {"imageType":"17","href":"http://ngiss.t-online.de/countdown_h10.jpg"}]},
+              {"starttime":"2026-11-06 19:25:00 UTC+00:00","name":"Live BL: Hamburger SV - Borussia M'gladbach, Flutlicht-Freitag","pictures":[
+                {"imageType":"17","href":"http://ngiss.t-online.de/match_h10.jpg"}]},
+              {"starttime":"2026-11-06 19:30:00 UTC+00:00","name":"Live BL: Werder Bremen - Borussia Dortmund","pictures":[
+                {"imageType":"17","href":"http://ngiss.t-online.de/other_h10.jpg"}]}
+            ]""".trimIndent(),
+        )
+        val kickoff = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { clear(); set(2026, 10, 6, 19, 30) }.timeInMillis
+        val home = listOf("Hamburg SV", "Hamburg", "HSV")
+        val away = listOf("Borussia Mönchengladbach", "Gladbach", "BMG")
+        assertEquals("https://ngiss.t-online.de/match_h10.jpg", MagentaNames.matchPicture(list, home, away, kickoff))
+        assertNull(MagentaNames.matchPicture(list, listOf("Bayern München", "Bayern", "FCB"), away, kickoff))
+    }
+
+    @Test
+    fun `sports channels, the Bundesliga ones first`() {
+        val index = linkedMapOf("das erste" to "1", "sky sport news" to "2", "dazn 1" to "3", "sky sport bundesliga 1" to "4")
+        assertEquals(listOf("4", "3", "2"), MagentaNames.sportChannels(index))
+    }
 }

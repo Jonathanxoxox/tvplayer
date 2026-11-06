@@ -194,6 +194,16 @@ internal fun HomeStage(
     }
     // A pick from the guide brings its own picture.
     val pickArt = (hl as? Highlight.Pick)?.pick
+    // A match: its programme's picture from the guide's sports channels, when one shows it.
+    val magenta = org.koin.compose.koinInject<MagentaGuide>()
+    val sportMatch = (hl as? Highlight.Sport)?.match
+    val sportArt by androidx.compose.runtime.produceState<String?>(null, sportMatch?.key) {
+        value = null
+        val m = sportMatch ?: return@produceState
+        fun names(c: tv.own.owntv.core.sports.model.Competitor?) =
+            listOfNotNull(c?.team?.name, c?.team?.shortName, c?.team?.abbreviation).filter { it.isNotBlank() }
+        value = magenta.matchPicture(m.key, names(m.home), names(m.away), m.startMs)
+    }
     val picProgramme = if (hl is Highlight.Live) hl.programme else if (hl == null) programme else null
     // The row's pictures ahead, once Home has settled: browsing then shows them at once. Only their
     // addresses and the files on disk; decoded, thirty 1080p pictures would take some 240 MB.
@@ -241,7 +251,10 @@ internal fun HomeStage(
     // it, the page's wash fading in from the left for the text and from below for the channel strip.
     if (spotlight) Box(Modifier.matchParentSize()) {
         when (hl) {
-            is Highlight.Sport -> Unit
+            // A match with a picture shows it full width like any highlight; without one, its crests (below).
+            is Highlight.Sport -> sportArt?.let { url ->
+                SpotlightArt(state = ArtState.Picture(url), channel = picChannel, logo = {}, corner = {})
+            }
             is Highlight.Resume -> HighlightPicture(hl)
             else -> SpotlightArt(
                 state = artState,
@@ -351,7 +364,7 @@ internal fun HomeStage(
                 )
                 if (spotlight) {
                     // The picture is the full-width one behind; a match shows its crests here.
-                    if (video == null && hl is Highlight.Sport) HighlightPicture(hl)
+                    if (video == null && hl is Highlight.Sport && sportArt == null) HighlightPicture(hl)
                 } else if (video == null && hl != null && hl !is Highlight.Live) {
                     HighlightPicture(hl)
                 } else if (video == null) {
