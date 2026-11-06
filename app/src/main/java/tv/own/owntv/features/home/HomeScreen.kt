@@ -275,6 +275,17 @@ fun HomeScreen(
             state.spotlightWatched, state.heroItems, picks,
         )
     }
+    // The Spotlight is where Home starts and where the Home button lands (Jonathan, 6 Nov 2026): once per
+    // start, as soon as it has highlights, and on every Home press. Switching to Home in the rail stays as it was.
+    val homePress by tv.own.owntv.launcher.apps.LauncherSystem.homePress.collectAsStateWithLifecycle()
+    var spotlightFocusRequest by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    val spotlightReady = spotlightLayout && spotlightHighlights.isNotEmpty()
+    LaunchedEffect(homePress, spotlightReady) {
+        if (!spotlightReady) return@LaunchedEffect
+        val request = SpotlightLanding.take(homePress) ?: return@LaunchedEffect
+        runCatching { listState.scrollToItem(0) }
+        spotlightFocusRequest = request
+    }
     val showAllHiddenState = orderedRows.isEmpty()
     val showEmptyState = orderedRows.isNotEmpty() && renderRows.isEmpty()
     val fullBleed = renderRows.firstOrNull() == HomeRow.TRENDING &&
@@ -633,6 +644,7 @@ fun HomeScreen(
                             modifier = rowModifier,
                             spotlight = spotlightLayout,
                             highlights = spotlightHighlights,
+                            spotlightFocusRequest = spotlightFocusRequest,
                             onOpenMatch = onOpenMatch,
                             onResume = { item ->
                                 when (item) {
@@ -1655,3 +1667,26 @@ private const val PICKS_RETRY_MS = 30_000L
 /** From a little back (programmes on now) to late tonight. */
 private const val PICKS_BACK_MS = 3 * 60 * 60_000L
 private const val PICKS_AHEAD_MS = 12 * 60 * 60_000L
+
+/**
+ * When Home lands on the Spotlight: once per app start, and once for each Home button press (the shell counts
+ * them in [tv.own.owntv.launcher.apps.LauncherSystem.homePress]). Process-wide, so a Home screen built anew
+ * (back from another section) does not take the same press again.
+ */
+internal object SpotlightLanding {
+    private var started = false
+    private var handledPress = 0L
+
+    /** A new request token, or null when nothing is new. */
+    @Synchronized
+    fun take(homePress: Long): Long? {
+        if (!started) {
+            started = true
+            handledPress = homePress
+            return android.os.SystemClock.elapsedRealtime()
+        }
+        if (homePress == 0L || homePress == handledPress) return null
+        handledPress = homePress
+        return homePress
+    }
+}

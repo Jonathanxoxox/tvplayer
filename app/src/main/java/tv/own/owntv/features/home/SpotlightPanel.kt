@@ -143,6 +143,11 @@ private fun reasonLabel(hl: Highlight, now: Long): String {
     }
     return when (hl.reason) {
     HighlightReason.SPORT_LIVE -> stringResource(R.string.home_hl_live, (hl as? Highlight.Sport)?.match?.leagueName.orEmpty())
+    HighlightReason.SPORT_LATER -> stringResource(
+        R.string.home_hl_later,
+        clock((hl as? Highlight.Sport)?.match?.startMs ?: 0L),
+        (hl as? Highlight.Sport)?.match?.leagueName.orEmpty(),
+    )
     HighlightReason.SPORT_SOON -> stringResource(
         R.string.home_hl_soon,
         android.text.format.DateFormat.getTimeFormat(LocalContext.current).format(java.util.Date((hl as? Highlight.Sport)?.match?.startMs ?: 0L)),

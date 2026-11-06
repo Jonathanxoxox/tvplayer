@@ -102,6 +102,8 @@ internal fun HomeStage(
     highlights: List<Highlight> = emptyList(),
     onOpenMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = {},
     onResume: (tv.own.owntv.core.home.HeroItem) -> Unit = {},
+    /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
+    spotlightFocusRequest: Long = 0L,
 ) {
     val channels = row.channels
     if (channels.isEmpty()) return
@@ -152,6 +154,18 @@ internal fun HomeStage(
         shownId = back.id
         delay(RETURN_FOCUS_MS)
         runCatching { pickedLogo.requestFocus() }
+    }
+    // Start and the Home button land on the Spotlight, not on the first channel (Jonathan, 6 Nov 2026): the
+    // channel playing here stops, the first highlight shows, focus goes to its button. After the Back-from-
+    // full-screen refocus above, which the Home button's way out of the player would otherwise win.
+    LaunchedEffect(spotlightFocusRequest) {
+        if (spotlightFocusRequest == 0L || !spotlight || highlights.isEmpty()) return@LaunchedEffect
+        if (picked != null) { liveVm.stopPreview(); picked = null }
+        stripFocused = false
+        hlIndex = 0
+        delay(RETURN_FOCUS_MS + 50)
+        withFrameNanos { }
+        runCatching { hlButton.requestFocus() }
     }
     // Woken from standby: the channel picked here is not coming back; the highlights show again.
     val wake by tv.own.owntv.launcher.apps.LauncherSystem.wake.collectAsState()
