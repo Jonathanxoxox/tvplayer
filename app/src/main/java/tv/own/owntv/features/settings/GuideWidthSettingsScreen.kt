@@ -58,7 +58,7 @@ internal fun GuideWidthPanel(vm: SettingsViewModel, onDismiss: () -> Unit) {
 internal fun guideWidthValue(enabled: Boolean, shares: GuideWidthShares?): String {
     if (!enabled) return stringResource(R.string.settings_subtitle_default)
     val s = shares ?: GuideWidthLimits.defaults
-    return stringResource(R.string.common_percent, s.channels) + " · " + stringResource(R.string.common_percent, s.epg)
+    return stringResource(R.string.common_percent, s.channels) + stringResource(R.string.content_epg_bits_separator) + stringResource(R.string.common_percent, s.epg)
 }
 
 @Composable

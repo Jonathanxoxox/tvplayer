@@ -2082,7 +2082,6 @@ private fun RootRowStage(
     val unpin = stringResource(R.string.settings_key_unpin)
     val value = extra?.value ?: item.value ?: when {
         item.showChevron || item.key == "catchup_sources" -> SettingValue.Opens(item.chip)
-        item.key == "epg_offset" -> SettingValue.Choice(item.chip.orEmpty())
         item.chip == on || item.chip == off -> SettingValue.Switch(item.chip == on)
         item.chip != null -> SettingValue.Choice(item.chip)
         else -> null
