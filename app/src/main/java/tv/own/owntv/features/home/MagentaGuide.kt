@@ -61,34 +61,46 @@ class MagentaGuide(private val http: OkHttpClient) {
     }
 
     /**
-     * Today's picks on [channels] from [fromMs] to [toMs]: MagentaTV's tips and highlights, and on the channels
-     * in [docsOn] (arte) their documentaries. One call per channel; empty when the guide cannot be asked.
+     * Today's picks on [channels] from [fromMs] to [toMs]: MagentaTV's tips and highlights, on the channels
+     * in [docsOn] (arte) their documentaries, and on those in [filmsOn] (Sky Cinema …) their films. One call
+     * per channel; empty when the guide cannot be asked.
      */
     suspend fun picks(
         channels: List<tv.own.owntv.core.database.entity.ChannelEntity>,
         docsOn: Set<Long>,
         fromMs: Long,
         toMs: Long,
+        filmsOn: Set<Long> = emptySet(),
     ): List<GuidePick> = withContext(Dispatchers.IO) {
         runCatching {
             lock.withLock {
                 channels.distinctBy { it.id }.flatMap { ch ->
                     val id = channelId(ch.name) ?: return@flatMap emptyList()
-                    val body = JSONObject()
-                        .put("count", -1)
-                        .put("isFillProgram", 0)
-                        .put("offset", 0)
-                        .put("properties", JSONArray().put(JSONObject().put("include", PICK_FIELDS).put("name", "playbill")))
-                        .put("type", 2)
-                        .put("begintime", utc(fromMs))
-                        .put("channelid", id)
-                        .put("endtime", utc(toMs))
-                    val list = post("PlayBillList", body)?.optJSONArray("playbilllist") ?: return@flatMap emptyList()
-                    MagentaNames.picks(list, ch, docs = ch.id in docsOn)
+                    fun ask(fields: String): JSONArray? {
+                        val body = JSONObject()
+                            .put("count", -1)
+                            .put("isFillProgram", 0)
+                            .put("offset", 0)
+                            .put("properties", JSONArray().put(JSONObject().put("include", fields).put("name", "playbill")))
+                            .put("type", 2)
+                            .put("begintime", utc(fromMs))
+                            .put("channelid", id)
+                            .put("endtime", utc(toMs))
+                        return post("PlayBillList", body)?.takeIf { it.optString("retcode", "0") == "0" }?.optJSONArray("playbilllist")
+                    }
+                    // Season, episode and year are asked for too; should the guide ever refuse them, it is asked
+                    // again with the fields it has always answered, and from then on only with those.
+                    val list = (if (extraFields) ask(PICK_FIELDS + PICK_EXTRA_FIELDS) else null)
+                        ?: ask(PICK_FIELDS)?.also { if (extraFields) extraFields = false }
+                        ?: return@flatMap emptyList()
+                    MagentaNames.picks(list, ch, docs = ch.id in docsOn, films = ch.id in filmsOn)
                 }
             }
         }.getOrDefault(emptyList())
     }
+
+    /** Off once the guide has refused [PICK_EXTRA_FIELDS] and answered without them. */
+    @Volatile private var extraFields = true
 
     /** Match key → picture URL, or "" when the sports channels were all asked and none shows it. */
     private val matchPictures = ConcurrentHashMap<String, String>()
@@ -225,6 +237,8 @@ class MagentaGuide(private val http: OkHttpClient) {
         /** The guide's start times differ from the provider's by a few minutes now and then. */
         const val WINDOW_MS = 20 * 60_000L
         const val PICK_FIELDS = "name,starttime,endtime,tipType,tipCategory,genres,pictures,introduce"
+        /** What tells a film from an episode, and its year. */
+        const val PICK_EXTRA_FIELDS = ",seasonNO,sitcomNO,seriesID,producedate"
     }
 }
 
@@ -337,9 +351,15 @@ internal object MagentaNames {
 
     /**
      * The guide's programmes on [channel] worth a Spotlight place: those MagentaTV marks as "highlight" or
-     * "tip", and with [docs] (arte) every documentary of half an hour or more.
+     * "tip", with [docs] (arte) every documentary of half an hour or more, and with [films] (a film channel)
+     * every film. Each says whether it is a film, an episode of a series, or a premiere.
      */
-    fun picks(list: JSONArray, channel: tv.own.owntv.core.database.entity.ChannelEntity, docs: Boolean): List<GuidePick> {
+    fun picks(
+        list: JSONArray,
+        channel: tv.own.owntv.core.database.entity.ChannelEntity,
+        docs: Boolean,
+        films: Boolean = false,
+    ): List<GuidePick> {
         val out = ArrayList<GuidePick>()
         for (i in 0 until list.length()) {
             val p = list.optJSONObject(i) ?: continue
@@ -348,12 +368,21 @@ internal object MagentaNames {
             val type = p.optString("tipType")
             val highlight = type == "highlight"
             val tip = type == "tip"
-            val genres = p.optString("genres").lowercase()
-            val isDoc = p.optString("tipCategory") == "documentary" ||
-                (docs && stop - start >= DOC_MIN_MS && DOC_WORDS.any { it in genres })
-            if (!highlight && !tip && !isDoc) continue
+            val genreList = p.optString("genres").split(',', '/', '|').map { it.trim() }.filter { it.isNotEmpty() && it != "null" }
+            val genres = genreList.joinToString(",").lowercase()
             val title = p.optString("name")
             if (title.isBlank()) continue
+            val description = p.optString("introduce").ifBlank { null }
+            val series = isSeries(p, genres, title)
+            val long = stop - start >= FILM_MIN_MS
+            // A documentary film ("Dokumentarfilm") is a documentary here, not one of tonight's films.
+            val isFilm = !series && DOC_WORDS.none { it in genres } && (
+                p.optString("tipCategory") == "movie" || (long && (films || filmWords.any { it in genres }))
+                )
+            val isDoc = p.optString("tipCategory") == "documentary" ||
+                (docs && stop - start >= DOC_MIN_MS && DOC_WORDS.any { it in genres })
+            if (!highlight && !tip && !isDoc && !(films && isFilm)) continue
+            val text = (title + " " + description.orEmpty()).lowercase()
             out += GuidePick(
                 channel = channel,
                 title = title,
@@ -363,12 +392,48 @@ internal object MagentaNames {
                 tip = tip,
                 doc = isDoc,
                 picture = pictureOf(p),
-                description = p.optString("introduce").ifBlank { null },
+                description = description,
+                film = isFilm,
+                series = series,
+                premiere = isFilm && (PREMIERE_WORDS.any { it in text } || "premiere" in key(channel.name)),
+                year = p.optString("producedate").take(4).toIntOrNull()?.takeIf { it in 1900..2100 },
+                // "Thriller" rather than "Spielfilm": the kind of film, when the guide says more than that it is one.
+                genre = genreList.firstOrNull { g -> filmWords.none { it == g.lowercase() } } ?: genreList.firstOrNull(),
             )
         }
         return out
     }
 
+    /** An episode: the guide numbers it (season or episode), files it under a series genre, or its title says so. */
+    private fun isSeries(p: JSONObject, genres: String, title: String): Boolean {
+        val numbered = listOf("seasonNO", "sitcomNO").any { f -> p.optString(f).let { it.isNotBlank() && it != "null" && it != "0" } }
+        return numbered || seriesWords.any { it in genres } || episodeTitle.containsMatchIn(title)
+    }
+
+    /**
+     * A film channel by its name (as [key] folds it): Sky Cinema's channels, MagentaTV's own film channels,
+     * and any other "Kino" / "Cinema" / "Movie" channel of the playlist.
+     */
+    fun isFilmChannel(name: String): Boolean {
+        val k = key(name)
+        return FILM_CHANNEL_WORDS.any { it in k }
+    }
+
+    private val FILM_CHANNEL_WORDS = listOf("cinema", "kino", "movie", "filmfest", "magenta film")
+
+    /** How the guides name a series ("Serie", "Krimiserie", "Sitcom", "Soap", "Telenovela"). */
+    val seriesWords = listOf("serie", "sitcom", "soap", "telenovela")
+
+    /** How the guide names a film ("Spielfilm", "Fernsehfilm", "Kinofilm", "Film"). */
+    private val filmWords = listOf("spielfilm", "fernsehfilm", "kinofilm", "film", "movie")
+
+    /** "S2 E5", "Folge 12", "Staffel 3": an episode by its title. */
+    private val episodeTitle = Regex("(?i)\\bS\\d{1,2}\\s?E\\d{1,3}\\b|\\b(folge|staffel|episode)\\s+\\d+")
+
+    private val PREMIERE_WORDS = listOf("tv-premiere", "free-tv-premiere", "erstausstrahlung", "premiere:")
+
+    /** A film is at least this long; shorter ones on a film channel are trailers and magazines. */
+    private const val FILM_MIN_MS = 70 * 60_000L
     private const val DOC_MIN_MS = 30 * 60_000L
     /** How the guide names documentary genres ("Dokumentation", "Doku-Reihe", "Reportage"). */
     private val DOC_WORDS = listOf("doku", "reportage")

@@ -35,6 +35,16 @@ data class LauncherConfig(
     val spotlightOrder: List<String> = emptyList(),
     /** Spotlight sources switched off. */
     val spotlightOff: Set<String> = emptySet(),
+    /** How many highlights the Spotlight shows at most (Jonathan, 6 Nov 2026: Settings › Spotlight). */
+    val spotlightMax: Int = SPOTLIGHT_MAX_DEFAULT,
+    /** Seconds after which the Spotlight moves on to its next highlight by itself; 0 = only with ◀ ▶. */
+    val spotlightAutoSecs: Int = 0,
+    /** A film's TMDB rating (★ 7,8) on its Spotlight highlight. */
+    val spotlightRatings: Boolean = true,
+    /** Series and episodes stay out of the Spotlight's tips, films and "on now". */
+    val spotlightHideSeries: Boolean = true,
+    /** Premieres, MagentaTV's highlights, top-rated films and matches wear a gold badge over their title. */
+    val spotlightBadges: Boolean = true,
     /** Apps in the menu: the grid of every app. */
     val appsInMenu: Boolean = true,
     /** The grid's own order (moved with a held OK); apps not listed follow by name. */
@@ -59,6 +69,12 @@ data class LauncherConfig(
         const val LAYOUT_STAGE = "stage"
         /** As Stage, the picture twice as large and playing by itself, muted, where focus rests (layout F). */
         const val LAYOUT_SPOTLIGHT = "spotlight"
+
+        const val SPOTLIGHT_MAX_DEFAULT = 8
+        /** The Spotlight's length, as Settings steps through it. */
+        val SPOTLIGHT_MAX_STEPS = listOf(4, 6, 8, 10, 12)
+        /** The Spotlight's automatic advance, as Settings steps through it (0 = off). */
+        val SPOTLIGHT_AUTO_STEPS = listOf(0, 8, 12, 20, 30)
 
         /** TizenTube, YouTube, Nuvio, Spotify and Downloader, as far as they are installed. */
         val DEFAULT_ROW = listOf(
@@ -103,6 +119,11 @@ object LauncherPrefs {
             putString("channel_slots", next.channelSlots.joinToString(LINES))
             putString("spotlight_order", next.spotlightOrder.joinToString(SEP))
             putStringSet("spotlight_off", next.spotlightOff)
+            putInt("spotlight_max", next.spotlightMax)
+            putInt("spotlight_auto_secs", next.spotlightAutoSecs)
+            putBoolean("spotlight_ratings", next.spotlightRatings)
+            putBoolean("spotlight_hide_series", next.spotlightHideSeries)
+            putBoolean("spotlight_badges", next.spotlightBadges)
             putBoolean("apps_in_menu", next.appsInMenu)
             putString("app_order", next.appOrder.joinToString(SEP))
             putStringSet("hidden_apps", next.hiddenApps)
@@ -128,6 +149,11 @@ object LauncherPrefs {
             channelSlots = p.getString("channel_slots", null)?.split(LINES)?.filter { it.isNotBlank() }.orEmpty(),
             spotlightOrder = p.getString("spotlight_order", null).toList(),
             spotlightOff = p.getStringSet("spotlight_off", null)?.toSet() ?: emptySet(),
+            spotlightMax = p.getInt("spotlight_max", d.spotlightMax),
+            spotlightAutoSecs = p.getInt("spotlight_auto_secs", d.spotlightAutoSecs),
+            spotlightRatings = p.getBoolean("spotlight_ratings", d.spotlightRatings),
+            spotlightHideSeries = p.getBoolean("spotlight_hide_series", d.spotlightHideSeries),
+            spotlightBadges = p.getBoolean("spotlight_badges", d.spotlightBadges),
             appsInMenu = p.getBoolean("apps_in_menu", d.appsInMenu),
             appOrder = p.getString("app_order", null).toList(),
             hiddenApps = p.getStringSet("hidden_apps", null)?.toSet() ?: emptySet(),

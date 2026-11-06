@@ -87,9 +87,82 @@ class SpotlightHighlightsTest {
     @Test
     fun `stored order keeps sources it does not name, after it`() {
         assertEquals(
-            listOf(SpotlightSource.DOCS, SpotlightSource.SPORT, SpotlightSource.TIPS, SpotlightSource.RESUME, SpotlightSource.HABIT, SpotlightSource.NOW),
+            listOf(
+                SpotlightSource.DOCS, SpotlightSource.SPORT, SpotlightSource.FILMS, SpotlightSource.TIPS,
+                SpotlightSource.RESUME, SpotlightSource.HABIT, SpotlightSource.NOW,
+            ),
             SpotlightSource.ordered(listOf("docs"), off = emptySet()),
         )
+    }
+
+    @Test
+    fun `a source added in an update goes in where it belongs, not behind on now`() {
+        // An order saved before Films existed, with Tips moved to the top.
+        val saved = listOf("tips", "sport", "docs", "resume", "habit", "now")
+        assertEquals(
+            listOf(
+                SpotlightSource.TIPS, SpotlightSource.SPORT, SpotlightSource.FILMS, SpotlightSource.DOCS,
+                SpotlightSource.RESUME, SpotlightSource.HABIT, SpotlightSource.NOW,
+            ),
+            SpotlightSource.ordered(saved, off = emptySet()),
+        )
+    }
+
+    private fun film(
+        ch: Long, start: Long, stop: Long, premiere: Boolean = false, highlight: Boolean = false, series: Boolean = false,
+    ) = GuidePick(
+        channel(ch), "F $ch@$start", start, stop, highlight, tip = false, doc = false, picture = null, description = null,
+        film = !series, series = series, premiere = premiere,
+    )
+
+    @Test
+    fun `films tonight - premiere and the main film first, one per channel, none half over`() {
+        val now = at(18, 0)
+        val picks = listOf(
+            film(1, at(22, 0), at(23, 50)),                  // late film
+            film(2, at(20, 15), at(22, 0)),                  // the main film
+            film(3, at(21, 0), at(23, 0), premiere = true),  // a premiere
+            film(2, at(22, 10), at(23, 55)),                 // the same channel again
+            film(4, at(16, 0), at(18, 30)),                  // begun two hours ago
+        )
+        val h = rank(now, sources = listOf(SpotlightSource.FILMS), picks = picks)
+        assertEquals(listOf(3L, 2L, 1L), h.map { (it as Highlight.Pick).pick.channel.id })
+        assertEquals(HighlightReason.PREMIERE, h.first().reason)
+        assertEquals(HighlightReason.FILM, h[1].reason)
+    }
+
+    @Test
+    fun `a better rating lifts a film`() {
+        val now = at(18, 0)
+        val low = film(1, at(20, 15), at(22, 0))
+        val high = film(2, at(22, 0), at(23, 50))
+        val ranked = SpotlightHighlights.films(listOf(low, high), now, zone, ratings = mapOf(low.key to 5.9, high.key to 8.6))
+        assertEquals(listOf(2L, 1L), ranked.map { it.channel.id })
+    }
+
+    @Test
+    fun `series stay out when asked, and come back when not`() {
+        val now = at(20, 30)
+        val picks = listOf(
+            GuidePick(channel(1), "Serie", at(20, 15), at(21, 0), highlight = true, tip = false, doc = false, picture = null, description = null, series = true),
+            pick(2, at(20, 15), at(21, 45), tip = true),
+        )
+        val onNow = mapOf(5L to programme(5, at(20, 0), at(21, 0)).copy(episode = "S1 E2"))
+        assertEquals(listOf(2L), rank(now, sources = listOf(SpotlightSource.TIPS, SpotlightSource.NOW), picks = picks, onNow = onNow)
+            .map { (it as Highlight.Pick).pick.channel.id })
+        val all = SpotlightHighlights.rank(
+            now, listOf(SpotlightSource.TIPS, SpotlightSource.NOW), emptyList(), channels, onNow, emptyList(), emptyList(), picks, zone,
+            hideSeries = false,
+        )
+        assertEquals(listOf("pick:1@${at(20, 15)}", "pick:2@${at(20, 15)}", "live:5"), all.map { it.key })
+    }
+
+    @Test
+    fun `the user's length is kept`() {
+        val now = at(20, 30)
+        val onNow = (1L..14L).associateWith { programme(it, at(20, 0), at(22, 0)) }
+        val h = SpotlightHighlights.rank(now, all, emptyList(), channels, onNow, emptyList(), emptyList(), emptyList(), zone, max = 4)
+        assertEquals(4, h.size)
     }
 
     @Test
@@ -125,5 +198,30 @@ class SpotlightHighlightsTest {
         val picks = (1L..14L).map { pick(it, at(20, 0), at(22, 0), tip = true, doc = it % 2 == 0L) }
         val onNow = (1L..14L).associateWith { programme(it, at(20, 0), at(22, 0)) }
         assertEquals(SpotlightHighlights.MAX, rank(now, onNow = onNow, picks = picks).size)
+    }
+
+    @Test
+    fun `every highlight with a description shows it, folded to one paragraph`() {
+        val p = programme(2, at(20, 0), at(21, 0)).copy(description = "Ein Kommissar\nermittelt   in Kiel.")
+        assertEquals("Ein Kommissar ermittelt in Kiel.", descriptionOf(Highlight.Live(channel(2), p, HighlightReason.NOW)))
+        val pick = GuidePick(channel(3), "T", at(20, 0), at(21, 0), true, false, false, null, "Ein Tipp des Tages mit Text.")
+        assertEquals("Ein Tipp des Tages mit Text.", descriptionOf(Highlight.Pick(pick, HighlightReason.HIGHLIGHT)))
+        // A label is no description, and a programme without one shows none.
+        assertEquals(null, descriptionOf(Highlight.Live(channel(2), p.copy(description = "Spielfilm"), HighlightReason.NOW)))
+        assertEquals(null, descriptionOf(Highlight.Live(channel(2), null, HighlightReason.HABIT)))
+    }
+
+    @Test
+    fun `the top tier - premiere before highlight, top-rated films, matches, nothing else`() {
+        val now = at(18, 0)
+        fun tier(p: GuidePick, rating: Double? = null) = HighlightTier.of(Highlight.Pick(p, HighlightReason.FILM), rating)
+        assertEquals(HighlightTier.PREMIERE, tier(film(1, at(20, 15), at(22, 0), premiere = true, highlight = true)))
+        assertEquals(HighlightTier.HIGHLIGHT, tier(pick(2, at(20, 15), at(21, 0), highlight = true)))
+        assertEquals(HighlightTier.TOP_RATED, tier(film(3, at(20, 15), at(22, 0)), rating = 8.1))
+        assertEquals(null, tier(film(3, at(20, 15), at(22, 0)), rating = 7.9))
+        // A rating says nothing about a tip that is not a film.
+        assertEquals(null, tier(pick(4, at(20, 15), at(21, 0), tip = true), rating = 9.0))
+        assertEquals(HighlightTier.SPORT, HighlightTier.of(Highlight.Sport(match("1", true, now), HighlightReason.SPORT_LIVE), null))
+        assertEquals(null, HighlightTier.of(Highlight.Live(channel(5), null, HighlightReason.NOW), null))
     }
 }

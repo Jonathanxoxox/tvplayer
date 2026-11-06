@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +42,8 @@ import tv.own.owntv.ui.theme.stageText
 
 /**
  * The Spotlight's text side for a [Highlight]: why it is there, what it is, and its one button — Watch, To
- * the match, Watch on. ◀ ▶ on the button go through the highlights; the dots say how many there are.
+ * the match, Watch on. ◀ ▶ on the button go through the highlights, round from the last to the first; the
+ * dots say how many there are. A film shows its [rating] (TMDB), year and kind.
  */
 @Composable
 internal fun HighlightInfo(
@@ -58,16 +60,25 @@ internal fun HighlightInfo(
     track: (FocusRequester) -> Unit,
     now: Long,
     modifier: Modifier = Modifier,
+    rating: Double? = null,
+    /** The film is also in the playlist's library: a second button plays it from the start, now. */
+    onOnDemand: (() -> Unit)? = null,
+    /** The top tier, when this highlight is in it: a gold badge before its label. */
+    tier: HighlightTier? = null,
 ) {
     val accent = stageAccent.accent
+    val onDemandButton = remember { FocusRequester() }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(14.mpx)) {
-        Text(reasonLabel(hl, now), style = stageText(17, 800), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-        // What it is about, from the guide: two lines, as the streaming apps show it.
-        (hl as? Highlight.Pick)?.pick?.description?.let {
-            Text(it, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.mpx)) {
+            if (tier != null) TierBadge(tier)
+            Text(reasonLabel(hl, now, badged = tier != null), style = stageText(17, 800), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
+        Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
+        FilmFacts(hl, rating)
+        lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
+        // that has one, not only the guide's picks).
+        descriptionOf(hl)?.let { SpotlightDescription(it) }
         Row(Modifier.padding(top = 10.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
             StageSurface(
                 onClick = onOpen,
@@ -84,8 +95,10 @@ internal fun HighlightInfo(
                     .onPreviewKeyEvent { e ->
                         if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                         when {
-                            e.key == Key.DirectionRight && index < count - 1 -> { onStep(1); true }
-                            e.key == Key.DirectionLeft && index > 0 -> { onStep(-1); true }
+                            // ▶ goes to On demand when the film has it; from there ▶ goes on to the next highlight.
+                            e.key == Key.DirectionRight && onOnDemand != null -> { runCatching { onDemandButton.requestFocus() }; true }
+                            e.key == Key.DirectionRight && count > 1 -> { onStep(1); true }
+                            e.key == Key.DirectionLeft && count > 1 -> { onStep(-1); true }
                             else -> false
                         }
                     },
@@ -93,6 +106,38 @@ internal fun HighlightInfo(
                 Row(Modifier.padding(horizontal = 28.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
                     OwnTVIcon(OwnTVIcon.PLAY, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(22.mpx), filled = true)
                     Text(buttonLabel(hl, now), style = stageText(20, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            // The same film in the playlist's library: watch it now, from the start (Jonathan, 6 Nov 2026).
+            if (onOnDemand != null) StageSurface(
+                onClick = onOnDemand,
+                radius = 30.mpx,
+                focusStyle = StageFocus.FILLED,
+                idle = Modifier.clip(RoundedCornerShape(30.mpx)).background(StageColors.ControlFill),
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .height(60.mpx)
+                    .focusRequester(onDemandButton)
+                    .onFocusChanged { if (it.hasFocus) onFocus() }
+                    .onPreviewKeyEvent { e ->
+                        if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        when (e.key) {
+                            // ◀ back to the main button; ▶ on to the next highlight, focus on its main button.
+                            Key.DirectionLeft -> { runCatching { ownRequester.requestFocus() }; true }
+                            Key.DirectionRight -> {
+                                if (count > 1) { runCatching { ownRequester.requestFocus() }; onStep(1) }
+                                true
+                            }
+                            else -> false
+                        }
+                    },
+            ) { focused ->
+                Row(Modifier.padding(horizontal = 28.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
+                    OwnTVIcon(OwnTVIcon.MOVIES, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(22.mpx))
+                    Text(
+                        stringResource(R.string.home_hl_on_demand),
+                        style = stageText(20, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
             if (count > 1) Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically) {
@@ -137,9 +182,40 @@ internal fun HighlightPicture(hl: Highlight) {
     }
 }
 
+/**
+ * The top tier's badge: ★ TV-PREMIERE, ★ HIGHLIGHT, ★ TOP-BEWERTET, ★ DEIN SPORT, filled in the gold of the
+ * rating star (unchanged in light, like the rating chips), dark ink on it, so it reads from the sofa.
+ */
 @Composable
-private fun reasonLabel(hl: Highlight, now: Long): String {
+private fun TierBadge(tier: HighlightTier) {
+    val label = stringResource(
+        when (tier) {
+            HighlightTier.PREMIERE -> R.string.home_hl_badge_premiere
+            HighlightTier.HIGHLIGHT -> R.string.home_hl_badge_highlight
+            HighlightTier.TOP_RATED -> R.string.home_hl_badge_top_rated
+            HighlightTier.SPORT -> R.string.home_hl_badge_sport
+        },
+    )
+    Row(
+        Modifier.clip(RoundedCornerShape(8.mpx)).background(StageColors.RatingStar).padding(horizontal = 12.mpx, vertical = 5.mpx),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.mpx),
+    ) {
+        OwnTVIcon(OwnTVIcon.STAR, BadgeInk, Modifier.size(17.mpx), filled = true)
+        Text(label, style = stageText(16, 900), color = BadgeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** The ink on the gold badge: near-black, warm, in every Theme. */
+private val BadgeInk = androidx.compose.ui.graphics.Color(0xFF1F1500)
+
+@Composable
+private fun reasonLabel(hl: Highlight, now: Long, badged: Boolean = false): String {
     val pick = (hl as? Highlight.Pick)?.pick
+    // The badge already says premiere or highlight: on now, the label only says where.
+    if (badged && pick != null && pick.startMs <= now && (hl.reason == HighlightReason.PREMIERE || hl.reason == HighlightReason.HIGHLIGHT)) {
+        return stringResource(R.string.home_hl_now, pick.channel.name)
+    }
     // Later today: when and where, whatever kind of pick it is.
     if (pick != null && pick.startMs > now) {
         return stringResource(R.string.home_hl_later, clock(pick.startMs), pick.channel.name)
@@ -155,6 +231,8 @@ private fun reasonLabel(hl: Highlight, now: Long): String {
         R.string.home_hl_soon,
         android.text.format.DateFormat.getTimeFormat(LocalContext.current).format(java.util.Date((hl as? Highlight.Sport)?.match?.startMs ?: 0L)),
     )
+    HighlightReason.FILM -> stringResource(R.string.home_hl_film, pick?.channel?.name.orEmpty())
+    HighlightReason.PREMIERE -> stringResource(R.string.home_hl_premiere, pick?.channel?.name.orEmpty())
     HighlightReason.HIGHLIGHT -> stringResource(R.string.home_hl_highlight, pick?.channel?.name.orEmpty())
     HighlightReason.TIP -> stringResource(R.string.home_hl_tip, pick?.channel?.name.orEmpty())
     HighlightReason.DOC -> stringResource(R.string.home_hl_doc, pick?.channel?.name.orEmpty())
@@ -162,6 +240,64 @@ private fun reasonLabel(hl: Highlight, now: Long): String {
     HighlightReason.RESUME -> stringResource(R.string.home_hl_resume)
     HighlightReason.NOW -> stringResource(R.string.home_hl_now, (hl as? Highlight.Live)?.channel?.name.orEmpty())
     }
+}
+
+/**
+ * A film's facts under its title: ★ 7,8 (TMDB, in the rating chips' gold) · 2023 · Thriller. Nothing for a
+ * highlight that is not a film, nor for a film the guide and TMDB say nothing more about.
+ */
+@Composable
+private fun FilmFacts(hl: Highlight, rating: Double?) {
+    val pick = (hl as? Highlight.Pick)?.pick?.takeIf { it.film } ?: return
+    val rest = listOfNotNull(pick.year?.toString(), pick.genre).joinToString(" · ")
+    if (rating == null && rest.isEmpty()) return
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
+        if (rating != null) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.mpx)) {
+                OwnTVIcon(OwnTVIcon.STAR, StageColors.RatingStar, Modifier.size(20.mpx), filled = true)
+                Text(
+                    tv.own.owntv.features.shell.components.vodRating(rating),
+                    style = stageText(20, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        if (rating != null && rest.isNotEmpty()) {
+            Text("·", style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+        if (rest.isNotEmpty()) {
+            Text(rest, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+/**
+ * A highlight's short description: the guide's for a pick, the EPG's for a channel's programme, the episode's
+ * (else the series') plot or the film's for watching on. A match has none: its score and minute say it.
+ */
+internal fun descriptionOf(hl: Highlight): String? = when (hl) {
+    is Highlight.Pick -> hl.pick.description
+    is Highlight.Live -> hl.programme?.description
+    is Highlight.Resume -> when (val item = hl.item) {
+        is HeroItem.MovieHero -> item.movie.plot
+        is HeroItem.SeriesHero -> item.episode.plot ?: item.series.plot
+        is HeroItem.LiveHero -> null
+    }
+    is Highlight.Sport -> null
+}?.let(::shortDescription)
+
+/** One paragraph of plain text, line breaks and runs of spaces folded; null when nothing is left. */
+internal fun shortDescription(text: String): String? =
+    text.replace(WHITESPACE, " ").trim().takeIf { it.length >= MIN_DESCRIPTION }
+
+private val WHITESPACE = Regex("\\s+")
+
+/** Shorter than this it is a label ("Spielfilm", "n/a"), not a description. */
+private const val MIN_DESCRIPTION = 12
+
+/** The two lines of what it is about, under the title and its facts. */
+@Composable
+internal fun SpotlightDescription(text: String, modifier: Modifier = Modifier) {
+    Text(text, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = modifier)
 }
 
 /** A time of day as the box shows it (20:15). */

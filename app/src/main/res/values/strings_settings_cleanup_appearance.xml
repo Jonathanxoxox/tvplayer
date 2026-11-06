@@ -10,9 +10,9 @@
     <string name="settings_ca_home_rows">Home rows</string>
     <string name="settings_ca_help_home_rows">Pick which rows Home shows and in what order. ▶ on a row shows its own options: what Keep watching includes, which category the channel row shows.</string>
     <string name="settings_ca_rows_heading">Rows</string>
-    <string name="settings_ca_spotlight_sources">Spotlight sources</string>
-    <string name="settings_ca_line_spotlight_sources">Choose where the Spotlight\'s tips come from</string>
-    <string name="settings_ca_help_spotlight_sources">The Spotlight layout shows one highlight at a time. Switch each source on or off; hold OK on one to change the order.</string>
+    <string name="settings_ca_spotlight_sources">Spotlight</string>
+    <string name="settings_ca_line_spotlight_sources">Sources, order, films and ratings</string>
+    <string name="settings_ca_help_spotlight_sources">The Spotlight layout shows one highlight at a time. Set how many there are, whether they move on by themselves, and whether films show their rating and series stay out. Switch each source on or off; hold OK on one to change the order.</string>
     <string name="settings_ca_bg_glass">Background &amp; glass</string>
     <string name="settings_ca_line_bg_glass">Background picture, colours and glass</string>
     <string name="settings_ca_line_theme">Dark, light or like the TV</string>

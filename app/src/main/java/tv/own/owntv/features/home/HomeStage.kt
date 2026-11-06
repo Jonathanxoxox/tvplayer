@@ -25,7 +25,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -102,6 +101,16 @@ internal fun HomeStage(
     highlights: List<Highlight> = emptyList(),
     onOpenMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = {},
     onResume: (tv.own.owntv.core.home.HeroItem) -> Unit = {},
+    /** The films' TMDB ratings by [GuidePick.key], shown on their highlight; empty when ratings are off. */
+    ratings: Map<String, Double> = emptyMap(),
+    /** Seconds after which the next highlight shows by itself; 0 = only with ◀ ▶ (Settings › Spotlight). */
+    autoAdvanceSecs: Int = 0,
+    /** Films the playlist also has on demand: [GuidePick.key] → the movie's id ([FilmLibrary]). */
+    onDemand: Map<String, Long> = emptyMap(),
+    /** Plays the playlist's movie from the start. */
+    onPlayOnDemand: (Long) -> Unit = {},
+    /** The top tier's gold badge over the title ([HighlightTier]; Settings › Spotlight). */
+    badges: Boolean = true,
     /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
     spotlightFocusRequest: Long = 0L,
 ) {
@@ -125,8 +134,22 @@ internal fun HomeStage(
     // Spotlight starts nothing by itself (Jonathan, 5 Nov 2026): focus on a logo shows that programme's picture,
     // OK plays it here with its sound, OK again takes it full screen.
     // Spotlight's highlights, Netflix-like: one at a time with its picture, ◀ ▶ on its button go through them.
-    var hlIndex by remember(highlights.map { it.key }) { mutableIntStateOf(0) }
+    // Held by its key, not its place: the list ranks again as the films' ratings come in, and the highlight
+    // on screen must stay the one shown rather than jump back to the first.
+    var hlKey by remember { mutableStateOf<String?>(null) }
+    val hlIndex = highlights.indexOfFirst { it.key == hlKey }.coerceAtLeast(0)
+    // ◀ ▶ go round: past the last comes the first again, before the first the last (Jonathan, 6 Nov 2026).
+    fun stepHighlight(d: Int) {
+        if (highlights.isNotEmpty()) hlKey = highlights[(hlIndex + d).mod(highlights.size)].key
+    }
     val hl = if (spotlight && !stripFocused) highlights.getOrNull(hlIndex) else null
+    // The automatic advance, when switched on: the next highlight after a while, round and round. It waits
+    // while the player is full screen and while focus is in the strip; any step starts the wait again.
+    if (spotlight && autoAdvanceSecs > 0) LaunchedEffect(hlKey, highlights, stripFocused, active, autoAdvanceSecs) {
+        if (!active || stripFocused || highlights.size < 2) return@LaunchedEffect
+        delay(autoAdvanceSecs * 1000L)
+        stepHighlight(1)
+    }
     // ▲ from the strip goes to the highlights' button, which is only there once the strip has let go of focus.
     val hlButton = remember { FocusRequester() }
     var toButton by remember { mutableStateOf(false) }
@@ -165,7 +188,7 @@ internal fun HomeStage(
         if (!StageOnce.first("focus", spotlightFocusRequest)) return@LaunchedEffect
         if (picked != null) { liveVm.stopPreview(); picked = null }
         stripFocused = false
-        hlIndex = 0
+        hlKey = highlights.firstOrNull()?.key
         delay(RETURN_FOCUS_MS + 50)
         withFrameNanos { }
         runCatching { hlButton.requestFocus() }
@@ -298,7 +321,10 @@ internal fun HomeStage(
                     hl = hl,
                     count = highlights.size,
                     index = hlIndex,
-                    onStep = { d -> hlIndex = (hlIndex + d).coerceIn(0, highlights.lastIndex) },
+                    onStep = { d -> stepHighlight(d) },
+                    rating = (hl as? Highlight.Pick)?.let { ratings[it.key] },
+                    onOnDemand = (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onPlayOnDemand(id) } },
+                    tier = if (badges) HighlightTier.of(hl, (hl as? Highlight.Pick)?.let { ratings[it.key] }) else null,
                     onOpen = {
                         when (hl) {
                             is Highlight.Live -> onPlayFullscreen(hl.channel, channels)
@@ -340,6 +366,8 @@ internal fun HomeStage(
                     Box(Modifier.width(520.mpx).height(6.mpx).clip(RoundedCornerShape(3.mpx)).background(StageColors.ControlFill)) {
                         Box(Modifier.fillMaxHeight().fillMaxWidth(programmeProgress(programme, now)).background(stageAccent.accent))
                     }
+                    // Spotlight: what the focused channel's programme is about, as on the highlights.
+                    if (spotlight) programme.description?.let(::shortDescription)?.let { SpotlightDescription(it) }
                 }
             }
             Box(
