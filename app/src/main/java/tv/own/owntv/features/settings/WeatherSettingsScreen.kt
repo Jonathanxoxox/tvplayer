@@ -73,8 +73,8 @@ fun WeatherSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val back = stringResource(R.string.common_back)
     StageFullPage(
         parents = listOf(stringResource(R.string.settings_group_appearance_home)),
-        title = stringResource(R.string.settings_title_date_time_weather),
-        count = pluralStringResource(R.plurals.settings_setting_count, 6, 6),
+        title = stringResource(R.string.settings_heading_clock_weather),
+        count = "",
         onBack = onBack,
         modifier = modifier,
         rowsFocus = rowsFocus,
@@ -166,7 +166,7 @@ fun WeatherSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         val text = StageColors.Text
         val muted = StageColors.Muted
         StageColorPopup(
-            eyebrow = stringResource(R.string.settings_title_date_time_weather),
+            eyebrow = stringResource(R.string.settings_heading_clock_weather),
             title = stringResource(part.titleRes),
             presets = listOf(
                 ColorChoice(text, stringResource(R.string.settings_clock_color_white)) { vm.setClockColor(part, text.hex()) },

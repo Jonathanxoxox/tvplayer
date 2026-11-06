@@ -105,7 +105,7 @@ import tv.own.owntv.ui.theme.primary
 
 internal enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS, FONTS, BROWSING, SUBTITLE_STYLE, SPORTS, PER_PLAYLIST, RESETS }
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS, FONTS, BROWSING, SUBTITLE_STYLE, SPORTS, PER_PLAYLIST, RESETS, SPOTLIGHT }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -163,6 +163,8 @@ fun SettingsScreen(
     var catchupSource by remember { mutableStateOf<tv.own.owntv.core.database.entity.SourceEntity?>(null) }
     var showAnimations by remember { mutableStateOf(false) }
     var showNavigation by remember { mutableStateOf(false) }
+    // Größe & Schrift's font rows: which one has its value open in the panel (6 Nov 2026).
+    val appearanceDialogs = remember { AppearanceDialogState() }
     var showStartup by remember { mutableStateOf(false) }
     var showStartupChannelPicker by remember { mutableStateOf(false) }
     var showAfrWarning by remember { mutableStateOf(false) }
@@ -302,10 +304,10 @@ fun SettingsScreen(
     val rememberLastMovies by settingsVm.rememberLastMovies.collectAsStateWithLifecycle()
     val rememberLastSeries by settingsVm.rememberLastSeries.collectAsStateWithLifecycle()
     // "Custom" on the Panel Width row as soon as any one of the three sections is switched on.
-    val panelWidthLive by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.core.settings.PanelSection.LIVE).collectAsStateWithLifecycle()
     val panelWidthMovies by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.core.settings.PanelSection.MOVIES).collectAsStateWithLifecycle()
     val panelWidthSeries by settingsVm.panelWidthEnabled.getValue(tv.own.owntv.core.settings.PanelSection.SERIES).collectAsStateWithLifecycle()
-    val panelWidthCustom = panelWidthLive || panelWidthMovies || panelWidthSeries
+    // Live TV's section is not offered any more (no Live TV screen reads it), so it no longer counts.
+    val panelWidthCustom = panelWidthMovies || panelWidthSeries
 
     // Auto frame rate is the one toggle that can make the picture visibly worse on the wrong hardware:
     // below Android 12 there is no way to ask the display which refresh rates it can reach without
@@ -400,7 +402,9 @@ fun SettingsScreen(
             SettingsTab.GUIDE_WIDTH -> LaunchedEffect(Unit) { lastTab = null; tab = SettingsTab.ROOT; jumpVideo("vp_guide_width", false) }
             SettingsTab.GLASS_EFFECT -> { GlassEffectSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
             SettingsTab.SUBTITLE_STYLE -> tv.own.owntv.features.settings.SubtitleStylePage(onBack = { toRoot() }, modifier = modifier)
-            SettingsTab.BROWSING -> tv.own.owntv.features.settings.BrowsingListsSettingsScreen(onBack = { toRoot() }, modifier = modifier)
+            // Rows on their group's page now (6 Nov 2026): a restored BROWSING or FONTS lands back there.
+            SettingsTab.BROWSING, SettingsTab.FONTS -> LaunchedEffect(tab) { toRoot() }
+            SettingsTab.SPOTLIGHT -> tv.own.owntv.features.settings.SpotlightSourcesScreen(onBack = { toRoot() }, modifier = modifier)
             SettingsTab.SPORTS -> tv.own.owntv.features.sports.SportsSettingsScreen(onBack = { toRoot() }, modifier = modifier)
             // Mayo TV: the gathered pages (1 Nov 2026).
             SettingsTab.PER_PLAYLIST -> tv.own.owntv.features.settings.VideoGatherPage(
@@ -409,10 +413,6 @@ fun SettingsScreen(
             ) { CatchupPerPlaylistRow(settingsVm) }
             SettingsTab.RESETS -> tv.own.owntv.features.settings.VideoGatherPage(
                 VideoGroup.RESETS, tv.own.owntv.features.settings.RESET_KEYS, stringResource(R.string.settings_group_app),
-                onBack = { toRoot() }, modifier = modifier,
-            )
-            SettingsTab.FONTS -> tv.own.owntv.features.settings.FontSettingsScreen(
-                current = fontCustomization, onSet = onSetFontCustomization, familyLabel = { fontFamilyLabel(it) },
                 onBack = { toRoot() }, modifier = modifier,
             )
             SettingsTab.ROOT -> Unit
@@ -503,9 +503,8 @@ fun SettingsScreen(
             "home_layout", TileTone.PRIMARY, OwnTVIcon.GRID,
             heading = stringResource(R.string.settings_heading_home),
             title = stringResource(R.string.home_layout_title), desc = stringResource(R.string.home_layout_description),
-            // ◀ ▶ (or OK) step through the layouts in place, so the live preview beside it changes as they go
-            // by (Jonathan, 4 Nov 2026), as Design does.
-            // The chosen one's name only: four segments pushed the row's own title off it.
+            // ◀ ▶ step through the layouts in place, so the live preview beside it changes as they go by
+            // (Jonathan, 4 Nov 2026); OK opens the list in the panel, as every choice does (6 Nov 2026).
             value = tv.own.owntv.features.settings.SettingValue.Choice(
                 listOf(
                     stringResource(R.string.home_layout_standard),
@@ -516,20 +515,15 @@ fun SettingsScreen(
             ),
             onStep = { step -> stepHomeLayout(step) },
             focus = homeLayoutRowFocus,
-            onClick = { stepHomeLayout(1) },
+            onClick = { showHomeLayout = true },
         ),
         RootRow(
             "home_row_titles", TileTone.SECONDARY, OwnTVIcon.TEXT_SIZE,
-            title = stringResource(R.string.home_row_titles), desc = stringResource(R.string.home_row_titles_description),
+            title = stringResource(R.string.settings_ca_row_titles), desc = stringResource(R.string.settings_ca_line_row_titles),
             value = tv.own.owntv.features.settings.SettingValue.Switch(launcherConfig.rowTitles),
             onClick = { tv.own.owntv.launcher.apps.LauncherPrefs.update(launcherContext) { it.copy(rowTitles = !it.rowTitles) } },
         ),
-        RootRow(
-            tabRowKey(SettingsTab.HOME), TileTone.SECONDARY, OwnTVIcon.HOME,
-            title = stringResource(R.string.settings_home_more), desc = stringResource(R.string.settings_home_more_line),
-            focus = rowFocus.getValue(SettingsTab.HOME),
-            onClick = { open(SettingsTab.HOME) },
-        ),
+        *homeRootRows(launcherConfig, rowFocus.getValue(SettingsTab.HOME), rowFocus.getValue(SettingsTab.SPOTLIGHT), open).toTypedArray(),
         RootRow(
             "theme", TileTone.PRIMARY, OwnTVIcon.THEME,
             heading = stringResource(R.string.settings_heading_colors_style),
@@ -555,118 +549,59 @@ fun SettingsScreen(
             focus = focusHighlightRowFocus,
             onClick = { saveScroll(); dialogReturn = focusHighlightRowFocus; showFocusHighlight = true },
         ),
-        // Glass & background has enough controls to be a page of its own; the root row only summarizes it.
+        // Background & glass has enough controls to be a page of its own; the root row only summarizes it.
+        // Ambient glow lives on that page now (6 Nov 2026).
         RootRow(
             tabRowKey(SettingsTab.GLASS_EFFECT), TileTone.PRIMARY, OwnTVIcon.SPARKLE,
-            title = stringResource(R.string.settings_glass_bg_title), desc = stringResource(R.string.settings_line_glass_bg),
-            chip = glassBackgroundSummary(settingsVm.backgroundConfig.collectAsStateWithLifecycle().value, glassConfig),
-            chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY,
+            title = stringResource(R.string.settings_ca_bg_glass), desc = stringResource(R.string.settings_ca_line_bg_glass),
             focus = rowFocus.getValue(SettingsTab.GLASS_EFFECT),
             onClick = { open(SettingsTab.GLASS_EFFECT) },
         ),
-        if (themeMode == ThemeMode.DARK && !glassOn) RootRow(
-            "ambient_glow", TileTone.PRIMARY, OwnTVIcon.GLOW,
-            title = stringResource(R.string.settings_ambient_glow),
-            desc = stringResource(R.string.settings_ambient_glow_description),
-            chip = stringResource(if (ambientGlowEnabled) R.string.common_on else R.string.common_off),
-            chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
-            focus = ambientGlowRowFocus,
-            onClick = { saveScroll(); dialogReturn = ambientGlowRowFocus; showAmbientGlow = true },
-        ) else null,
-        RootRow(
-            "fonts", TileTone.SECONDARY, OwnTVIcon.TEXT_SIZE,
-            heading = stringResource(R.string.settings_mayo_heading_size),
-            title = stringResource(R.string.settings_font_customization),
-            desc = stringResource(R.string.settings_font_customization_description),
-            chip = stringResource(R.string.common_percent, fontCustomization.sizePercent),
-            chipTone = TileTone.SECONDARY,
-            focus = rowFocus.getValue(SettingsTab.FONTS),
-            onClick = { open(SettingsTab.FONTS) },
-        ),
-        RootRow(
-            "popup_size", TileTone.SECONDARY, OwnTVIcon.ZOOM,
-            title = stringResource(R.string.settings_popup_size),
-            desc = stringResource(R.string.settings_popup_size_description),
-            chip = stringResource(R.string.common_percent, fontCustomization.popupSizePercent),
-            chipTone = TileTone.SECONDARY,
-            focus = popupSizeRowFocus,
-            onClick = { saveScroll(); dialogReturn = popupSizeRowFocus; showPopupSize = true },
-        ),
-        RootRow(
-            "ui_zoom", TileTone.SECONDARY, OwnTVIcon.ZOOM,
-            title = stringResource(R.string.settings_ui_zoom), desc = stringResource(R.string.settings_ui_zoom_description),
-            chip = stringResource(R.string.common_percent, uiZoomPercent), chipTone = TileTone.SECONDARY,
-            focus = zoomRowFocus,
-            onClick = { saveScroll(); dialogReturn = zoomRowFocus; showZoom = true },
-        ),
         RootRow(
             "animations", TileTone.SECONDARY, OwnTVIcon.MOTION,
-            title = stringResource(R.string.settings_animations), desc = stringResource(R.string.settings_animations_description),
-            chip = stringResource(animationLevel.labelRes), chipTone = TileTone.SECONDARY,
+            title = stringResource(R.string.settings_animations), desc = stringResource(R.string.settings_ca_line_animations),
             focus = animationsRowFocus,
-            onClick = { saveScroll(); dialogReturn = animationsRowFocus; showAnimations = true },
+            onClick = { },
         ),
+        // Clock & weather: the clock's colours and the weather beside it, a page for the location field.
         RootRow(
             tabRowKey(SettingsTab.WEATHER), TileTone.SECONDARY, OwnTVIcon.WEATHER,
-            heading = stringResource(R.string.settings_heading_clock_weather),
-            title = stringResource(R.string.settings_weather),
-            desc = stringResource(R.string.settings_weather_description_root),
-            chip = if (weatherEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off),
-            chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
+            title = stringResource(R.string.settings_heading_clock_weather),
+            desc = stringResource(R.string.settings_ca_line_clock_weather),
             focus = rowFocus.getValue(SettingsTab.WEATHER),
             onClick = { open(SettingsTab.WEATHER) },
         ),
+        // Size & font, flat (6 Nov 2026): zoom, the three font values that had a page of their own, popups,
+        // and the column widths of Movies & Series.
+        *sizeRootRows(
+            fontCustomization, onSetFontCustomization, uiZoomPercent, appearanceDialogs,
+            zoomFocus = zoomRowFocus, popupSizeFocus = popupSizeRowFocus,
+            onOpenZoom = { saveScroll(); dialogReturn = zoomRowFocus; showZoom = true },
+            onOpenPopupSize = { saveScroll(); dialogReturn = popupSizeRowFocus; showPopupSize = true },
+        ).toTypedArray(),
         RootRow(
             tabRowKey(SettingsTab.PANEL_WIDTH), TileTone.PRIMARY, OwnTVIcon.PANEL_WIDTH,
-            heading = stringResource(R.string.settings_heading_widths),
-            title = stringResource(R.string.settings_panel_width),
-            desc = stringResource(R.string.settings_panel_width_description),
-            chip = if (panelWidthCustom) stringResource(R.string.settings_live_latency_custom) else stringResource(R.string.settings_subtitle_default),
-            chipTone = if (panelWidthCustom) TileTone.PRIMARY else TileTone.SECONDARY,
+            title = stringResource(R.string.settings_ca_column_widths),
+            desc = stringResource(R.string.settings_ca_line_column_widths),
+            value = tv.own.owntv.features.settings.SettingValue.Opens(stringResource(if (panelWidthCustom) R.string.settings_ca_custom else R.string.settings_ca_default)),
             focus = rowFocus.getValue(SettingsTab.PANEL_WIDTH),
             onClick = { open(SettingsTab.PANEL_WIDTH) },
         ),
-        // Controls (Jonathan, 4 Nov 2026): how Mayo TV is worked, out of Appearance.
+        // Controls (Jonathan, 4 Nov 2026): how Mayo TV is worked, out of Appearance. Its rows are built in
+        // [controlsRootRows] (6 Nov 2026: Menüeinträge, Tasten & Kurzbefehle, Listen & Menüs).
         RootGroup("group_controls", stringResource(R.string.settings_group_controls), OwnTVIcon.MENU, ""),
-        navigationRootRow(settingsVm, navigationRowFocus) { saveScroll(); dialogReturn = navigationRowFocus; showNavigation = true }
-            .copy(heading = stringResource(R.string.settings_heading_sidebar)),
-        RootRow(
-            "sidebar_apps", TileTone.SECONDARY, OwnTVIcon.GRID,
-            title = stringResource(R.string.launcher_apps_menu), desc = stringResource(R.string.launcher_apps_menu_line),
-            value = tv.own.owntv.features.settings.SettingValue.Switch(launcherConfig.appsInMenu),
-            onClick = { tv.own.owntv.launcher.apps.LauncherPrefs.update(launcherContext) { it.copy(appsInMenu = !it.appsInMenu) } },
-        ),
-        RootRow(
-            tabRowKey(SettingsTab.CH_NAV), TileTone.PRIMARY, OwnTVIcon.CH_NAV,
-            heading = stringResource(R.string.settings_heading_remote),
-            title = stringResource(R.string.settings_ch_paging), desc = stringResource(R.string.settings_ch_paging_description),
-            chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off),
-            chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY,
-            focus = rowFocus.getValue(SettingsTab.CH_NAV),
-            onClick = { open(SettingsTab.CH_NAV) },
-        ),
-        RootRow(
-            "browsing_lists", TileTone.PRIMARY, OwnTVIcon.LIST_GRID,
-            heading = stringResource(R.string.settings_heading_menus_lists),
-            title = stringResource(R.string.settings_browsing_lists), desc = stringResource(R.string.settings_browsing_description),
-            chevron = true,
-            focus = rowFocus.getValue(SettingsTab.BROWSING),
-            onClick = { open(SettingsTab.BROWSING) },
-        ),
-        RootRow(
-            tabRowKey(SettingsTab.CONTENT_MENUS), TileTone.PRIMARY, OwnTVIcon.MENU,
-            title = stringResource(R.string.settings_content_menus_title),
-            desc = stringResource(R.string.settings_content_menus_description),
-            focus = rowFocus.getValue(SettingsTab.CONTENT_MENUS),
-            onClick = { open(SettingsTab.CONTENT_MENUS) },
-        ),
+        *controlsRootRows(
+            settingsVm, navigationRowFocus, rowFocus.getValue(SettingsTab.CH_NAV), rowFocus.getValue(SettingsTab.CONTENT_MENUS),
+            onNavigation = { saveScroll(); dialogReturn = navigationRowFocus; showNavigation = true },
+            onOpen = open,
+        ).toTypedArray(),
         // About and the error log live in More. A page of facts and a log are
         // not preferences; both are More rows now, opening the very same dialogs.
         // Mayo TV as the TV's start screen. LauncherSettingsRows draws the group; these two rows sit inside it.
         RootGroup("group_homescreen", stringResource(R.string.launcher_settings_group), OwnTVIcon.POWER, ""),
         RootRow(
             "app_startup", TileTone.SECONDARY, OwnTVIcon.POWER,
-            title = stringResource(R.string.settings_app_startup), desc = stringResource(R.string.settings_app_startup_description),
+            title = stringResource(R.string.settings_ca_opens_with), desc = stringResource(R.string.settings_ca_line_opens_with),
             chip = if (startupMode == tv.own.owntv.core.settings.StartupMode.SPECIFIC_CHANNEL) {
                 startupChannel?.name ?: startupLabel(startupMode)
             } else startupLabel(startupMode),
@@ -790,14 +725,17 @@ fun SettingsScreen(
     var unpinReturnKey by remember { mutableStateOf<String?>(null) }
     val menuReturnFocus = remember { FocusRequester() }
     LaunchedEffect(menuReturnKey) {
-        if (menuReturnKey == null) return@LaunchedEffect
+        val key = menuReturnKey ?: return@LaunchedEffect
         kotlinx.coroutines.delay(60)
-        // Unpinning removes the row from Quick, so its requester may no longer be attached to
-        // anything — then the page's first row takes focus rather than nothing at all.
-        if (runCatching { menuReturnFocus.requestFocus() }.isFailure) {
-            runCatching { rowsFocus.requestFocus() }
-        }
+        // A search result's row may need a frame or two once its group is drawn ([jumpRow]). If it never
+        // turns up, the page's first row takes focus rather than nothing at all.
+        if (!focusWithin(menuReturnFocus)) runCatching { rowsFocus.requestFocus() }
+        // Cleared once used, so the same row can be asked for again.
+        if (menuReturnKey == key) menuReturnKey = null
     }
+    // A search result for a row on a group page: that group, focus on the row (6 Nov 2026, house rule 18).
+    val jumpRow: (String) -> Unit = { key -> searchQuery = ""; searchMode = false; groupOfKey[key]?.let { selectedGroup = it }; menuReturnKey = key }
+    val selectGroup: (SettingsGroup) -> Unit = { g -> searchQuery = ""; searchMode = false; selectedGroup = g.ordinal }
     // A genuinely new group starts at its top. Recreating the page after a sub-screen does not:
     // its group and scroll were kept above the sub-screen dispatch, so leave them untouched.
     LaunchedEffect(selectedGroup) {
@@ -876,52 +814,12 @@ fun SettingsScreen(
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_epg_sources), stringResource(R.string.settings_search_keywords_epg), OwnTVIcon.EPG, TileTone.PRIMARY) { open(SettingsTab.EPG) },
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_search_guide_logos), stringResource(R.string.settings_search_keywords_logos), OwnTVIcon.EPG, TileTone.SECONDARY) { open(SettingsTab.EPG) },
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_customize), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.SORT, TileTone.PRIMARY) { open(SettingsTab.CUSTOMIZE) },
-            navigationSearchEntry(settingsVm) { saveScroll(); dialogReturn = searchFieldFocus; showNavigation = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_controls), stringResource(R.string.settings_ch_paging), stringResource(R.string.settings_search_keywords_ch), OwnTVIcon.CH_NAV, TileTone.PRIMARY,
-                chip = if (chNavEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (chNavEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.CH_NAV) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_panel_width), stringResource(R.string.settings_search_keywords_panel_width), OwnTVIcon.PANEL_WIDTH, TileTone.PRIMARY,
-                chip = if (panelWidthCustom) stringResource(R.string.settings_live_latency_custom) else stringResource(R.string.settings_subtitle_default), chipTone = if (panelWidthCustom) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.PANEL_WIDTH) },
-        SettingsSearchEntry(stringResource(R.string.settings_group_controls), stringResource(R.string.settings_browsing_lists), stringResource(R.string.settings_search_keywords_browsing), OwnTVIcon.LIST_GRID, TileTone.PRIMARY) { open(SettingsTab.BROWSING) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_home_more), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.HOME, TileTone.SECONDARY) { open(SettingsTab.HOME) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.home_layout_title), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.GRID, TileTone.PRIMARY) { saveScroll(); dialogReturn = searchFieldFocus; showHomeLayout = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.home_row_titles), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.TEXT_SIZE, TileTone.SECONDARY) { searchQuery = ""; searchMode = false; selectedGroup = SettingsGroup.APPEARANCE.ordinal },
-            SettingsSearchEntry(stringResource(R.string.settings_group_controls), stringResource(R.string.launcher_apps_menu), stringResource(R.string.settings_search_keywords_home), OwnTVIcon.GRID, TileTone.SECONDARY) { searchQuery = ""; searchMode = false; selectedGroup = SettingsGroup.CONTROLS.ordinal },
+            // Aussehen & Startseite, Bedienung, Einschalten & Home-Taste: each result goes to its row (6 Nov 2026).
+            *appearanceSearchEntries(settingsVm, themeMode, fontCustomization, uiZoomPercent, jumpRow, selectGroup, open).toTypedArray(),
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_metadata), stringResource(R.string.settings_search_keywords_metadata), OwnTVIcon.IMAGE, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
             // No entries for the download folder, Backup, Local sync or Clear history. They
             // are not in Settings any more, and a result for something that is not here is a lie
             // about where it lives. The no-results state deliberately says nothing else either.
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_theme), stringResource(R.string.settings_search_keywords_theme), OwnTVIcon.THEME, TileTone.PRIMARY,
-                chip = themeLabel(themeMode)) { saveScroll(); dialogReturn = searchFieldFocus; showTheme = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_accent), stringResource(R.string.settings_search_keywords_accent), OwnTVIcon.PALETTE, TileTone.SECONDARY,
-                chip = if (customAccent.isNotBlank()) customAccent.uppercase() else stringResource(accent.labelRes), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAccent = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_focus_highlight), stringResource(R.string.settings_search_keywords_focus), OwnTVIcon.FOCUS_HIGHLIGHT, TileTone.SECONDARY,
-                chip = focusHighlightChip(focusHighlight, focusHighlightWidth), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showFocusHighlight = true },
-            if (themeMode == ThemeMode.DARK && !glassOn) SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_ambient_glow), stringResource(R.string.settings_ambient_glow_description), OwnTVIcon.GLOW, TileTone.PRIMARY,
-                chip = stringResource(if (ambientGlowEnabled) R.string.common_on else R.string.common_off), chipTone = if (ambientGlowEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAmbientGlow = true } else null,
-        SettingsSearchEntry(
-            stringResource(R.string.settings_group_appearance_home),
-            stringResource(R.string.settings_font_customization),
-                stringResource(R.string.settings_search_keywords_fonts),
-                OwnTVIcon.TEXT_SIZE,
-                TileTone.SECONDARY,
-                chip = stringResource(R.string.common_percent, fontCustomization.sizePercent),
-            chipTone = TileTone.SECONDARY,
-        ) { open(SettingsTab.FONTS) },
-        SettingsSearchEntry(
-            stringResource(R.string.settings_group_appearance_home),
-            stringResource(R.string.settings_popup_size),
-            stringResource(R.string.settings_popup_size_description),
-            OwnTVIcon.ZOOM,
-            TileTone.SECONDARY,
-            chip = stringResource(R.string.common_percent, fontCustomization.popupSizePercent),
-            chipTone = TileTone.SECONDARY,
-        ) { saveScroll(); dialogReturn = searchFieldFocus; showPopupSize = true },
-        SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_ui_zoom), stringResource(R.string.settings_search_keywords_zoom), OwnTVIcon.ZOOM, TileTone.SECONDARY,
-                chip = stringResource(R.string.common_percent, uiZoomPercent), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showZoom = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_animations), stringResource(R.string.settings_search_keywords_animation), OwnTVIcon.MOTION, TileTone.SECONDARY,
-                chip = stringResource(animationLevel.labelRes), chipTone = TileTone.SECONDARY) { saveScroll(); dialogReturn = searchFieldFocus; showAnimations = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_weather), stringResource(R.string.settings_search_keywords_weather), OwnTVIcon.WEATHER, TileTone.SECONDARY,
-                chip = if (weatherEnabled) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (weatherEnabled) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.WEATHER) },
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_live_preview"), stringResource(R.string.settings_quick_live_preview), stringResource(R.string.settings_search_keywords_live_preview), OwnTVIcon.LIVE_TV, TileTone.TERTIARY,
                 chip = if (livePreview) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (livePreview) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { toggleLivePreview(searchFieldFocus) },
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_preview_audio"), stringResource(R.string.settings_preview_audio), stringResource(R.string.settings_search_keywords_sound), OwnTVIcon.AUDIO, TileTone.SECONDARY,
@@ -943,9 +841,6 @@ fun SettingsScreen(
             // Four screens that had no entry at all, so nothing on them could be found by name.
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_playback), stringResource(R.string.recording_settings_group), stringResource(R.string.settings_search_keywords_recording), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { searchQuery = ""; searchMode = false; selectedGroup = SettingsGroup.PLAYBACK.ordinal },
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_language), stringResource(R.string.settings_open_subtitles), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.PRIMARY) { open(SettingsTab.OPEN_SUBTITLES) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_appearance_home), stringResource(R.string.settings_glass_bg_title), stringResource(R.string.settings_search_keywords_glass), OwnTVIcon.SPARKLE, TileTone.PRIMARY,
-                chip = glassBackgroundSummary(settingsVm.backgroundConfig.collectAsStateWithLifecycle().value, glassConfig), chipTone = if (glassOn) TileTone.PRIMARY else TileTone.SECONDARY) { open(SettingsTab.GLASS_EFFECT) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_controls), stringResource(R.string.settings_content_menus_title), stringResource(R.string.settings_search_keywords_customize), OwnTVIcon.MENU, TileTone.PRIMARY) { open(SettingsTab.CONTENT_MENUS) },
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_sub_style"), stringResource(R.string.settings_subtitle_appearance), stringResource(R.string.settings_search_keywords_subtitle_appearance), OwnTVIcon.SUBTITLE, TileTone.TERTIARY) { open(SettingsTab.SUBTITLE_STYLE) },
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_live_latency"), stringResource(R.string.settings_live_latency), stringResource(R.string.settings_search_keywords_latency), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { jumpVideo("vp_live_latency", false) },
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_preroll"), stringResource(R.string.settings_cl_live_preroll),stringResource(R.string.settings_search_keywords_live_preroll), OwnTVIcon.LIVE_TV, TileTone.TERTIARY) { jumpVideo("vp_preroll", false) },
@@ -960,8 +855,6 @@ fun SettingsScreen(
             *sportsSearchEntries { open(SettingsTab.SPORTS) }.toTypedArray(),
             // Settings inside a sub-screen, by their own names (kept out of line: this function is at the JVM size limit).
             *subScreenSearchEntries { t -> open(t) }.toTypedArray(),
-            SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_app_startup), stringResource(R.string.settings_search_keywords_startup), OwnTVIcon.POWER, TileTone.SECONDARY,
-                chip = startupLabel(startupMode)) { saveScroll(); dialogReturn = searchFieldFocus; showStartup = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_check_updates), stringResource(R.string.settings_search_keywords_updates), OwnTVIcon.REFRESH, TileTone.PRIMARY,
                 chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}") { saveScroll(); dialogReturn = searchFieldFocus; showUpdate = true },
             SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_update_startup), stringResource(R.string.settings_search_keywords_update_auto), OwnTVIcon.REFRESH, TileTone.SECONDARY,
@@ -1211,6 +1104,7 @@ fun SettingsScreen(
     if (showNavigation) {
         NavigationPopupHost(settingsVm, onDismiss = { showNavigation = false })
     }
+    AppearanceDialogHost(appearanceDialogs, fontCustomization, onSetFontCustomization)
     if (showFocusHighlight) {
         FocusHighlightDialog(
             highlight = focusHighlight,
@@ -1403,44 +1297,278 @@ private fun startupLabel(mode: tv.own.owntv.core.settings.StartupMode): String =
     },
 )
 
-/** Settings › Layout › Navigation, hosted outside [SettingsScreen] (whose body is at the JVM method-size limit). */
+/** Settings › Bedienung › Menüeinträge, hosted outside [SettingsScreen] (whose body is at the JVM method-size limit). */
 @Composable
 private fun NavigationPopupHost(settingsVm: SettingsViewModel, onDismiss: () -> Unit) {
     val navMenuMode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
     val navMenuHidden by settingsVm.navMenuHidden.collectAsStateWithLifecycle()
+    val launcher = tv.own.owntv.launcher.apps.rememberLauncherConfig()
+    val context = LocalContext.current
     tv.own.owntv.features.settings.NavigationSettingsPopup(
         menuMode = navMenuMode,
         onMenuMode = settingsVm::setNavMenuMode,
         hiddenSections = navMenuHidden,
         onSectionHidden = settingsVm::setNavSectionHidden,
+        appsInMenu = launcher.appsInMenu,
+        onAppsInMenu = { on -> tv.own.owntv.launcher.apps.LauncherPrefs.update(context) { it.copy(appsInMenu = on) } },
         onDismiss = onDismiss,
     )
 }
 
-/** The Layout group's Navigation row, built here to keep [SettingsScreen] under the JVM method-size limit. */
+/**
+ * Settings › Bedienung (6 Nov 2026), built here to keep [SettingsScreen] under the JVM method-size limit:
+ * Menü links (Menüeinträge, the panel with Apps as one tick), Fernbedienung (Tasten & Kurzbefehle) and
+ * Listen & Menüs (the four remember switches straight on the page, then Menüs bei langem OK).
+ * Movies' and Series' "remember last category" were never read by those screens and are not offered.
+ */
 @Composable
-private fun navigationRootRow(settingsVm: SettingsViewModel, focus: FocusRequester, onClick: () -> Unit): RootRow {
+private fun controlsRootRows(
+    settingsVm: SettingsViewModel,
+    navigationFocus: FocusRequester,
+    keysFocus: FocusRequester,
+    menusFocus: FocusRequester,
+    onNavigation: () -> Unit,
+    onOpen: (SettingsTab) -> Unit,
+): List<RootRow> {
     val mode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
-    return RootRow(
-        "navigation", TileTone.PRIMARY, OwnTVIcon.MENU,
-        title = stringResource(R.string.settings_navigation),
-        desc = stringResource(R.string.settings_navigation_description),
-        chip = stringResource(mode.labelRes),
-        chipTone = TileTone.PRIMARY,
-        focus = focus,
-        onClick = onClick,
+    val bindings by settingsVm.remoteShortcutBindings.collectAsStateWithLifecycle()
+    val catLive by settingsVm.rememberCategoryLive.collectAsStateWithLifecycle()
+    val lastLive by settingsVm.rememberLastLive.collectAsStateWithLifecycle()
+    val lastMovies by settingsVm.rememberLastMovies.collectAsStateWithLifecycle()
+    val lastSeries by settingsVm.rememberLastSeries.collectAsStateWithLifecycle()
+    // "Eigene" as soon as one of the arranged menus has an order of its own.
+    val customMenus = tv.own.owntv.features.settings.ArrangedMenus.map { menu ->
+        androidx.compose.runtime.key(menu) {
+            remember(menu) { settingsVm.menuOrder(menu) }.collectAsStateWithLifecycle(emptyList()).value.isNotEmpty()
+        }
+    }.any { it }
+    return listOf(
+        RootRow(
+            "navigation", TileTone.PRIMARY, OwnTVIcon.MENU,
+            heading = stringResource(R.string.settings_ca_heading_menu),
+            title = stringResource(R.string.settings_ca_menu_items),
+            desc = stringResource(R.string.settings_ca_line_menu_items),
+            value = tv.own.owntv.features.settings.SettingValue.Choice(stringResource(mode.labelRes)),
+            focus = navigationFocus,
+            onClick = onNavigation,
+        ),
+        RootRow(
+            tabRowKey(SettingsTab.CH_NAV), TileTone.PRIMARY, OwnTVIcon.CH_NAV,
+            heading = stringResource(R.string.settings_heading_remote),
+            title = stringResource(R.string.settings_ca_keys), desc = stringResource(R.string.settings_ca_line_keys),
+            value = tv.own.owntv.features.settings.SettingValue.Opens(pluralStringResource(R.plurals.settings_ca_key_count, bindings.size, bindings.size)),
+            focus = keysFocus,
+            onClick = { onOpen(SettingsTab.CH_NAV) },
+        ),
+        RootRow(
+            "remember_live_category", TileTone.SECONDARY, OwnTVIcon.LIVE_TV,
+            heading = stringResource(R.string.settings_ca_heading_lists),
+            title = stringResource(R.string.settings_ca_remember_live_category), desc = stringResource(R.string.settings_ca_line_remember_live_category),
+            value = tv.own.owntv.features.settings.SettingValue.Switch(catLive),
+            onClick = { settingsVm.setRememberCategoryLive(!catLive) },
+        ),
+        RootRow(
+            "remember_last_live", TileTone.SECONDARY, OwnTVIcon.LIVE_TV,
+            title = stringResource(R.string.settings_ca_remember_channel), desc = stringResource(R.string.settings_ca_line_remember_channel),
+            value = tv.own.owntv.features.settings.SettingValue.Switch(lastLive),
+            onClick = { settingsVm.setRememberLastLive(!lastLive) },
+        ),
+        RootRow(
+            "remember_last_movies", TileTone.SECONDARY, OwnTVIcon.MOVIES,
+            title = stringResource(R.string.settings_ca_remember_movie), desc = stringResource(R.string.settings_ca_line_remember_movie),
+            value = tv.own.owntv.features.settings.SettingValue.Switch(lastMovies),
+            onClick = { settingsVm.setRememberLastMovies(!lastMovies) },
+        ),
+        RootRow(
+            "remember_last_series", TileTone.SECONDARY, OwnTVIcon.SERIES,
+            title = stringResource(R.string.settings_ca_remember_series), desc = stringResource(R.string.settings_ca_line_remember_series),
+            value = tv.own.owntv.features.settings.SettingValue.Switch(lastSeries),
+            onClick = { settingsVm.setRememberLastSeries(!lastSeries) },
+        ),
+        RootRow(
+            tabRowKey(SettingsTab.CONTENT_MENUS), TileTone.PRIMARY, OwnTVIcon.MENU,
+            title = stringResource(R.string.settings_ca_long_press_menus),
+            desc = stringResource(R.string.settings_ca_line_long_press_menus),
+            value = tv.own.owntv.features.settings.SettingValue.Opens(stringResource(if (customMenus) R.string.settings_ca_custom else R.string.settings_ca_default)),
+            focus = menusFocus,
+            onClick = { onOpen(SettingsTab.CONTENT_MENUS) },
+        ),
     )
 }
 
-/** The Navigation row's settings-search entry (see [navigationRootRow]). */
+/**
+ * Aussehen & Startseite › Startseite, after Layout and Row titles (6 Nov 2026): Reihen der Startseite (its
+ * page, with how many rows Home shows) and, while the layout is Spotlight, Spotlight-Quellen.
+ */
 @Composable
-private fun navigationSearchEntry(settingsVm: SettingsViewModel, onClick: () -> Unit): SettingsSearchEntry {
-    val mode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
-    return SettingsSearchEntry(
-        stringResource(R.string.settings_group_controls), stringResource(R.string.settings_navigation),
-        stringResource(R.string.settings_search_keywords_navigation), OwnTVIcon.MENU, TileTone.PRIMARY,
-        chip = stringResource(mode.labelRes), chipTone = TileTone.PRIMARY, onClick = onClick,
+private fun homeRootRows(
+    launcherConfig: tv.own.owntv.launcher.apps.LauncherConfig,
+    homeFocus: FocusRequester,
+    spotlightFocus: FocusRequester,
+    onOpen: (SettingsTab) -> Unit,
+): List<RootRow> {
+    val homeVm: tv.own.owntv.features.settings.HomeSettingsViewModel = koinViewModel()
+    val config by homeVm.config.collectAsStateWithLifecycle()
+    val shown = config.visibleOrder.size
+    return listOfNotNull(
+        RootRow(
+            tabRowKey(SettingsTab.HOME), TileTone.SECONDARY, OwnTVIcon.HOME,
+            title = stringResource(R.string.settings_ca_home_rows), desc = stringResource(R.string.settings_line_home),
+            value = tv.own.owntv.features.settings.SettingValue.Opens(pluralStringResource(R.plurals.settings_home_row_count, shown, shown)),
+            focus = homeFocus,
+            onClick = { onOpen(SettingsTab.HOME) },
+        ),
+        if (launcherConfig.homeLayout == tv.own.owntv.launcher.apps.LauncherConfig.LAYOUT_SPOTLIGHT) RootRow(
+            tabRowKey(SettingsTab.SPOTLIGHT), TileTone.SECONDARY, OwnTVIcon.STAR,
+            title = stringResource(R.string.settings_ca_spotlight_sources), desc = stringResource(R.string.settings_ca_line_spotlight_sources),
+            value = tv.own.owntv.features.settings.SettingValue.Opens(tv.own.owntv.features.settings.spotlightSourcesValue()),
+            focus = spotlightFocus,
+            onClick = { onOpen(SettingsTab.SPOTLIGHT) },
+        ) else null,
     )
+}
+
+/** Which of Größe & Schrift's font rows has its value open in the panel. */
+private class AppearanceDialogState {
+    var font by mutableStateOf<tv.own.owntv.features.settings.FontEdit?>(null)
+}
+
+/**
+ * Aussehen & Startseite › Größe & Schrift (6 Nov 2026), flat: Oberflächenzoom, Textgröße, Schriftart,
+ * Popup-Größe, Popup-Textgröße. Steppers change with ◀ ▶ in place; OK opens the value in the panel.
+ */
+@Composable
+private fun sizeRootRows(
+    font: FontCustomization,
+    onSetFont: (FontCustomization) -> Unit,
+    uiZoomPercent: Int,
+    state: AppearanceDialogState,
+    zoomFocus: FocusRequester,
+    popupSizeFocus: FocusRequester,
+    onOpenZoom: () -> Unit,
+    onOpenPopupSize: () -> Unit,
+): List<RootRow> {
+    val percent: @Composable (Int) -> String = { stringResource(R.string.common_percent, it) }
+    val families = tv.own.owntv.features.settings.fontChoices { fontFamilyLabel(it) }
+    return listOf(
+        RootRow(
+            "ui_zoom", TileTone.SECONDARY, OwnTVIcon.ZOOM,
+            heading = stringResource(R.string.settings_mayo_heading_size),
+            title = stringResource(R.string.settings_ui_zoom), desc = stringResource(R.string.settings_ca_line_zoom),
+            focus = zoomFocus,
+            onClick = onOpenZoom,
+        ),
+        RootRow(
+            "text_size", TileTone.SECONDARY, OwnTVIcon.TEXT_SIZE,
+            title = stringResource(R.string.settings_ca_text_size), desc = stringResource(R.string.settings_ca_line_text_size),
+            value = tv.own.owntv.features.settings.SettingValue.Stepper(percent(font.sizePercent)),
+            onStep = { d -> onSetFont(tv.own.owntv.features.settings.stepTextSize(font, d)) },
+            onClick = { state.font = tv.own.owntv.features.settings.FontEdit.SIZE },
+        ),
+        RootRow(
+            "font", TileTone.SECONDARY, OwnTVIcon.TEXT_SIZE,
+            title = stringResource(R.string.settings_ca_font), desc = stringResource(R.string.settings_ca_line_font),
+            value = tv.own.owntv.features.settings.SettingValue.Choice(tv.own.owntv.features.settings.fontChoiceLabel(font) { fontFamilyLabel(it) }),
+            choices = families.map { it.second },
+            onClick = { state.font = tv.own.owntv.features.settings.FontEdit.FONT },
+        ),
+        RootRow(
+            "popup_size", TileTone.SECONDARY, OwnTVIcon.ZOOM,
+            title = stringResource(R.string.settings_popup_size), desc = stringResource(R.string.settings_line_popup_size),
+            focus = popupSizeFocus,
+            onClick = onOpenPopupSize,
+        ),
+        RootRow(
+            "popup_text_size", TileTone.SECONDARY, OwnTVIcon.TEXT_SIZE,
+            title = stringResource(R.string.settings_ca_popup_text_size), desc = stringResource(R.string.settings_ca_line_popup_text_size),
+            value = tv.own.owntv.features.settings.SettingValue.Stepper(percent(font.popupFontSizePercent)),
+            onStep = { d -> onSetFont(tv.own.owntv.features.settings.stepPopupTextSize(font, d)) },
+            onClick = { state.font = tv.own.owntv.features.settings.FontEdit.POPUP },
+        ),
+    )
+}
+
+/** The panel editors of [sizeRootRows], hosted with the page's other dialogs. */
+@Composable
+private fun AppearanceDialogHost(state: AppearanceDialogState, font: FontCustomization, onSetFont: (FontCustomization) -> Unit) {
+    tv.own.owntv.features.settings.FontEditHost(state.font, font, onSetFont, { fontFamilyLabel(it) }) { state.font = null }
+}
+
+/** Up to ten frames for [focus] to take focus; whether it did. */
+private suspend fun focusWithin(focus: FocusRequester): Boolean {
+    repeat(10) {
+        if (runCatching { focus.requestFocus() }.getOrDefault(false)) return true
+        withFrameNanos { }
+    }
+    return false
+}
+
+/**
+ * Settings search for Aussehen & Startseite, Bedienung and Einschalten & Home-Taste (6 Nov 2026): each
+ * entry is named as its row is and goes to that row ([jumpRow]) instead of opening a dialog of its own.
+ * Rows that live on a page open the page; Einschalten & Home-Taste's rows open their group.
+ */
+@Composable
+private fun appearanceSearchEntries(
+    settingsVm: SettingsViewModel,
+    themeMode: ThemeMode,
+    font: FontCustomization,
+    uiZoomPercent: Int,
+    jumpRow: (String) -> Unit,
+    selectGroup: (SettingsGroup) -> Unit,
+    open: (SettingsTab) -> Unit,
+): List<SettingsSearchEntry> {
+    val looks = stringResource(SettingsGroup.APPEARANCE.titleRes)
+    val controls = stringResource(SettingsGroup.CONTROLS.titleRes)
+    val power = stringResource(SettingsGroup.HOMESCREEN.titleRes)
+    val homePage = stringResource(R.string.settings_breadcrumb, looks, stringResource(R.string.settings_ca_home_rows))
+    val keys = stringResource(R.string.settings_search_keywords_home)
+    val accent by settingsVm.accent.collectAsStateWithLifecycle()
+    val customAccent by settingsVm.customAccent.collectAsStateWithLifecycle()
+    val animations by settingsVm.animationLevel.collectAsStateWithLifecycle()
+    val mode by settingsVm.navMenuMode.collectAsStateWithLifecycle()
+    val startup by settingsVm.startupMode.collectAsStateWithLifecycle()
+    val e = mutableListOf<SettingsSearchEntry>()
+    // Each title resolved here, so the entry says exactly what its row says.
+    @Composable fun add(group: String, title: Int, icon: OwnTVIcon, chip: String? = null, onClick: () -> Unit) {
+        e += SettingsSearchEntry(group, stringResource(title), keys, icon, TileTone.SECONDARY, chip = chip, onClick = onClick)
+    }
+    @Composable fun percent(value: Int) = stringResource(R.string.common_percent, value)
+    add(looks, R.string.home_layout_title, OwnTVIcon.GRID) { jumpRow("home_layout") }
+    add(looks, R.string.settings_ca_row_titles, OwnTVIcon.TEXT_SIZE) { jumpRow("home_row_titles") }
+    add(looks, R.string.settings_ca_home_rows, OwnTVIcon.HOME) { jumpRow(tabRowKey(SettingsTab.HOME)) }
+    add(looks, R.string.settings_ca_spotlight_sources, OwnTVIcon.STAR) { open(SettingsTab.SPOTLIGHT) }
+    add(looks, R.string.settings_theme, OwnTVIcon.THEME, themeLabel(themeMode)) { jumpRow("theme") }
+    add(looks, R.string.settings_accent, OwnTVIcon.PALETTE, if (customAccent.isNotBlank()) customAccent.uppercase() else stringResource(accent.labelRes)) { jumpRow("accent") }
+    add(looks, R.string.settings_focus_highlight, OwnTVIcon.FOCUS_HIGHLIGHT) { jumpRow("focus_highlight") }
+    add(looks, R.string.settings_ca_bg_glass, OwnTVIcon.SPARKLE) { jumpRow(tabRowKey(SettingsTab.GLASS_EFFECT)) }
+    add(stringResource(R.string.settings_breadcrumb, looks, stringResource(R.string.settings_ca_bg_glass)), R.string.settings_ambient_glow, OwnTVIcon.GLOW) { open(SettingsTab.GLASS_EFFECT) }
+    add(looks, R.string.settings_animations, OwnTVIcon.MOTION, stringResource(animations.labelRes)) { jumpRow("animations") }
+    add(looks, R.string.settings_heading_clock_weather, OwnTVIcon.WEATHER) { jumpRow(tabRowKey(SettingsTab.WEATHER)) }
+    add(looks, R.string.settings_ui_zoom, OwnTVIcon.ZOOM, percent(uiZoomPercent)) { jumpRow("ui_zoom") }
+    add(looks, R.string.settings_ca_text_size, OwnTVIcon.TEXT_SIZE, percent(font.sizePercent)) { jumpRow("text_size") }
+    add(looks, R.string.settings_ca_font, OwnTVIcon.TEXT_SIZE) { jumpRow("font") }
+    add(looks, R.string.settings_popup_size, OwnTVIcon.ZOOM, percent(font.popupSizePercent)) { jumpRow("popup_size") }
+    add(looks, R.string.settings_ca_popup_text_size, OwnTVIcon.TEXT_SIZE, percent(font.popupFontSizePercent)) { jumpRow("popup_text_size") }
+    add(looks, R.string.settings_ca_column_widths, OwnTVIcon.PANEL_WIDTH) { jumpRow(tabRowKey(SettingsTab.PANEL_WIDTH)) }
+    // The Home rows page's own settings open that page.
+    add(homePage, R.string.home_row_now_trending, OwnTVIcon.STAR) { open(SettingsTab.HOME) }
+    add(homePage, R.string.home_trending_style, OwnTVIcon.MOVIES) { open(SettingsTab.HOME) }
+    add(homePage, R.string.launcher_apps_row, OwnTVIcon.TILES) { open(SettingsTab.HOME) }
+    add(homePage, R.string.launcher_app_channels, OwnTVIcon.LAYERS) { open(SettingsTab.HOME) }
+    add(controls, R.string.settings_ca_menu_items, OwnTVIcon.MENU, stringResource(mode.labelRes)) { jumpRow("navigation") }
+    add(controls, R.string.settings_ca_keys, OwnTVIcon.CH_NAV) { jumpRow(tabRowKey(SettingsTab.CH_NAV)) }
+    add(controls, R.string.settings_ca_remember_live_category, OwnTVIcon.LIVE_TV) { jumpRow("remember_live_category") }
+    add(controls, R.string.settings_ca_remember_channel, OwnTVIcon.LIVE_TV) { jumpRow("remember_last_live") }
+    add(controls, R.string.settings_ca_remember_movie, OwnTVIcon.MOVIES) { jumpRow("remember_last_movies") }
+    add(controls, R.string.settings_ca_remember_series, OwnTVIcon.SERIES) { jumpRow("remember_last_series") }
+    add(controls, R.string.settings_ca_long_press_menus, OwnTVIcon.MENU) { jumpRow(tabRowKey(SettingsTab.CONTENT_MENUS)) }
+    add(power, R.string.launcher_as_start, OwnTVIcon.HOME) { selectGroup(SettingsGroup.HOMESCREEN) }
+    add(power, R.string.launcher_guard, OwnTVIcon.FOCUS_HIGHLIGHT) { selectGroup(SettingsGroup.HOMESCREEN) }
+    add(power, R.string.launcher_boot, OwnTVIcon.POWER) { selectGroup(SettingsGroup.HOMESCREEN) }
+    add(power, R.string.settings_ca_opens_with, OwnTVIcon.POWER, startupLabel(startup)) { jumpRow("app_startup") }
+    add(power, R.string.settings_ca_tv_cards, OwnTVIcon.HISTORY) { selectGroup(SettingsGroup.HOMESCREEN) }
+    return e
 }
 
 // Moved out of SettingsScreen unchanged: that function sits at the JVM's 64 KB method limit.
@@ -1458,7 +1586,7 @@ private fun ThemeDialogHost(settingsVm: SettingsViewModel, themeMode: ThemeMode,
 @Composable
 private fun StartupDialogHost(settingsVm: SettingsViewModel, startupMode: tv.own.owntv.core.settings.StartupMode, onClose: () -> Unit, onPickChannel: () -> Unit) {
     tv.own.owntv.features.settings.PickerDialog(
-        title = stringResource(R.string.settings_app_startup_dialog),
+        title = stringResource(R.string.settings_ca_opens_with),
         options = tv.own.owntv.core.settings.StartupMode.entries.map { it.name to startupLabel(it) },
         selected = startupMode.name,
         onSelect = {
@@ -1502,6 +1630,33 @@ private fun AnimationsDialogHost(settingsVm: SettingsViewModel, animationLevel: 
         onSelect = { settingsVm.setAnimationLevel(tv.own.owntv.core.theme.AnimationLevel.valueOf(it)); onClose() },
         onDismiss = { onClose() },
     )
+}
+
+/**
+ * Hintergrund & Glas › Glas: Umgebungsleuchten, and its slow pulse while it is on (rule 9: a dependent row
+ * shows only while its switch is on).
+ */
+@Composable
+private fun AmbientGlowRows(settingsVm: SettingsViewModel) {
+    val on by settingsVm.ambientGlowEnabled.collectAsStateWithLifecycle()
+    val pulse by settingsVm.ambientGlowPulse.collectAsStateWithLifecycle()
+    val title = stringResource(R.string.settings_ambient_glow)
+    val line = stringResource(R.string.settings_ca_line_ambient_glow)
+    val value = SettingValue.Switch(on)
+    StageSettingRow(
+        icon = OwnTVIcon.GLOW, title = title, desc = line, value = value,
+        onClick = { settingsVm.setAmbientGlowEnabled(!on) },
+        help = settingHelp(null, title, stringResource(R.string.settings_ambient_glow_dialog_description), value, pinnable = false),
+    )
+    if (on) {
+        val pulseTitle = stringResource(R.string.settings_ambient_glow_pulse)
+        val pulseValue = SettingValue.Switch(pulse)
+        StageSettingRow(
+            icon = OwnTVIcon.MOTION, title = pulseTitle, desc = null, value = pulseValue,
+            onClick = { settingsVm.setAmbientGlowPulse(!pulse) },
+            help = settingHelp(null, pulseTitle, stringResource(R.string.settings_ambient_glow_dialog_description), pulseValue, pinnable = false),
+        )
+    }
 }
 
 @Composable
@@ -1869,6 +2024,9 @@ private fun GlassEffectSettingsScreen(onBack: () -> Unit, modifier: Modifier = M
     val ingestScope = rememberCoroutineScope()
 
     val background by settingsVm.backgroundConfig.collectAsStateWithLifecycle()
+    // Ambient glow (moved here from the group page, 6 Nov 2026) only where it shows: dark and without glass.
+    val glowShown = tv.own.owntv.ui.theme.LocalThemeMode.current == ThemeMode.DARK && !glassConfig.enabled
+    val glowOn by settingsVm.ambientGlowEnabled.collectAsStateWithLifecycle()
     GlassBackgroundPage(
         background = background,
         glassOn = glassConfig.enabled,
@@ -1892,6 +2050,8 @@ private fun GlassEffectSettingsScreen(onBack: () -> Unit, modifier: Modifier = M
         onReset = settingsVm::resetGlassAndBackground,
         onBack = onBack,
         modifier = modifier,
+        glassRows = { if (glowShown) AmbientGlowRows(settingsVm) },
+        glassRowsCount = if (!glowShown) 0 else if (glowOn) 2 else 1,
     )
 
     if (showBackgroundChooser) {
@@ -2208,7 +2368,6 @@ private fun stageRowExtras(
     val weatherOn by vm.weatherEnabled.collectAsStateWithLifecycle()
     val weatherPlace by vm.weatherLocation.collectAsStateWithLifecycle()
     val fahrenheit by vm.weatherFahrenheit.collectAsStateWithLifecycle()
-    val navMenuMode by vm.navMenuMode.collectAsStateWithLifecycle()
     val appIcon by vm.appIcon.collectAsStateWithLifecycle()
     val brandAccent by vm.brandAccentTriangle.collectAsStateWithLifecycle()
     val focusHighlight by vm.focusHighlight.collectAsStateWithLifecycle()
@@ -2256,7 +2415,6 @@ private fun stageRowExtras(
             hints = listOf(
                 stringResource(R.string.common_ok) to stringResource(R.string.settings_key_palette),
                 "◀ ▶" to stringResource(R.string.settings_presets),
-                stringResource(R.string.content_key_hold_ok) to stringResource(R.string.settings_row_menu_pin),
                 stringResource(R.string.common_back) to stringResource(R.string.common_nav_settings),
             ),
         ),
@@ -2266,7 +2424,6 @@ private fun stageRowExtras(
             OwnTVIcon(OwnTVIcon.CHEVRON, tv.own.owntv.ui.theme.StageColors.Muted, Modifier.size(20.mpx))
         }),
         "tab_GLASS_EFFECT" to RowExtra(SettingValue.Opens(glassBackgroundSummary(vm.backgroundConfig.collectAsStateWithLifecycle().value, glass))),
-        "fonts" to RowExtra(SettingValue.Opens(fontFamilyLabel(font.mainFamily) + sep + stringResource(R.string.common_percent, font.sizePercent))),
         // The sample popup shows as soon as the row has focus, so ◀ ▶ on the row resize it live.
         "popup_size" to RowExtra(
             SettingValue.Stepper(stringResource(R.string.common_percent, font.popupSizePercent)), onStep = popupStep,
@@ -2286,7 +2443,6 @@ private fun stageRowExtras(
             if (!weatherOn) stringResource(R.string.common_off)
             else listOfNotNull(weatherPlace.ifBlank { null }, stringResource(if (fahrenheit) R.string.settings_degree_fahrenheit else R.string.settings_degree_celsius)).joinToString(sep),
         )),
-        "navigation" to RowExtra(SettingValue.Opens(stringResource(navMenuMode.labelRes))),
         "app_icon" to RowExtra(SettingValue.Opens(stringResource(appIcon.label))),
         "brand_accent" to RowExtra(SettingValue.Switch(brandAccent), onClick = { vm.setBrandAccentTriangle(!brandAccent) }),
         "check_updates" to RowExtra(SettingValue.Action(stringResource(R.string.settings_check_now))),

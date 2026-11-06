@@ -53,6 +53,12 @@ private fun menuTitle(menu: ContentMenu) = stringResource(
     },
 )
 
+/**
+ * The menus Mayo TV arranges: movies, series and episodes (VodStage). Live TV's channel menu does not read
+ * its saved order, so it is not offered; its stored order stays untouched.
+ */
+internal val ArrangedMenus = ContentMenu.entries.filter { it != ContentMenu.LIVE }
+
 private fun menuIcon(menu: ContentMenu) = when (menu) {
     ContentMenu.LIVE -> OwnTVIcon.LIVE_TV
     ContentMenu.MOVIE -> OwnTVIcon.MOVIES
@@ -72,20 +78,20 @@ private fun menuIcon(menu: ContentMenu) = when (menu) {
 fun ContentMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val vm: SettingsViewModel = koinViewModel()
     val scrollState = rememberScrollState()
-    val rowFocus = remember { ContentMenu.entries.associateWith { FocusRequester() } }
+    val rowFocus = remember { ArrangedMenus.associateWith { FocusRequester() } }
     var openMenu by remember { mutableStateOf<ContentMenu?>(null) }
-    LaunchedEffect(Unit) { runCatching { rowFocus.getValue(ContentMenu.LIVE).requestFocus() } }
+    LaunchedEffect(Unit) { runCatching { rowFocus.getValue(ArrangedMenus.first()).requestFocus() } }
     // Four menu rows and Reset; the panel lists the focused menu's actions in their order.
     val about = stringResource(R.string.settings_content_menus_description)
     StageFullPage(
         parents = listOf(stringResource(R.string.settings_group_controls)),
-        title = stringResource(R.string.settings_content_menus_title),
-        count = pluralStringResource(R.plurals.settings_setting_count, ContentMenu.entries.size, ContentMenu.entries.size),
+        title = stringResource(R.string.settings_ca_long_press_menus),
+        count = "",
         onBack = onBack,
         modifier = modifier,
         scroll = scrollState,
     ) {
-        ContentMenu.entries.forEach { menu ->
+        ArrangedMenus.forEach { menu ->
             val saved by remember(menu) { vm.menuOrder(menu) }.collectAsStateWithLifecycle(emptyList())
             val refs = catalogue(menu)
             val order = applyMenuOrder(refs.map { it.key }, saved) { it }
@@ -121,7 +127,7 @@ fun ContentMenuSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier)
             title = reset,
             desc = null,
             value = null,
-            onClick = { ContentMenu.entries.forEach { vm.setMenuOrder(it, emptyList()) } },
+            onClick = { ArrangedMenus.forEach { vm.setMenuOrder(it, emptyList()) } },
             help = SettingHelp(reset, about, hints = settingHints(null, pinnable = false)),
         )
         // Arranged in the page's panel.

@@ -70,7 +70,7 @@ internal fun SettingsLivePreview() {
     val appNames = tv.own.owntv.launcher.apps.rowApps(launcher, apps).map { if (tv.own.owntv.launcher.apps.isTizenTube(it.pkg)) youtube else it.label }
     val a = stageAccent
     val ink = tv.own.owntv.ui.theme.LocalStagePalette.current.ink
-    SettingPanelHeading(stringResource(R.string.settings_quick_live_preview))
+    SettingPanelHeading(stringResource(R.string.settings_ca_preview))
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()

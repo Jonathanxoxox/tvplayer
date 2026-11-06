@@ -23,6 +23,8 @@ fun PlayerKeySettingsSection() {
     val context = LocalContext.current
     val map by remember { PlayerKeyMap.flow(context) }.collectAsStateWithLifecycle()
     var editing by remember { mutableStateOf<Pair<PlayerKey, Boolean>?>(null) }
+    // Restore default keys asks first (Cancel focused): it throws the user's own assignments away.
+    var confirmReset by remember { mutableStateOf(false) }
     val about = stringResource(R.string.tvplayer_keys_help)
     val hints = settingHints(SettingValue.Choice(String()), pinnable = false)
 
@@ -50,9 +52,19 @@ fun PlayerKeySettingsSection() {
         title = resetTitle,
         desc = resetDesc,
         value = null,
-        onClick = { PlayerKeyMap.reset(context) },
+        onClick = { confirmReset = true },
         help = SettingHelp(resetTitle, resetDesc, hints = settingHints(null, pinnable = false)),
     )
+    if (confirmReset) {
+        tv.own.owntv.ui.stage.StageConfirm(
+            title = resetTitle,
+            body = stringResource(R.string.settings_ca_keys_restore_confirm),
+            confirm = stringResource(R.string.settings_ca_keys_restore_action),
+            onConfirm = { PlayerKeyMap.reset(context); confirmReset = false },
+            onCancel = { confirmReset = false },
+            focusCancel = true,
+        )
+    }
 
     editing?.let { (key, long) ->
         val binding = map.getValue(key)

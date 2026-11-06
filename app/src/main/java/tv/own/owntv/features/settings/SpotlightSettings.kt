@@ -15,18 +15,40 @@ import tv.own.owntv.ui.components.MoveOrderOverlay
 import tv.own.owntv.ui.components.OwnTVIcon
 
 /**
- * Settings › Home › Spotlight: where the Spotlight's highlights come from, each switched on or off with OK,
- * in an order the user sets by holding OK on one (Jonathan, 5 Nov 2026).
+ * Settings › Aussehen & Startseite › Spotlight-Quellen (a page of its own since 6 Nov 2026, shown while the
+ * layout is Spotlight): where the Spotlight's highlights come from, each switched on or off with OK, in an
+ * order the user sets by holding OK on one (Jonathan, 5 Nov 2026).
  */
 @Composable
-internal fun SpotlightSourceRows() {
+internal fun SpotlightSourcesScreen(onBack: () -> Unit, modifier: androidx.compose.ui.Modifier = androidx.compose.ui.Modifier) {
+    StageFullPage(
+        parents = listOf(stringResource(R.string.settings_group_appearance_home)),
+        title = stringResource(R.string.settings_ca_spotlight_sources),
+        count = "",
+        onBack = onBack,
+        modifier = modifier,
+    ) {
+        SpotlightSourceRows()
+    }
+}
+
+/** The Spotlight-Quellen row's value: how many of the sources are on, "4 von 6 an". */
+@Composable
+internal fun spotlightSourcesValue(): String {
+    val config = rememberLauncherConfig()
+    val all = SpotlightSource.ordered(config.spotlightOrder, off = emptySet())
+    val on = all.count { it.key !in config.spotlightOff }
+    return stringResource(R.string.launcher_app_channels_count, on, all.size)
+}
+
+@Composable
+private fun SpotlightSourceRows() {
     val context = LocalContext.current
     val config = rememberLauncherConfig()
     val order = SpotlightSource.ordered(config.spotlightOrder, off = emptySet())
     // The order while its Move window is open, with the carried source's place.
     var moving by remember { mutableStateOf<Pair<List<SpotlightSource>, Int>?>(null) }
     val holdHint = stringResource(R.string.home_spotlight_hold_hint)
-    StageSettingsHeading(stringResource(R.string.home_spotlight_heading), order.size)
     order.forEachIndexed { index, source ->
         val on = source.key !in config.spotlightOff
         val title = stringResource(source.title())
@@ -42,7 +64,14 @@ internal fun SpotlightSourceRows() {
                 }
             },
             onLongClick = { moving = order to index },
-            help = SettingHelp(title, desc + "\n" + holdHint, hints = settingHints(null, pinnable = false)),
+            help = SettingHelp(
+                title, desc + "\n" + holdHint,
+                hints = listOf(
+                    stringResource(R.string.common_ok) to stringResource(R.string.settings_key_switch),
+                    stringResource(R.string.content_key_hold_ok) to stringResource(R.string.content_move),
+                    stringResource(R.string.common_back) to stringResource(R.string.settings_group_appearance_home),
+                ),
+            ),
         )
     }
     moving?.let { (list, index) ->

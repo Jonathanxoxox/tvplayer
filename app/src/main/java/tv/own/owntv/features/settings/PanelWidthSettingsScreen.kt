@@ -73,11 +73,11 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
     val vm: SettingsViewModel = koinViewModel()
 
     var open by remember { mutableStateOf<PanelSection?>(null) }
-    val rowFocus = remember { PanelSection.entries.associateWith { FocusRequester() } }
+    val rowFocus = remember { OfferedSections.associateWith { FocusRequester() } }
     val scrollState = rememberScrollState()
     var dialogReturn by remember { mutableStateOf<FocusRequester?>(null) }
 
-    LaunchedEffect(Unit) { runCatching { rowFocus.getValue(PanelSection.LIVE).requestFocus() } }
+    LaunchedEffect(Unit) { runCatching { rowFocus.getValue(OfferedSections.first()).requestFocus() } }
     // Snapshot the offset while the dialog is up and hold it across the restore, so the row is already
     // in view when focus lands — see [restoreAfterDialogClose].
     var savedScroll by remember { mutableIntStateOf(0) }
@@ -101,13 +101,13 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
         val sep = stringResource(R.string.content_epg_bits_separator)
         StageFullPage(
             parents = listOf(stringResource(R.string.settings_group_appearance_home)),
-            title = stringResource(R.string.settings_panel_width),
-            count = pluralStringResource(R.plurals.settings_setting_count, PanelSection.entries.size, PanelSection.entries.size),
+            title = stringResource(R.string.settings_ca_column_widths),
+            count = "",
             onBack = onBack,
             modifier = Modifier,
             scroll = scrollState,
         ) {
-            PanelSection.entries.forEach { section ->
+            OfferedSections.forEach { section ->
                 val enabled by vm.panelWidthEnabled.getValue(section).collectAsStateWithLifecycle()
                 val shares by vm.panelShares.getValue(section).collectAsStateWithLifecycle()
                 val current = shares ?: defaultPanelShares(section, rowWidth)
@@ -155,6 +155,12 @@ fun PanelWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) 
         }
     }
 }
+
+/**
+ * Movies and Series (6 Nov 2026): no Live TV screen reads Live TV's widths any more, so that section is not
+ * offered; what is stored for it stays untouched.
+ */
+private val OfferedSections = PanelSection.entries.filter { it != PanelSection.LIVE }
 
 @Composable
 private fun sectionTitle(section: PanelSection): String = when (section) {
