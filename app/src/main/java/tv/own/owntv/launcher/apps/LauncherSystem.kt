@@ -54,6 +54,17 @@ object LauncherSystem {
         }
     }
 
+    private val wakes = MutableStateFlow(0L)
+    /** Counts up each time the box wakes from standby with Mayo TV in front: Home starts afresh, nothing picked. */
+    val wake: StateFlow<Long> = wakes.asStateFlow()
+
+    /** Woken from standby: out of the player and onto Home, as after the Home button, with nothing left playing. */
+    fun wokeFromStandby() {
+        val now = SystemClock.elapsedRealtime()
+        wakes.value = now
+        homePresses.value = now
+    }
+
     fun openHome(context: Context, live: Boolean = false) {
         val intent = context.packageManager.getLeanbackLaunchIntentForPackage(context.packageName)
             ?: context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return
