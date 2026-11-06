@@ -52,7 +52,8 @@ class SettingsSearchCoverageTest {
      * Playlists, and the settings it held are found under Playlists › Wiedergabe.
      */
     // GUIDE_WIDTH is no page any more: it only forwards to its row (Live-TV & Sport › TV-Guide), which search finds.
-    private val notSearchable = setOf("ROOT", "BACKUP", "LOCAL_SYNC", "RESETS", "GUIDE_WIDTH", "PER_PLAYLIST")
+    // BROWSING and FONTS likewise: their rows sit on Bedienung and Aussehen & Startseite now, each with its own entry.
+    private val notSearchable = setOf("ROOT", "BACKUP", "LOCAL_SYNC", "RESETS", "GUIDE_WIDTH", "PER_PLAYLIST", "BROWSING", "FONTS")
 
     @Test
     fun `every settings screen can be found by search`() {

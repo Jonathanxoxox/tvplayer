@@ -1331,6 +1331,8 @@ private fun appearanceSearchEntries(
     // The Home rows page's own settings open that page.
     add(homePage, R.string.home_row_now_trending, OwnTVIcon.STAR) { open(SettingsTab.HOME) }
     add(homePage, R.string.home_trending_style, OwnTVIcon.MOVIES) { open(SettingsTab.HOME) }
+    // The channel row's category, a panel action of that row on the page.
+    add(homePage, R.string.home_catalog_title, OwnTVIcon.LIVE_TV) { open(SettingsTab.HOME) }
     add(homePage, R.string.launcher_apps_row, OwnTVIcon.TILES) { open(SettingsTab.HOME) }
     add(homePage, R.string.launcher_app_channels, OwnTVIcon.LAYERS) { open(SettingsTab.HOME) }
     add(controls, R.string.settings_ca_menu_items, OwnTVIcon.MENU, stringResource(mode.labelRes)) { jumpRow("navigation") }
