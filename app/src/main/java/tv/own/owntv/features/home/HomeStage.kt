@@ -284,8 +284,7 @@ internal fun HomeStage(
                     now = now,
                     modifier = Modifier.weight(1f),
                 )
-            } else
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.mpx)) {
+            } else Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.mpx)) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.mpx)) {
                     Box(Modifier.size(64.mpx).clip(RoundedCornerShape(10.mpx)).background(StageColors.ControlFill)) {
                         ChannelLogoTile(logoUrl = shown.displayLogoUrl, modifier = Modifier.fillMaxSize().padding(6.mpx), fill = Color.Transparent) {
