@@ -244,7 +244,8 @@ fun HomeScreen(
         }
     }
     // The Spotlight's highlights (Jonathan, 4 Nov 2026): followed matches, the evening, habits, watching on.
-    val spotlightMatches = if (spotlightLayout) matches else emptyList()
+    // The Spotlight's own list: the followed matches also before one is near (the row waits for that).
+    val spotlightMatches = if (spotlightLayout) sportsVm.spotlightRow.collectAsStateWithLifecycle().value else emptyList()
     // Today's picks from MagentaTV's guide (its tips and highlights, arte's documentaries), asked once Home has
     // settled and every half hour after: the shown channels and arte (Jonathan, 5 Nov 2026).
     val magentaGuide = koinInject<MagentaGuide>()
