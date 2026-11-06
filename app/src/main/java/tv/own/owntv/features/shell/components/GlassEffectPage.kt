@@ -90,6 +90,9 @@ internal fun GlassBackgroundPage(
     onReset: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Under Glass: Ambient glow, while the interface is dark and solid (6 Nov 2026, from the group page). */
+    glassRows: @Composable () -> Unit = {},
+    glassRowsCount: Int = 0,
 ) {
     val rowsFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { rowsFocus.requestFocus() } }
@@ -103,8 +106,8 @@ internal fun GlassBackgroundPage(
     val previewTitle = stringResource(R.string.settings_glass_live_preview)
     StageFullPage(
         parents = listOf(stringResource(R.string.settings_group_appearance_home)),
-        title = stringResource(R.string.settings_glass_bg_title),
-        count = pluralStringResource(R.plurals.settings_setting_count, 10, 10),
+        title = stringResource(R.string.settings_ca_bg_glass),
+        count = "",
         onBack = onBack,
         modifier = modifier,
         rowsFocus = rowsFocus,
@@ -176,7 +179,7 @@ internal fun GlassBackgroundPage(
 
         NightSceneRows(stepHints)
 
-        StageSettingsHeading(stringResource(R.string.settings_glass_section), 2)
+        StageSettingsHeading(stringResource(R.string.settings_glass_section), 2 + glassRowsCount)
         val glassTitle = stringResource(R.string.settings_glass_section)
         val glassHelp = stringResource(R.string.settings_help_glass_chrome)
         StageSettingRow(
@@ -198,6 +201,7 @@ internal fun GlassBackgroundPage(
             onStep = { d -> onSetAlpha((alphaPercent + d * 5).coerceIn(20, 100)) },
             help = SettingHelp(opacityTitle + dotSeparator() + previewTitle, glassHelp, hints = stepHints, extra = preview),
         )
+        glassRows()
 
         val resetTitle = stringResource(tv.own.owntv.R.string.common_reset)
         val resetLine = stringResource(R.string.settings_line_glass_reset, stringResource(R.string.common_percent, tv.own.owntv.core.settings.SettingsRepository.GLASS_ALPHA_DEFAULT_PCT))

@@ -7,6 +7,10 @@
     <string name="settings_home_move_row">Verschieben</string>
     <string name="settings_startup_favorites">Favoriten im Live-TV</string>
     <string name="settings_line_home">Wähle die Reihen der Startseite und ihre Reihenfolge</string>
+    <plurals name="settings_home_row_count">
+        <item quantity="one">%1$d Reihe</item>
+        <item quantity="other">%1$d Reihen</item>
+    </plurals>
     <string name="settings_line_popup_size">Mach Popups und Menüs größer oder kleiner</string>
 
     <!-- Aussehen & Startseite -->

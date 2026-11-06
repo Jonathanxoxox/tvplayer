@@ -7,6 +7,10 @@
     <string name="settings_home_move_row">Move</string>
     <string name="settings_startup_favorites">Favourites in Live TV</string>
     <string name="settings_line_home">Pick the rows Home shows and their order</string>
+    <plurals name="settings_home_row_count">
+        <item quantity="one">%1$d row</item>
+        <item quantity="other">%1$d rows</item>
+    </plurals>
     <string name="settings_line_popup_size">Make popups and menus larger or smaller</string>
 
     <!-- Appearance & Home -->
