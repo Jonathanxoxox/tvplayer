@@ -106,6 +106,7 @@ open class MainActivity : ComponentActivity() {
     override fun onDestroy() {
         startJank?.release()
         startJank = null
+        runCatching { unregisterReceiver(screenOff) }
         super.onDestroy()
     }
 
@@ -153,11 +154,6 @@ open class MainActivity : ComponentActivity() {
         override fun onReceive(context: android.content.Context, intent: Intent) {
             if (intent.action == Intent.ACTION_SCREEN_OFF) slept = true
         }
-    }
-
-    override fun onDestroy() {
-        runCatching { unregisterReceiver(screenOff) }
-        super.onDestroy()
     }
 
     override fun onStop() {
