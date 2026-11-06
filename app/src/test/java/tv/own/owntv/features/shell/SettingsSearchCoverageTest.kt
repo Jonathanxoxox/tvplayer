@@ -36,8 +36,10 @@ class SettingsSearchCoverageTest {
     /**
      * Tabs deliberately absent from search. Backup and Local sync live under ⋯ More, not Settings, and
      * the code says so: a result that lands somewhere the row is not is worse than no result.
+     * PER_PLAYLIST only survives so a saved screen still restores: its page is gone, the tab opens
+     * Playlists, and the settings it held are found under Playlists › Wiedergabe.
      */
-    private val notSearchable = setOf("ROOT", "BACKUP", "LOCAL_SYNC")
+    private val notSearchable = setOf("ROOT", "BACKUP", "LOCAL_SYNC", "PER_PLAYLIST")
 
     @Test
     fun `every settings screen can be found by search`() {
