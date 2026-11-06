@@ -17,7 +17,6 @@
     <string name="settings_epg_sources_fill_playlist">Aus Playlist übernehmen</string>
     <string name="settings_epg_sources_none_playlist">Keine deiner Playlists stellt eine EPG-Adresse bereit.</string>
     <string name="settings_epg_sources_portal_guide">EPG vom Portal</string>
-    <string name="settings_epg_sources_name_hint">z. B. EPG UK</string>
     <string name="settings_epg_sources_logos_description">Zeigt die Logos aus dieser EPG-Quelle statt der deiner Playlist. Sender ohne Logo in der Quelle behalten das Logo der Playlist.</string>
     <string name="settings_help_epg_name">Erscheint in der Liste der EPG-Quellen und unter „EPG manuell wählen“.</string>
     <string name="settings_line_epg_auto_refresh">Hält die EPG-Daten aktuell</string>

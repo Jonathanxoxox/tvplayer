@@ -39,7 +39,7 @@
     <string name="settings_dns_server_missing">No server is set yet. Enter a server address, pick a provider, or turn this off.</string>
     <string name="settings_dns_test_failed">DNS test failed — check the server address.</string>
     <string name="settings_download_remote_description">On any device with a browser on the same Wi-Fi — a phone, a computer or another TV — scan the QR (or open the URL), enter this PIN, and download your backup file to keep it safe.</string>
-    <string name="settings_epg_sources_name_hint">e.g. UK Guide</string>
+    <string name="settings_epg_sources_name_hint">e.g. EPG UK</string>
     <string name="settings_epg_sources_nav_description">Add XMLTV guide feeds for the TV Guide</string>
     <string name="settings_epg_sources_use_logos">Use this EPG source\'s logos</string>
     <string name="settings_group_summary_quick">The toggles you reach for most</string>

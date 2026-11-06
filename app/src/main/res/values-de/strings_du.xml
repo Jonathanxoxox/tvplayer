@@ -39,7 +39,7 @@
     <string name="settings_dns_server_missing">Noch kein Server eingetragen. Gib eine Serveradresse ein, wähl einen Anbieter oder schalte das aus.</string>
     <string name="settings_dns_test_failed">DNS-Test fehlgeschlagen – prüf die Serveradresse.</string>
     <string name="settings_download_remote_description">Scanne auf einem beliebigen Gerät mit Browser im selben WLAN – Smartphone, Computer oder ein anderer Fernseher – den QR-Code (oder öffne die URL), gib diese PIN ein und lade deine Sicherungsdatei herunter, um sie aufzubewahren.</string>
-    <string name="settings_epg_sources_name_hint">z. B. TV-Guide UK</string>
+    <string name="settings_epg_sources_name_hint">z. B. EPG UK</string>
     <string name="settings_epg_sources_nav_description">XMLTV-Programmdaten für den TV-Guide hinzufügen</string>
     <string name="settings_epg_sources_use_logos">Senderlogos dieser EPG-Quelle</string>
     <string name="settings_group_summary_quick">Die Schalter, die du am häufigsten brauchst</string>

@@ -17,7 +17,6 @@
     <string name="settings_epg_sources_fill_playlist">Fill from playlist</string>
     <string name="settings_epg_sources_none_playlist">None of your playlists offers an EPG address.</string>
     <string name="settings_epg_sources_portal_guide">EPG from the portal</string>
-    <string name="settings_epg_sources_name_hint">e.g. EPG UK</string>
     <string name="settings_epg_sources_logos_description">Show the logos from this EPG source instead of your playlist\'s. Channels it has no logo for keep the playlist\'s logo.</string>
     <string name="settings_help_epg_name">Shown in the list of EPG sources and under Pick EPG manually.</string>
     <string name="settings_line_epg_auto_refresh">Keeps the EPG data up to date</string>
