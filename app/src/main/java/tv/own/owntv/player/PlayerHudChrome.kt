@@ -2,6 +2,7 @@ package tv.own.owntv.player
 
 import tv.own.owntv.ui.theme.hudAccent
 import tv.own.owntv.ui.theme.hudShade
+import tv.own.owntv.ui.theme.LocalStagePalette
 import tv.own.owntv.ui.theme.hudInk
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -569,16 +570,22 @@ internal fun NextEpisodeCard(
     val total = remember { seconds().coerceAtLeast(1) }
     val shape = RoundedCornerShape(u.dp(18))
     val accent = hudAccent
+    // In the Theme's own colours (Jonathan, 6 Nov 2026: the fixed black card stood apart from the rest):
+    // the panel is the palette's glass (petrol in dark, white in light), the text its ink, the hairline
+    // and the countdown's track the ink at the alphas the other panels use.
+    val palette = LocalStagePalette.current
+    val panel = palette.glassTint.copy(alpha = if (palette.isLight) 0.94f else 0.9f)
+    val ink = palette.ink
     Column(
         modifier = modifier
             .width(u.dp(400))
             .clip(shape)
-            .background(Color(0xFF04080A).copy(alpha = 0.78f))
-            .border(u.dp(1), Color.White.copy(alpha = 0.08f), shape)
+            .background(panel)
+            .border(u.dp(1), ink.copy(alpha = 0.1f), shape)
             .drawBehind {
                 val h = u.toPx(3)
                 val left = (seconds().toFloat() / total).coerceIn(0f, 1f)
-                drawRect(Color.White.copy(alpha = 0.1f), Offset(0f, size.height - h), Size(size.width, h))
+                drawRect(ink.copy(alpha = 0.1f), Offset(0f, size.height - h), Size(size.width, h))
                 drawRect(accent, Offset(0f, size.height - h), Size(size.width * left, h))
             }
             .padding(start = u.dp(22), end = u.dp(22), top = u.dp(16), bottom = u.dp(20)),
@@ -586,14 +593,14 @@ internal fun NextEpisodeCard(
         Text(
             stringResource(R.string.player_next_episode, seconds()),
             style = u.cardText(16, 600),
-            color = Color.White.copy(alpha = 0.62f),
+            color = accent,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
         Text(
             title,
             style = u.cardText(22, 500),
-            color = Color.White,
+            color = palette.text,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = u.dp(4)),
