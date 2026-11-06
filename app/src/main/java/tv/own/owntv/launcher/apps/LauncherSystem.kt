@@ -54,9 +54,15 @@ object LauncherSystem {
         }
     }
 
-    /** Home without a key press: the shell leaves the player and goes to Home (e.g. waking from standby). */
-    fun goHome() {
-        homePresses.value = SystemClock.elapsedRealtime()
+    private val wakes = MutableStateFlow(0L)
+    /** Counts up each time the box wakes from standby with Mayo TV in front: Home starts afresh, nothing picked. */
+    val wake: StateFlow<Long> = wakes.asStateFlow()
+
+    /** Woken from standby: out of the player and onto Home, as after the Home button, with nothing left playing. */
+    fun wokeFromStandby() {
+        val now = SystemClock.elapsedRealtime()
+        wakes.value = now
+        homePresses.value = now
     }
 
     fun openHome(context: Context, live: Boolean = false) {

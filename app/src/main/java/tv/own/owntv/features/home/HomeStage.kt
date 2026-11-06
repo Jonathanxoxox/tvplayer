@@ -21,6 +21,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -151,6 +152,13 @@ internal fun HomeStage(
         shownId = back.id
         delay(RETURN_FOCUS_MS)
         runCatching { pickedLogo.requestFocus() }
+    }
+    // Woken from standby: the channel picked here is not coming back; the highlights show again.
+    val wake by tv.own.owntv.launcher.apps.LauncherSystem.wake.collectAsState()
+    LaunchedEffect(wake) {
+        if (wake == 0L || picked == null) return@LaunchedEffect
+        liveVm.stopPreview()
+        picked = null
     }
     // Back first ends the picture, then (with nothing playing) goes on to the menu as before.
     BackHandler(enabled = active && picked != null) { liveVm.stopPreview(); picked = null }

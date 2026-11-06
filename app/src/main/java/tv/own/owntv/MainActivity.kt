@@ -180,7 +180,7 @@ open class MainActivity : ComponentActivity() {
             Log.d(TAG, "woke from standby: home")
             player.discardBackgroundRestore()
             previewEngine.discardBackgroundRestore()
-            tv.own.owntv.launcher.apps.LauncherSystem.goHome()
+            tv.own.owntv.launcher.apps.LauncherSystem.wokeFromStandby()
         }
         engines.onAppForegrounded()
         // Staleness-based auto refresh on resume (interval modes only — STARTUP is cold-start only). The
