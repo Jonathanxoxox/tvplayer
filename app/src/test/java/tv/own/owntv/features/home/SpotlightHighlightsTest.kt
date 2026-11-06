@@ -199,4 +199,15 @@ class SpotlightHighlightsTest {
         val onNow = (1L..14L).associateWith { programme(it, at(20, 0), at(22, 0)) }
         assertEquals(SpotlightHighlights.MAX, rank(now, onNow = onNow, picks = picks).size)
     }
+
+    @Test
+    fun `every highlight with a description shows it, folded to one paragraph`() {
+        val p = programme(2, at(20, 0), at(21, 0)).copy(description = "Ein Kommissar\nermittelt   in Kiel.")
+        assertEquals("Ein Kommissar ermittelt in Kiel.", descriptionOf(Highlight.Live(channel(2), p, HighlightReason.NOW)))
+        val pick = GuidePick(channel(3), "T", at(20, 0), at(21, 0), true, false, false, null, "Ein Tipp des Tages mit Text.")
+        assertEquals("Ein Tipp des Tages mit Text.", descriptionOf(Highlight.Pick(pick, HighlightReason.HIGHLIGHT)))
+        // A label is no description, and a programme without one shows none.
+        assertEquals(null, descriptionOf(Highlight.Live(channel(2), p.copy(description = "Spielfilm"), HighlightReason.NOW)))
+        assertEquals(null, descriptionOf(Highlight.Live(channel(2), null, HighlightReason.HABIT)))
+    }
 }

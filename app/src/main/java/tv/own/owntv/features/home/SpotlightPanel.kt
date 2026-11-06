@@ -67,10 +67,9 @@ internal fun HighlightInfo(
         Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         FilmFacts(hl, rating)
         lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
-        // What it is about, from the guide: two lines, as the streaming apps show it.
-        (hl as? Highlight.Pick)?.pick?.description?.let {
-            Text(it, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        }
+        // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
+        // that has one, not only the guide's picks).
+        descriptionOf(hl)?.let { SpotlightDescription(it) }
         Row(Modifier.padding(top = 10.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
             StageSurface(
                 onClick = onOpen,
@@ -195,6 +194,36 @@ private fun FilmFacts(hl: Highlight, rating: Double?) {
             Text(rest, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
+}
+
+/**
+ * A highlight's short description: the guide's for a pick, the EPG's for a channel's programme, the episode's
+ * (else the series') plot or the film's for watching on. A match has none: its score and minute say it.
+ */
+internal fun descriptionOf(hl: Highlight): String? = when (hl) {
+    is Highlight.Pick -> hl.pick.description
+    is Highlight.Live -> hl.programme?.description
+    is Highlight.Resume -> when (val item = hl.item) {
+        is HeroItem.MovieHero -> item.movie.plot
+        is HeroItem.SeriesHero -> item.episode.plot ?: item.series.plot
+        is HeroItem.LiveHero -> null
+    }
+    is Highlight.Sport -> null
+}?.let(::shortDescription)
+
+/** One paragraph of plain text, line breaks and runs of spaces folded; null when nothing is left. */
+internal fun shortDescription(text: String): String? =
+    text.replace(WHITESPACE, " ").trim().takeIf { it.length >= MIN_DESCRIPTION }
+
+private val WHITESPACE = Regex("\\s+")
+
+/** Shorter than this it is a label ("Spielfilm", "n/a"), not a description. */
+private const val MIN_DESCRIPTION = 12
+
+/** The two lines of what it is about, under the title and its facts. */
+@Composable
+internal fun SpotlightDescription(text: String, modifier: Modifier = Modifier) {
+    Text(text, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = modifier)
 }
 
 /** A time of day as the box shows it (20:15). */

@@ -358,6 +358,8 @@ internal fun HomeStage(
                     Box(Modifier.width(520.mpx).height(6.mpx).clip(RoundedCornerShape(3.mpx)).background(StageColors.ControlFill)) {
                         Box(Modifier.fillMaxHeight().fillMaxWidth(programmeProgress(programme, now)).background(stageAccent.accent))
                     }
+                    // Spotlight: what the focused channel's programme is about, as on the highlights.
+                    if (spotlight) programme.description?.let(::shortDescription)?.let { SpotlightDescription(it) }
                 }
             }
             Box(
