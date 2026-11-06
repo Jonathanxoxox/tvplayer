@@ -52,7 +52,7 @@ val corePath = providers.gradleProperty("owntv.corePath").orNull?.takeIf { it.is
     )
 includeBuild(corePath)
 
-rootProject.name = "OwnTV"
+rootProject.name = "MayoTV"
 include(":app")
 // Baseline-profile generator. Test-only module: it ships nothing to users, it records
 // the cold-start journey on a device and writes the profile :app packages.
