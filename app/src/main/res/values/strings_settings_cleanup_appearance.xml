@@ -2,16 +2,6 @@
 <!-- Settings clean-up (6 Nov 2026), Appearance & Home, Controls, Power-on & Home button: new names and app-side overrides. -->
 <resources>
     <!-- Overrides of core strings (same name). -->
-    <string name="settings_home_hide_row">Hide this row</string>
-    <string name="settings_home_show_row">Show this row</string>
-    <string name="settings_home_move_row">Move</string>
-    <string name="settings_startup_favorites">Favourites in Live TV</string>
-    <string name="settings_line_home">Pick the rows Home shows and their order</string>
-    <plurals name="settings_home_row_count">
-        <item quantity="one">%1$d row</item>
-        <item quantity="other">%1$d rows</item>
-    </plurals>
-    <string name="settings_line_popup_size">Make popups and menus larger or smaller</string>
 
     <!-- Appearance & Home -->
     <string name="settings_ca_row_titles">Row titles</string>
