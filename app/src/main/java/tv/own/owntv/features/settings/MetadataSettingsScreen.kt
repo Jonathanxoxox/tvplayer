@@ -107,7 +107,7 @@ private fun metadataModeLabelRes(mode: tv.own.owntv.core.metadata.MetadataMode):
 }
 
 private fun metadataTierLabelRes(tier: tv.own.owntv.core.metadata.MetadataConfig.Tier): Int = when (tier) {
-    tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER -> R.string.settings_tier_default
+    tv.own.owntv.core.metadata.MetadataConfig.Tier.DEFAULT_WORKER -> R.string.settings_shared
     tv.own.owntv.core.metadata.MetadataConfig.Tier.OWN_KEY -> R.string.settings_tier_key
     tv.own.owntv.core.metadata.MetadataConfig.Tier.SELF_HOST -> R.string.settings_tier_self_host
 }
@@ -172,13 +172,12 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
 
     // LIBRARY DETAILS and CONNECTION as rows; the active source on top of the panel.
     val back = stringResource(R.string.common_back)
-    val content = stringResource(R.string.settings_group_content_metadata)
+    val content = stringResource(tv.own.owntv.features.shell.components.SettingsGroup.SOURCES.titleRes)
     val modeLabels = tv.own.owntv.core.metadata.MetadataMode.entries.map { stringResource(metadataModeLabelRes(it)) }
-    val rows = if (mode.enrich) 4 else 1
     StageFullPage(
         parents = listOf(content),
         title = stringResource(R.string.settings_metadata),
-        count = pluralStringResource(R.plurals.settings_setting_count, rows, rows),
+        count = "",
         onBack = onBack,
         modifier = modifier,
         rowsFocus = firstFocus,

@@ -14,14 +14,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.Text
 import tv.own.owntv.R
-import androidx.compose.ui.res.pluralStringResource
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.core.network.DohPresets
 import tv.own.owntv.ui.components.OwnTVIcon
 
 /** This screen's rows as Settings search finds them. */
 internal val DNS_SEARCH_ROWS: List<Int> =
-    listOf(R.string.settings_dns_use_custom, R.string.settings_presets, R.string.settings_dns_server, R.string.settings_dns_test)
+    listOf(R.string.settings_dns_use_custom, R.string.settings_src_dns_presets, R.string.settings_dns_server, R.string.settings_dns_test)
 
 @Composable
 fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
@@ -51,7 +50,6 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     }
 
     val serverConfigured = server.trim().isNotBlank()
-    val effectiveEnabled = toggleOn && serverConfigured
 
     // Toggle: ON = show fields (no persistence needed). OFF = hide fields + immediately persist disabled.
     fun applyToggle(on: Boolean) {
@@ -63,7 +61,7 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         }
     }
 
-    // Save: persist the server URL. DNS is enabled only when a server is configured.
+    // Save: persist the server URL (a preset picked, or the field closed). DNS is enabled only when a server is configured.
     fun applySave() {
         val s = server.trim()
         val (host, port, doh) = if (s.startsWith("https://", ignoreCase = true)) {
@@ -85,23 +83,24 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val rowsFocus = remember { FocusRequester() }
     LaunchedEffect(Unit) { runCatching { rowsFocus.requestFocus() } }
 
-    // The switch, then (while it is on) the presets, the server and Test DNS; the explanation in the panel.
+    // The switch, then (while it is on) the provider, the server and Test DNS; the explanation in the panel.
+    // No Save row (Settings clean-up, 6 Nov 2026): the field saves when its keyboard closes, as Proxy's do.
     val explanation = stringResource(R.string.settings_dns_explanation)
     val limits = stringResource(R.string.settings_dns_limitations)
     val notes: @Composable () -> Unit = {
         Text(limits, style = tv.own.owntv.ui.theme.stageText(16, 500), color = tv.own.owntv.ui.theme.StageColors.Muted, modifier = Modifier.padding(top = 14.mpx))
     }
-    val rows = if (toggleOn) 5 else 1
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_app)),
+        parents = listOf(stringResource(tv.own.owntv.features.shell.components.SettingsGroup.APP.titleRes)),
         title = stringResource(R.string.settings_dns),
-        count = pluralStringResource(R.plurals.settings_setting_count, rows, rows),
+        count = "",
         onBack = onBack,
         modifier = modifier,
         rowsFocus = rowsFocus,
     ) {
         val useTitle = stringResource(R.string.settings_dns_use_custom)
-        val useValue = SettingValue.Switch(effectiveEnabled)
+        // The switch says what was asked for; the line under it says when a server is still missing.
+        val useValue = SettingValue.Switch(toggleOn)
         StageSettingRow(
             icon = OwnTVIcon.DNS,
             title = useTitle,
@@ -115,7 +114,7 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         if (toggleOn) {
             val presets = DohPresets.all
             val at = presets.indexOfFirst { it.second == server.trim() }
-            val presetTitle = stringResource(R.string.settings_presets)
+            val presetTitle = stringResource(R.string.settings_src_dns_presets)
             val presetValue = SettingValue.Segmented(presets.map { it.first }, at)
             val pick: (Int) -> Unit = { i ->
                 server = presets[i].second
@@ -136,17 +135,6 @@ fun DnsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 SettingHelp(serverLabel, explanation, extra = notes),
                 placeholder = stringResource(R.string.settings_dns_server_hint),
                 onDone = { applySave() },
-            )
-            // The missing-server warning says "select Save", so Save stays a row of its own (the field
-            // also saves when its keyboard closes).
-            val saveTitle = stringResource(R.string.common_save)
-            StageSettingRow(
-                icon = OwnTVIcon.CHECK,
-                title = saveTitle,
-                desc = null,
-                value = null,
-                onClick = { applySave() },
-                help = SettingHelp(saveTitle, explanation, hints = settingHints(null, pinnable = false), extra = notes),
             )
             val testTitle = stringResource(if (dnsTestState is SettingsViewModel.DnsTestState.Testing) R.string.settings_testing else R.string.settings_dns_test)
             StageSettingRow(
