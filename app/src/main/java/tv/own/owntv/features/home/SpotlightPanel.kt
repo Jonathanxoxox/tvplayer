@@ -116,7 +116,10 @@ internal fun HighlightPicture(hl: Highlight) {
             listOfNotNull(hl.match.home, hl.match.away).forEach { c ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.mpx)) {
                     AsyncImage(model = c.team.logoUrl, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(180.mpx))
-                    Text(c.score?.text.orEmpty(), style = stageText(54, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // Before kick-off there is no score: "0 0" read as a match already on.
+                    if (hl.match.state != tv.own.owntv.core.sports.model.MatchState.PRE) {
+                        Text(c.score?.text.orEmpty(), style = stageText(54, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    }
                 }
             }
         }
@@ -180,7 +183,9 @@ private fun titleOf(hl: Highlight): String = when (hl) {
 
 @Composable
 private fun lineOf(hl: Highlight, now: Long): String? = when (hl) {
-    is Highlight.Sport -> hl.match.clock?.display ?: hl.match.statusText.ifBlank { null }
+    // Before kick-off neither a minute ("0'") nor a status: the label above already says when.
+    is Highlight.Sport -> if (hl.match.state == tv.own.owntv.core.sports.model.MatchState.PRE) null
+        else hl.match.clock?.display ?: hl.match.statusText.ifBlank { null }
     is Highlight.Live -> hl.programme?.let { timeLeftText(((it.stopMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L) }
     // On now: how long it still runs; later: from when to when.
     is Highlight.Pick -> if (hl.pick.startMs <= now) {
