@@ -1,5 +1,5 @@
 name: Feature request / idea
-description: Suggest an improvement for OwnTV
+description: Suggest an improvement for Mayo TV
 title: "[Idea] "
 labels: [enhancement]
 body:
@@ -12,7 +12,7 @@ body:
         both boxes are mandatory.
       options:
         - label: >
-            I read the **[User Guide](https://github.com/ahXN00/OwnTV/blob/main/extras/USER_GUIDE.md)**
+            I read the **[User Guide](https://github.com/Jonathanxoxox/tvplayer/blob/main/extras/USER_GUIDE.md)**
             and checked the app's **Settings** and existing **functions** — this isn't already possible.
           required: true
         - label: I searched existing issues and this isn't already requested.
@@ -22,7 +22,7 @@ body:
     id: idea
     attributes:
       label: The idea
-      description: What would you like OwnTV to do?
+      description: What would you like Mayo TV to do?
     validations:
       required: true
 

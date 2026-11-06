@@ -30,6 +30,9 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
+      - name: Core fork
+        run: bash tools/ci/core-fork.sh
+
       - name: Build x86_64 APK
         env:
           FLUTLICHT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}

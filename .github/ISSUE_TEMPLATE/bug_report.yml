@@ -1,12 +1,12 @@
 name: Bug report
-description: Something not working in OwnTV (playback, EPG, import, UI…)
+description: Something not working in Mayo TV (playback, EPG, import, UI…)
 title: "[Bug] "
 labels: [bug]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping improve OwnTV! The more detail you give, the faster it gets fixed.
+        Thanks for helping improve Mayo TV! The more detail you give, the faster it gets fixed.
 
   - type: checkboxes
     id: mandatory_checks
@@ -17,7 +17,7 @@ body:
         these — issues opened without them are usually closed. The last three boxes are mandatory.
       options:
         - label: >
-            I read the **[User Guide](https://github.com/ahXN00/OwnTV/blob/main/extras/USER_GUIDE.md)**
+            I read the **[User Guide](https://github.com/Jonathanxoxox/tvplayer/blob/main/extras/USER_GUIDE.md)**
             and checked the relevant **Settings** and **in-app functions** for this (e.g. the
             top-bar playlist switcher, per-playlist Default, HDR, Surround, Catch-up time, Player).
           required: true
@@ -39,7 +39,7 @@ body:
     attributes:
       label: The on-screen error ⚠️ important
       description: >
-        When playback fails, OwnTV shows a friendly message AND a small "err: ..." line at the bottom of
+        When playback fails, Mayo TV shows a friendly message AND a small "err: ..." line at the bottom of
         the player. Copy that EXACT "err: ..." text here (or photograph it).
       placeholder: "err: "
       render: text
@@ -62,7 +62,7 @@ body:
       value: |
         - **Device & model:**
         - **Fire OS / Android version:**
-        - **OwnTV version:**
+        - **Mayo TV version:**
         - **Playlist type:** Xtream / M3U URL / local M3U file
         - **Content type:** Live TV / Movie / Series / Catch-up / EPG
     validations:

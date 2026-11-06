@@ -3,24 +3,6 @@
      per-playlist playback settings on the playlist itself. Core texts overridden by name, plus this area's new keys. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Core overrides -->
-    <string name="settings_playlists">Playlists</string>
-    <string name="settings_sources_add">Add playlist</string>
-    <string name="settings_sources_empty">No playlists yet. Add one by link, Xtream login, Stalker portal or file.</string>
-    <string name="settings_sources_resync">Re-sync</string>
-    <string name="settings_sources_test_title">Playlist info</string>
-    <string name="settings_sources_delete_message">This removes the playlist and all of its channels, movies and series from every profile.</string>
-    <string name="settings_customize">Customize categories</string>
-    <string name="settings_metadata_remote_advanced">TMDB access</string>
-    <string name="settings_metadata_provider_only">Playlist only</string>
-    <string name="settings_metadata_provider_plus_tmdb">Playlist + TMDB</string>
-    <string name="settings_epg_sources_empty">No EPG sources yet. Add an XMLTV link.</string>
-    <string name="settings_epg_sources_fill_playlist">Fill from playlist</string>
-    <string name="settings_epg_sources_none_playlist">None of your playlists offers an EPG address.</string>
-    <string name="settings_epg_sources_portal_guide">EPG from the portal</string>
-    <string name="settings_epg_sources_logos_description">Show the logos from this EPG source instead of your playlist\'s. Channels it has no logo for keep the playlist\'s logo.</string>
-    <string name="settings_help_epg_name">Shown in the list of EPG sources and under Pick EPG manually.</string>
-    <string name="settings_line_epg_auto_refresh">Keeps the EPG data up to date</string>
-    <string name="settings_dns_use_custom">Use your own DNS server</string>
 
     <!-- New keys -->
     <string name="settings_src_line_playlists">Add your playlists and keep them in sync</string>

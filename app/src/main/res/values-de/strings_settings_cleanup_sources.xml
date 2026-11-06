@@ -3,24 +3,6 @@
      Wiedergabe-Einstellungen pro Playlist an der Playlist selbst. Core-Texte per Name überschrieben, dazu die neuen Schlüssel. -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <!-- Core-Overrides -->
-    <string name="settings_playlists">Playlists</string>
-    <string name="settings_sources_add">Playlist hinzufügen</string>
-    <string name="settings_sources_empty">Noch keine Playlists. Füg eine per Link, Xtream-Login, Stalker-Portal oder Datei hinzu.</string>
-    <string name="settings_sources_resync">Neu synchronisieren</string>
-    <string name="settings_sources_test_title">Playlist-Info</string>
-    <string name="settings_sources_delete_message">Dadurch werden die Playlist sowie alle zugehörigen Sender, Filme und Serien aus jedem Profil entfernt.</string>
-    <string name="settings_customize">Kategorien anpassen</string>
-    <string name="settings_metadata_remote_advanced">TMDB-Zugang</string>
-    <string name="settings_metadata_provider_only">Nur Playlist</string>
-    <string name="settings_metadata_provider_plus_tmdb">Playlist + TMDB</string>
-    <string name="settings_epg_sources_empty">Noch keine EPG-Quellen. Füg einen XMLTV-Link hinzu.</string>
-    <string name="settings_epg_sources_fill_playlist">Aus Playlist übernehmen</string>
-    <string name="settings_epg_sources_none_playlist">Keine deiner Playlists stellt eine EPG-Adresse bereit.</string>
-    <string name="settings_epg_sources_portal_guide">EPG vom Portal</string>
-    <string name="settings_epg_sources_logos_description">Zeigt die Logos aus dieser EPG-Quelle statt der deiner Playlist. Sender ohne Logo in der Quelle behalten das Logo der Playlist.</string>
-    <string name="settings_help_epg_name">Erscheint in der Liste der EPG-Quellen und unter „EPG manuell wählen“.</string>
-    <string name="settings_line_epg_auto_refresh">Hält die EPG-Daten aktuell</string>
-    <string name="settings_dns_use_custom">Eigenen DNS-Server verwenden</string>
 
     <!-- Neue Schlüssel -->
     <string name="settings_src_line_playlists">Deine Playlists hinzufügen und synchronisieren</string>

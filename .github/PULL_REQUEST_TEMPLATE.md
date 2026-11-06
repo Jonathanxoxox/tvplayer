@@ -1,8 +1,8 @@
-<!-- Thanks for contributing to OwnTV! Please fill this in so it's easy to review. -->
+<!-- Thanks for contributing to Mayo TV! Please fill this in so it's easy to review. -->
 
 ## Before you open this PR (required)
 <!-- These are mandatory — PRs that duplicate an existing in-app feature are closed. -->
-- [ ] I read the **[User Guide](https://github.com/ahXN00/OwnTV/blob/main/extras/USER_GUIDE.md)** and checked the app's **Settings** and existing **functions** — this change isn't already possible in the app.
+- [ ] I read the **[User Guide](https://github.com/Jonathanxoxox/tvplayer/blob/main/extras/USER_GUIDE.md)** and checked the app's **Settings** and existing **functions** — this change isn't already possible in the app.
 - [ ] I searched existing issues/PRs and this isn't a duplicate.
 
 ## What does this PR do?
@@ -14,7 +14,7 @@
 
 
 ## How was it tested?
-<!-- IMPORTANT: OwnTV is a TV app — please test on a REAL Android TV / Fire TV device, not the emulator
+<!-- IMPORTANT: Mayo TV is a TV app — please test on a REAL Android TV / Fire TV device, not the emulator
      only. The emulator misses a lot: HDR, hardware decoding, surround/passthrough, and real remote
      (D-pad) behaviour. -->
 - **Device(s) tested on:** <!-- e.g. Fire TV Stick 4K Max, NVIDIA Shield, TCL Google TV -->
@@ -24,5 +24,5 @@
 - [ ] Builds locally (`./gradlew assembleDebug`) and CI is green
 - [ ] **Tested on a real Android TV / Fire TV device** (not emulator only) — D-pad/remote navigation works
 - [ ] No user data is wiped (Room migrations stay additive)
-- [ ] Keeps OwnTV player-only (no bundled channels/content)
+- [ ] Keeps Mayo TV player-only (no bundled channels/content)
 - [ ] Commit messages are clear (they become the release notes)

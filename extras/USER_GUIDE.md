@@ -1,6 +1,9 @@
-# OwnTV — User Guide
+# Mayo TV — User Guide
 
-Everything OwnTV can do, **where to find it**, and the remote shortcuts that make it fast.
+> This guide started as OwnTV's. Mayo TV has since reorganised its Settings (November 2026), so a
+> menu path here may read differently in the app; search in Settings finds every setting by name.
+
+Everything Mayo TV can do, **where to find it**, and the remote shortcuts that make it fast.
 
 Each entry is one line about what it does and one line about where it lives. Nothing here is
 required reading — skim the headings and stop where something looks useful.
@@ -18,7 +21,7 @@ A fresh install walks you through this, in order. Nothing here is permanent — 
 changed later in Settings.
 
 ```
-Welcome  →  Display  →  Disclaimer  →  Set up OwnTV  →  Profile
+Welcome  →  Display  →  Disclaimer  →  Set up Mayo TV  →  Profile
                                                           ↓
               All set + TV guide  ←  Import  ←  Add a playlist
 ```
@@ -30,8 +33,8 @@ for that step shown in the corner.
    Press **Get started**.
 2. **Display** — step UI Zoom and Font size while a sample row resizes, so you judge it from your
    sofa, and pick the **App icon**. Changeable later in Settings → Appearance and Settings → App.
-3. **Disclaimer** — OwnTV is a player; you bring the sources.
-4. **Set up OwnTV** — three ways to begin: **New profile**, **Restore a backup**, or
+3. **Disclaimer** — Mayo TV is a player; you bring the sources.
+4. **Set up Mayo TV** — three ways to begin: **New profile**, **Restore a backup**, or
    **From another device** (copy everything off a TV you already have — see below). A restore asks
    which parts of the backup to bring back before it applies anything, so you can take the playlists
    and leave the old box's settings behind. Untick **Sources** and it warns you: the TV then gets no
@@ -46,8 +49,8 @@ for that step shown in the corner.
 7. **Import** runs, then **All set** — with an **Add a TV guide** button that opens Settings → EPG
    sources → Add as soon as the app is up.
 
-### 🔄 Already have OwnTV on another device?
-**Where:** the **Set up OwnTV** screen → **From another device**
+### 🔄 Already have Mayo TV on another device?
+**Where:** the **Set up Mayo TV** screen → **From another device**
 Copies your profiles, playlists, favourites, history and resume points straight over your Wi-Fi —
 no account, no cloud, no file to find. On the device you already have, open **⋯ More → Local sync**
 and turn **Sync mode** on; it stays on while that screen is open. The new television then finds it on
@@ -254,7 +257,7 @@ happens. **Live TV player per playlist** right below applies a different choice 
 > **Give up after, per playlist** gives one provider its own time.
 
 ### ⏳ "Too many connections"
-The spinner stays up with a live countdown and OwnTV retries by itself. Don't press Retry — just
+The spinner stays up with a live countdown and Mayo TV retries by itself. Don't press Retry — just
 wait.
 
 ### 🔒 Protected (DRM) channels
@@ -262,7 +265,7 @@ Widevine and ClearKey channels play with nothing to set up — your TV does the 
 includes ClearKey channels whose playlist writes the key itself (`license_key=kid:key`); a playlist
 added before this update needs one refresh to pick the key up. They always
 use ExoPlayer, so the engine toggle is hidden for them. Some cheaper boxes only allow standard
-definition; that is the device's decision, not OwnTV's.
+definition; that is the device's decision, not Mayo TV's.
 
 ---
 
@@ -286,7 +289,7 @@ then the grid, opened at now with the now-line about a third of the way across.
 ### 🔔 Programme reminders
 **Where:** hold OK on an upcoming programme → **Remind me** · Settings → Sources & guide →
 **Program reminders** / **Reminder time**
-When it is due (5 minutes before by default) OwnTV **asks to switch** — over any screen, the player
+When it is due (5 minutes before by default) Mayo TV **asks to switch** — over any screen, the player
 included — or **switches** by itself, or only **notifies**.
 
 ### ➕ Add guide data
@@ -338,7 +341,7 @@ day/hour/minute picker. **This works even on channels with no guide at all.**
 
 ### ⏸️ Pause and rewind channels without catch-up
 **Where:** **Settings → Live TV → Pause and rewind live TV**
-Off by default. While you watch a channel full screen, OwnTV saves it on this TV and plays it
+Off by default. While you watch a channel full screen, Mayo TV saves it on this TV and plays it
 from that copy, so it still looks live — and you can **pause**, rewind and go forward on channels
 whose provider keeps no archive. Pause, the rewind/forward buttons, the bar, Left/Right and **Go live** work as on a catch-up channel. A dark stretch on the bar is a moment the connection
 dropped; playback jumps over it. If your internet drops, saving waits and carries on when it is back; the channel picks up by itself.
@@ -347,12 +350,12 @@ dropped; playback jumps over it. If your internet drops, saving waits and carrie
   stays free; the oldest part goes first.
 - **Back to the Live screen is not leaving: the preview is the same channel, so it keeps saving.**
 - **The delete rules:**
-  - Leave the channel and its copy is kept for **5 minutes**. Come back within them and OwnTV asks
+  - Leave the channel and its copy is kept for **5 minutes**. Come back within them and Mayo TV asks
     **Continue where you left off?** — **Resume** plays on from where you left, **Go live** jumps to now.
     **Settings → Live TV → Resume a saved channel** turns the question into **Always resume** or
     **Never resume**.
   - Watch another channel for **2 minutes** and the copy you left is deleted at once — you have moved on.
-  - After 5 minutes it is deleted anyway, and every copy is deleted when OwnTV starts. The 5 minutes
+  - After 5 minutes it is deleted anyway, and every copy is deleted when Mayo TV starts. The 5 minutes
     are real time, standby included: wake the TV later and the channel opens live.
 - Catch-up channels still rewind into the provider's archive. Protected (DRM) and encrypted channels
   play as before, without a copy.
@@ -381,7 +384,7 @@ recording on the same playlist is shown before you confirm. While a channel reco
 > A recording costs one of your provider's connections and says so before it starts.
 
 > **Copy-protected channels cannot be recorded.** Where a provider protects a channel with DRM, it
-> can be watched but not saved — the protection is theirs, not OwnTV's. Asking to record one stops
+> can be watched but not saved — the protection is theirs, not Mayo TV's. Asking to record one stops
 > straight away and tells you why, rather than leaving a file that will not play.
 
 ---
@@ -401,14 +404,14 @@ A tile that cannot start says why rather than sitting blank.
 
 ### 🔌 How many channels your provider allows
 **Where:** Settings → Sources & guide → Playlists → **Info**
-OwnTV measures this once, at a playlist's first sync, and warns before refusing a stream. **Re-test**
+Mayo TV measures this once, at a playlist's first sync, and warns before refusing a stream. **Re-test**
 is inside Info — it stops anything playing and takes a few minutes.
 
 ---
 
 ## 🏆 Sports
 
-Live scores, fixtures and match details come from ESPN. OwnTV then looks in **your own TV guide** for
+Live scores, fixtures and match details come from ESPN. Mayo TV then looks in **your own TV guide** for
 the channels that show a match — nothing is streamed from ESPN.
 
 ### 🏁 First time
@@ -489,7 +492,7 @@ episodes**.
 
 ### 🎞️ Trailers
 **Where:** **Trailer** on Home, or **Play Trailer** in a title's menu
-Plays inside OwnTV: **OK** pauses, **◀ ▶** skip 10 seconds. If YouTube blocks the trailer, OwnTV tries
+Plays inside Mayo TV: **OK** pauses, **◀ ▶** skip 10 seconds. If YouTube blocks the trailer, Mayo TV tries
 the next one, then offers **Open in YouTube**.
 
 ### 📥 Download or play elsewhere
@@ -513,7 +516,7 @@ remembers it.
 language of plots and artwork — separate from the app's own language.
 
 ### 📊 Your daily share
-The built-in service is shared by everyone using OwnTV, so it has minute/hour/day allowances shown at
+The built-in service is shared by everyone using Mayo TV, so it has minute/hour/day allowances shown at
 the top of the page.
 
 ### 🔑 Use your own key instead — recommended
@@ -606,11 +609,11 @@ for this drive** (a FAT32 USB stick holds no file over 4 GB — format it as exF
 server's code. A finished download or recording whose file is gone (stick formatted, swapped or
 unplugged) says **File missing** and offers only Delete.
 > **One-stream playlists:** when you press Play while a download from that playlist runs, the download
-> pauses and OwnTV asks **Pause download and watch** or **Keep downloading** (which closes the player),
+> pauses and Mayo TV asks **Pause download and watch** or **Keep downloading** (which closes the player),
 > with **Don't ask again**. Change the answer with **Watching while downloading** next to Download
 > folder. A download started while you watch waits and starts when you stop. The Live TV preview stays
 > off while a download holds the only stream.
-> **USB stick removed?** New downloads and recordings go to OwnTV's own folder until it is back — the
+> **USB stick removed?** New downloads and recordings go to Mayo TV's own folder until it is back — the
 > screen says so — and then to your chosen folder again. A download cut off mid-way is marked failed;
 > reconnect and retry. **New folder** in the folder picker lets you name and create one.
 
@@ -703,7 +706,7 @@ right answer for TV speakers) · **Surround** (send Dolby/DTS to a real receiver
 **Night mode** turns loud scenes down and quiet dialogue up; **Volume leveling** brings every channel
 and film to the same loudness. Both are off by default and work on both engines, ExoPlayer and mpv.
 **Dolby and DTS passthrough** (on) sends Dolby/DTS undecoded to the TV or
-receiver on ExoPlayer; off, or while Night mode or leveling is on, OwnTV decodes it itself.
+receiver on ExoPlayer; off, or while Night mode or leveling is on, Mayo TV decodes it itself.
 
 ### 📺 Picture quality and tunneled playback
 **Where:** Settings → Picture
@@ -727,10 +730,10 @@ beside the rows shows each change before you leave it.
 
 ### 🃏 App icon
 **Where:** Settings → App → **App icon**
-Eight colours for the OwnTV icon and logo — Petrol, Sunflower, Cobalt, Tomato, Station Board,
+Eight colours for the Mayo TV icon and logo — Petrol, Sunflower, Cobalt, Tomato, Station Board,
 **Eggshell** (default), Olive and Olive on Cream — or **Pixel**, a dotted TV set. It changes the app row
-banner, the launch screen and every OwnTV logo in the app. **Accent-colored logo** (on) tints the
-logo's play triangle with your accent. **Restart now** switches at once: OwnTV closes and opens again by itself, on
+banner, the launch screen and every Mayo TV logo in the app. **Accent-colored logo** (on) tints the
+logo's play triangle with your accent. **Restart now** switches at once: Mayo TV closes and opens again by itself, on
 Home, with the new colour. **Later** switches when you next leave the app. Some launchers take a moment to show the new banner.
 
 ### 🔦 Focus highlight
@@ -753,7 +756,7 @@ A soft glow around the edges of the screen, with an optional slow pulse.
 **Where:** Settings → Appearance → **Font customization** · **Popup size** · **UI zoom**
 One font family for the whole app and popups (Plus Jakarta Sans by default), main text 60–140% and
 popup text separately. **Popup size** and **UI zoom** step with ◀ ▶ right on their rows.
-> Below **85% zoom** OwnTV warns first — very small sizes draw many more items and can exhaust a
+> Below **85% zoom** Mayo TV warns first — very small sizes draw many more items and can exhaust a
 > low-memory TV.
 
 ### 🕒 Date, time & weather
@@ -875,7 +878,7 @@ before it changes. On a brand-new television this is offered during setup instea
 
 ## 🛠️ Build your own M3U playlist
 
-OwnTV sorts each entry by its tags:
+Mayo TV sorts each entry by its tags:
 
 ```
 tagged series  →  Series tab
@@ -925,8 +928,8 @@ title. Markers: `S01E05` (also `s1e5`, `S01 E05`, `S01.E05`, `S01-E05`, `S2019E0
 | A channel stutters or shows artifacts on 4K | The **⇄ MPV/EXO** pill — compatibility mode fixes most of these |
 | One provider glitches, another is fine | Turn on **Prefer HLS** for that playlist, or set **Live TV player per playlist** |
 | Channel won't open at all | It already tried all four combinations. Check **Error log** (⋯ More) |
-| "Too many connections" | Wait — OwnTV counts down and retries by itself. Don't press Retry |
-| Sound but a black picture | OwnTV switches engines by itself; if neither can, it says so |
+| "Too many connections" | Wait — Mayo TV counts down and retries by itself. Don't press Retry |
+| Sound but a black picture | Mayo TV switches engines by itself; if neither can, it says so |
 | Stalker portal refuses the login | Re-check the MAC, and the TV's **date & time** |
 | Guide is blank | **Settings → Sources & guide → EPG Sources** — add a feed and sync it, then run **Auto-match EPG** |
 | A series says "Could not load the episodes" | The provider refused the episode list; the code in brackets (e.g. HTTP 407) says why. Stop any other stream on the account and open the series again |
@@ -934,8 +937,8 @@ title. Markers: `S01E05` (also `s1e5`, `S01 E05`, `S01.E05`, `S01-E05`, `S2019E0
 | Update says there isn't enough space | In-app updates need room for the whole APK — free some and retry |
 
 **Still stuck?** **⋯ More → Error log** holds the last crash and recent playback failures, and
-exports to `Download/owntv-playback-report.txt`. Bring it to
-[t.me/owntvplayer](https://t.me/owntvplayer).
+exports to `Download/mayo-playback-report.txt`. Attach it to an
+[issue](https://github.com/Jonathanxoxox/tvplayer/issues).
 
 ---
 
