@@ -105,6 +105,10 @@ internal fun HomeStage(
     ratings: Map<String, Double> = emptyMap(),
     /** Seconds after which the next highlight shows by itself; 0 = only with ◀ ▶ (Settings › Spotlight). */
     autoAdvanceSecs: Int = 0,
+    /** Films the playlist also has on demand: [GuidePick.key] → the movie's id ([FilmLibrary]). */
+    onDemand: Map<String, Long> = emptyMap(),
+    /** Plays the playlist's movie from the start. */
+    onPlayOnDemand: (Long) -> Unit = {},
     /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
     spotlightFocusRequest: Long = 0L,
 ) {
@@ -317,6 +321,7 @@ internal fun HomeStage(
                     index = hlIndex,
                     onStep = { d -> stepHighlight(d) },
                     rating = (hl as? Highlight.Pick)?.let { ratings[it.key] },
+                    onOnDemand = (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onPlayOnDemand(id) } },
                     onOpen = {
                         when (hl) {
                             is Highlight.Live -> onPlayFullscreen(hl.channel, channels)

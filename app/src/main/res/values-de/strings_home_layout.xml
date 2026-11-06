@@ -62,4 +62,5 @@
     <string name="home_spotlight_ratings_desc">Die TMDB-Bewertung eines Films, Jahr und Genre unter dem Titel</string>
     <string name="home_spotlight_hide_series">Serien ausblenden</string>
     <string name="home_spotlight_hide_series_desc">Serienfolgen erscheinen nicht bei Tipps, Filmen und „Jetzt im TV“</string>
+    <string name="home_hl_on_demand">On Demand</string>
 </resources>

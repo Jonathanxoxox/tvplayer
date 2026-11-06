@@ -17,6 +17,7 @@ import tv.own.owntv.core.content.SearchReader
 import tv.own.owntv.core.home.HomeFeedReader
 import tv.own.owntv.core.live.GuideReader
 import tv.own.owntv.core.live.LiveEpgReader
+import tv.own.owntv.features.home.FilmLibrary
 import tv.own.owntv.features.home.HomeCatalog
 import tv.own.owntv.features.home.MagentaGuide
 import tv.own.owntv.features.home.ProgrammeArt
@@ -68,6 +69,8 @@ val appModule = module {
     singleOf(::HomeFeedReader)
     // Mayo TV: the category row on Home and what Home hides or moves in it.
     singleOf(::HomeCatalog)
+    // Mayo TV: which of the Spotlight's TV films the playlist also has on demand.
+    singleOf(::FilmLibrary)
     // Sports Hub: which match the playing channel came from. Lazy; nothing runs until it is asked.
     singleOf(::SportsPlayback)
     // Process-long scope for work that must outlive the screen that started it (a first-run restore).

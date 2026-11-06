@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -60,8 +61,11 @@ internal fun HighlightInfo(
     now: Long,
     modifier: Modifier = Modifier,
     rating: Double? = null,
+    /** The film is also in the playlist's library: a second button plays it from the start, now. */
+    onOnDemand: (() -> Unit)? = null,
 ) {
     val accent = stageAccent.accent
+    val onDemandButton = remember { FocusRequester() }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(14.mpx)) {
         Text(reasonLabel(hl, now), style = stageText(17, 800), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -86,6 +90,8 @@ internal fun HighlightInfo(
                     .onPreviewKeyEvent { e ->
                         if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                         when {
+                            // ▶ goes to On demand when the film has it; from there ▶ goes on to the next highlight.
+                            e.key == Key.DirectionRight && onOnDemand != null -> { runCatching { onDemandButton.requestFocus() }; true }
                             e.key == Key.DirectionRight && count > 1 -> { onStep(1); true }
                             e.key == Key.DirectionLeft && count > 1 -> { onStep(-1); true }
                             else -> false
@@ -95,6 +101,38 @@ internal fun HighlightInfo(
                 Row(Modifier.padding(horizontal = 28.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
                     OwnTVIcon(OwnTVIcon.PLAY, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(22.mpx), filled = true)
                     Text(buttonLabel(hl, now), style = stageText(20, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            // The same film in the playlist's library: watch it now, from the start (Jonathan, 6 Nov 2026).
+            if (onOnDemand != null) StageSurface(
+                onClick = onOnDemand,
+                radius = 30.mpx,
+                focusStyle = StageFocus.FILLED,
+                idle = Modifier.clip(RoundedCornerShape(30.mpx)).background(StageColors.ControlFill),
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .height(60.mpx)
+                    .focusRequester(onDemandButton)
+                    .onFocusChanged { if (it.hasFocus) onFocus() }
+                    .onPreviewKeyEvent { e ->
+                        if (e.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        when (e.key) {
+                            // ◀ back to the main button; ▶ on to the next highlight, focus on its main button.
+                            Key.DirectionLeft -> { runCatching { ownRequester.requestFocus() }; true }
+                            Key.DirectionRight -> {
+                                if (count > 1) { runCatching { ownRequester.requestFocus() }; onStep(1) }
+                                true
+                            }
+                            else -> false
+                        }
+                    },
+            ) { focused ->
+                Row(Modifier.padding(horizontal = 28.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
+                    OwnTVIcon(OwnTVIcon.MOVIES, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(22.mpx))
+                    Text(
+                        stringResource(R.string.home_hl_on_demand),
+                        style = stageText(20, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
             if (count > 1) Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically) {

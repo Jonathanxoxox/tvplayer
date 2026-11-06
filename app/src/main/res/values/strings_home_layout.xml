@@ -63,4 +63,5 @@
     <string name="home_spotlight_ratings_desc">A film\'s TMDB rating, year and genre under its title</string>
     <string name="home_spotlight_hide_series">Leave out series</string>
     <string name="home_spotlight_hide_series_desc">Episodes of series stay out of the tips, films and “On TV now”</string>
+    <string name="home_hl_on_demand">On demand</string>
 </resources>
