@@ -15,7 +15,6 @@ import org.koin.androidx.compose.koinViewModel
 import androidx.tv.material3.Text
 import androidx.compose.ui.res.stringResource
 import tv.own.owntv.R
-import androidx.compose.ui.res.pluralStringResource
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.components.OwnTVIcon
 
@@ -68,9 +67,9 @@ fun NetworkSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     }
     val fieldHelp: @Composable (String) -> SettingHelp = { label -> SettingHelp(label, about, extra = notes) }
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_app)),
+        parents = listOf(stringResource(tv.own.owntv.features.shell.components.SettingsGroup.APP.titleRes)),
         title = stringResource(R.string.common_proxy),
-        count = pluralStringResource(R.plurals.settings_setting_count, 6, 6),
+        count = "",
         onBack = onBack,
         modifier = modifier,
         rowsFocus = rowsFocus,

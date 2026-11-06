@@ -1,8 +1,10 @@
 package tv.own.owntv.features.settings
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -11,23 +13,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
-import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.nav.MainSection
 import tv.own.owntv.core.settings.SettingsRepository.NavMenuMode
 import tv.own.owntv.ui.components.OwnTVIcon
+import tv.own.owntv.ui.components.trapAllFocusExit
 import tv.own.owntv.ui.stage.StagePopup
 import tv.own.owntv.ui.stage.StagePopupOption
-import tv.own.owntv.ui.stage.StagePill
+import tv.own.owntv.ui.stage.StageSwitch
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
 
 /**
- * Settings › Layout › Navigation: the rail's Menu items (Dynamic / Static; Static lists the sections as
- * toggles). Mayo TV has one rail, the icon strip that opens with names on focus, so there is no size, length
- * or Floating / Docked choice. OK on the value row steps to its next choice.
+ * Settings › Bedienung › Menüeinträge (6 Nov 2026): what the menu on the left lists, in the page's panel.
+ * Automatisch (the sections that have something in them) or Eigene Auswahl (each section ticked by hand),
+ * then Apps, the grid of every app, as one more tick. Search and More are always there.
  */
 @Composable
 fun NavigationSettingsPopup(
@@ -35,48 +36,51 @@ fun NavigationSettingsPopup(
     onMenuMode: (NavMenuMode) -> Unit,
     hiddenSections: Set<MainSection>,
     onSectionHidden: (MainSection, Boolean) -> Unit,
+    appsInMenu: Boolean,
+    onAppsInMenu: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val first = remember { FocusRequester() }
-    LaunchedEffect(Unit) { runCatching { first.requestFocus() } }
-    BackHandler { onDismiss() }
-    val locale = LocalConfiguration.current.locales[0]
-    val eyebrow = stringResource(
-        R.string.settings_breadcrumb_eyebrow,
-        stringResource(R.string.settings_title),
-        stringResource(R.string.settings_group_controls),
-    ).uppercase(locale)
-
-    StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_navigation), eyebrow = eyebrow) {
+    val content: @Composable () -> Unit = {
+        val first = remember { FocusRequester() }
+        LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { first.requestFocus() } }
         val static = menuMode == NavMenuMode.STATIC
-        StagePopupOption(
-            title = stringResource(R.string.settings_nav_menu_items),
-            subtitle = stringResource(R.string.settings_nav_menu_items_desc),
-            value = stringResource(if (static) R.string.settings_static else R.string.settings_dynamic),
-            onClick = { onMenuMode(if (static) NavMenuMode.DYNAMIC else NavMenuMode.STATIC) },
-            modifier = Modifier.focusRequester(first),
-            leading = { OwnTVIcon(OwnTVIcon.GRID, StageColors.Text, Modifier.size(21.mpx)) },
-        )
-        // Static: the browse sections as toggles, in rail order; Search and More can never be hidden.
-        if (static) {
-            FlowRow(
-                Modifier.padding(start = 61.mpx, end = 22.mpx, top = 6.mpx, bottom = 14.mpx),
-                horizontalArrangement = Arrangement.spacedBy(12.mpx),
-                verticalArrangement = Arrangement.spacedBy(12.mpx),
-            ) {
+        Column(Modifier.trapAllFocusExit().focusGroup()) {
+            StagePopupOption(
+                title = stringResource(R.string.settings_ca_menu_auto),
+                onClick = { onMenuMode(NavMenuMode.DYNAMIC) },
+                modifier = Modifier.focusRequester(first),
+                leading = { StageRadio(!static) },
+            )
+            StagePopupOption(
+                title = stringResource(R.string.settings_ca_menu_own),
+                onClick = { onMenuMode(NavMenuMode.STATIC) },
+                leading = { StageRadio(static) },
+            )
+            // Own choice: the browse sections as ticks, in the menu's order.
+            if (static) {
                 MenuSections.forEach { (section, icon) ->
                     val shown = section !in hiddenSections
-                    StagePill(
-                        text = stringResource(section.labelRes),
+                    StagePopupOption(
+                        title = stringResource(section.labelRes),
                         onClick = { onSectionHidden(section, shown) },
-                        icon = icon,
-                        trailingIcon = if (shown) OwnTVIcon.CHECK else OwnTVIcon.EYE_OFF,
-                        dimmed = !shown,
+                        leading = { OwnTVIcon(icon, StageColors.Muted, Modifier.size(21.mpx)) },
+                        trailing = { StageSwitch(shown) },
                     )
                 }
             }
+            StagePopupOption(
+                title = stringResource(R.string.settings_ca_menu_apps),
+                onClick = { onAppsInMenu(!appsInMenu) },
+                leading = { OwnTVIcon(OwnTVIcon.GRID, StageColors.Muted, Modifier.size(21.mpx)) },
+                trailing = { StageSwitch(appsInMenu) },
+            )
+            Row(Modifier.fillMaxWidth().padding(top = 16.mpx), horizontalArrangement = Arrangement.End) {
+                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_done), onClick = onDismiss, height = 52.mpx, textSize = 18, tinted = true)
+            }
         }
     }
+    if (panelEditor(onDismiss) { content() }) return
+    StagePopup(onDismiss = onDismiss, title = stringResource(R.string.settings_ca_menu_items)) { content() }
 }
 
 private val MenuSections = listOf(
@@ -88,5 +92,6 @@ private val MenuSections = listOf(
     MainSection.DOWNLOADS to OwnTVIcon.DOWNLOADS,
 )
 
+/** The Menüeinträge row's value: Automatisch or Eigene Auswahl. */
 internal val NavMenuMode.labelRes: Int
-    get() = if (this == NavMenuMode.STATIC) R.string.settings_static else R.string.settings_dynamic
+    get() = if (this == NavMenuMode.STATIC) R.string.settings_ca_menu_own else R.string.settings_ca_menu_auto

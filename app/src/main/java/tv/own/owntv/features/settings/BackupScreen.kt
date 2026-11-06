@@ -172,7 +172,7 @@ fun BackupScreen(
             }
             .focusGroup(),
     ) {
-        Text(stringResource(R.string.settings_backup_title), style = stageText(42, 800, (-1).mpxSp), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(stringResource(R.string.tvplayer_more_backup), style = stageText(42, 800, (-1).mpxSp), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
         val last = lastBackup
         val cardShape = RoundedCornerShape(26.mpx)
         Row(

@@ -50,10 +50,10 @@ private val LANGUAGES = listOf("DE", "EN", "FR", "ES", "IT", "TR", "AR", "PT", "
 private val COUNTRIES = listOf("DE", "AT", "CH", "UK", "US", "FR", "BE", "ES", "IT", "TR", "AR", "PT", "BR", "NL", "PL", "IN", "PK", "SA", "AE", "QA", "CA", "AU", "IE", "SE", "NO", "DK")
 
 /**
- * Settings → Sports, drawn as every Settings page is, with its sub-pages: Sports
- * and leagues (two panes: sports, then the chosen sport's leagues), My teams (search + suggested), Goal
- * alerts (the TV's in-player toast only), languages, countries, playlists, Remembered channels and About
- * sports data. Every value is the profile's; backups carry it.
+ * Settings → Sports, drawn as every Settings page is, with its sub-pages for lists: Sports
+ * and leagues (two panes: sports, then the chosen sport's leagues), My teams (search + suggested),
+ * languages, countries, playlists and Remembered channels. Goal alerts (the TV's in-player toast only)
+ * and the simple choices open in the page's panel. Every value is the profile's; backups carry it.
  */
 @Composable
 fun SportsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, vm: SportsSettingsViewModel = koinViewModel()) {
@@ -72,7 +72,8 @@ fun SportsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, vm: 
         }
     }
     when (page) {
-        SportsSettingsPage.MAIN -> StageFullPage(
+        // Goal alerts and About were pages of their own; they live on the main page now (6 Nov 2026).
+        SportsSettingsPage.MAIN, SportsSettingsPage.ALERTS, SportsSettingsPage.ABOUT -> StageFullPage(
             parents = emptyList(), title = title,
             count = pluralStringResource(R.plurals.settings_setting_count, MAIN_ROWS, MAIN_ROWS),
             onBack = onBack, modifier = modifier, rowsFocus = rowsFocus,
@@ -92,7 +93,6 @@ fun SportsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, vm: 
         ) {
             when (page) {
                 SportsSettingsPage.TEAMS -> TeamRows(vm, c)
-                SportsSettingsPage.ALERTS -> AlertRows(vm, c)
                 SportsSettingsPage.LANGUAGES -> CodeRows(LANGUAGES, c.preferredLanguages(vm.appLanguage), { languageName(it) }) { code ->
                     vm.update { s -> val now = s.preferredLanguages(vm.appLanguage); s.copy(languages = if (code in now) now - code else now + code) }
                 }
@@ -101,8 +101,7 @@ fun SportsSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier, vm: 
                 }
                 SportsSettingsPage.PLAYLISTS -> PlaylistRows(vm, c)
                 SportsSettingsPage.REMEMBERED -> RememberedRows(vm, c)
-                SportsSettingsPage.ABOUT -> StageSettingsNote(stringResource(R.string.sports_about_summary), stringResource(R.string.sports_live_refresh_description))
-                SportsSettingsPage.MAIN, SportsSettingsPage.LEAGUES -> Unit
+                SportsSettingsPage.MAIN, SportsSettingsPage.LEAGUES, SportsSettingsPage.ALERTS, SportsSettingsPage.ABOUT -> Unit
             }
         }
     }
@@ -115,23 +114,26 @@ private val SportsSettingsPage.titleRes: Int get() = when (this) {
     SportsSettingsPage.ALERTS -> R.string.sports_channel_goal_alerts
     SportsSettingsPage.LANGUAGES -> R.string.sports_languages
     SportsSettingsPage.COUNTRIES -> R.string.sports_countries
-    SportsSettingsPage.PLAYLISTS -> R.string.settings_sort_playlist
+    SportsSettingsPage.PLAYLISTS -> R.string.settings_cl_live_sport_playlists
     SportsSettingsPage.REMEMBERED -> R.string.sports_remembered_channels
     SportsSettingsPage.ABOUT -> R.string.sports_about
 }
 
 /** One row with its panel text, as every Settings page builds them. */
 @Composable
-private fun Row(icon: OwnTVIcon, title: String, desc: String?, value: SettingValue?, onStep: ((Int) -> Unit)? = null, onClick: () -> Unit) {
+private fun Row(icon: OwnTVIcon, title: String, desc: String?, value: SettingValue?, onStep: ((Int) -> Unit)? = null, help: String? = null, onClick: () -> Unit) {
     val choices = (value as? SettingValue.Segmented)?.options.orEmpty()
     StageSettingRow(
         icon = icon, title = title, desc = desc, value = value, onClick = onClick, onStep = onStep,
-        help = settingHelp(null, title, desc, value, choices = choices, pinnable = false),
+        help = settingHelp(null, title, help ?: desc, value, choices = choices, pinnable = false),
     )
 }
 
-/** Rows on the main page (the "N settings" beside its title): 1 + 5 + 6 + 3 + 2 + 4. */
-private const val MAIN_ROWS = 21
+/** Rows on the main page (the "N settings" beside its title): 6 + 6 + 3 + 2 + 3. */
+private const val MAIN_ROWS = 20
+
+/** The main page's panels: a choice, a time, or Goal alerts' three switches (6 Nov 2026: no sub-page for those). */
+private enum class SportsPanel { QUALITY, ALERTS, REMINDER_LEAD, AUTO_REBUILD, LIVE_REFRESH }
 
 /** The main page: What to show · Watching · While watching · Channels · Data. */
 @Composable
@@ -139,22 +141,22 @@ private fun MainRows(vm: SportsSettingsViewModel, c: SportsConfig, shown: Boolea
     val sep = stringResource(R.string.content_epg_bits_separator)
     val leagues = c.leagues
     val sports = SportsCatalog.sports.filter { s -> leagues.any { SportsCatalog.league(it)?.sport == s } }
+    var panel by remember { mutableStateOf<SportsPanel?>(null) }
+    val close = { panel = null }
 
     // Mayo TV's own football: the channel group ("Für dich" needs no switch). No kick-off reminders: no pop-ups.
     val context = androidx.compose.ui.platform.LocalContext.current
     var groupOn by remember { mutableStateOf(tv.own.owntv.launcher.FootballSetup.groupOn(context)) }
-    StageSettingsHeading(stringResource(R.string.tvplayer_football_heading), 1, first = true)
+    StageSettingsHeading(stringResource(R.string.sports_settings_what), 6, first = true)
     Row(OwnTVIcon.LIVE_TV, stringResource(R.string.tvplayer_football_group_setting), stringResource(R.string.tvplayer_football_group_desc), SettingValue.Switch(groupOn)) {
         groupOn = !groupOn
         tv.own.owntv.launcher.FootballSetup.set(context, tv.own.owntv.launcher.FootballSetup.GROUP_ON, groupOn)
     }
-
-    StageSettingsHeading(stringResource(R.string.sports_settings_what), 5)
     Row(OwnTVIcon.TILES, stringResource(R.string.sports_show_in_menu), stringResource(R.string.sports_show_in_menu_description), SettingValue.Switch(shown)) { vm.setShownInMenu(!shown) }
     Row(
         OwnTVIcon.LAYERS, stringResource(R.string.sports_leagues),
         (sports.take(4).map { sportLabel(it) } + pluralStringResource(R.plurals.sports_league_count, leagues.size, leagues.size)).joinToString(sep),
-        SettingValue.Opens(stringResource(R.string.common_edit)),
+        SettingValue.Opens(leagues.size.toString()),
     ) { open(SportsSettingsPage.LEAGUES) }
     val buttons = listOf(stringResource(R.string.sports_sport_buttons_mine), stringResource(R.string.sports_sport_buttons_all))
     val toggleAll: (Int) -> Unit = { vm.update { s -> s.copy(allSports = !s.allSports) } }
@@ -172,13 +174,14 @@ private fun MainRows(vm: SportsSettingsViewModel, c: SportsConfig, shown: Boolea
     Row(OwnTVIcon.NETWORK, stringResource(R.string.sports_countries), stringResource(R.string.sports_countries_description),
         SettingValue.Opens(c.countries.joinToString(", ").ifBlank { stringResource(R.string.sports_any) })) { open(SportsSettingsPage.COUNTRIES) }
     val qualities = MinQuality.entries.map { qualityLabel(it) }
-    val stepQuality: (Int) -> Unit = { d -> vm.update { s -> s.copy(minQuality = MinQuality.entries[(s.minQuality.ordinal + d).mod(MinQuality.entries.size)]) } }
-    Row(OwnTVIcon.VIDEO, stringResource(R.string.settings_vp_cat_picture), stringResource(R.string.sports_picture_description),
-        SettingValue.Choice(qualities[c.minQuality.ordinal]), onStep = stepQuality) { stepQuality(1) }
+    // ◀ ▶ step through the qualities in place, clamped; OK opens them in the panel.
+    val stepQuality: (Int) -> Unit = { d -> vm.update { s -> s.copy(minQuality = MinQuality.entries[(s.minQuality.ordinal + d).coerceIn(0, MinQuality.entries.lastIndex)]) } }
+    Row(OwnTVIcon.VIDEO, stringResource(R.string.settings_cl_live_sport_min_quality), stringResource(R.string.sports_picture_description),
+        SettingValue.Choice(qualities[c.minQuality.ordinal]), onStep = stepQuality) { panel = SportsPanel.QUALITY }
     val playlists by vm.playlists.collectAsStateWithLifecycle()
     // Only this device's playlists count: ids restored from another device name nothing here (core WatchFilter.from).
     val chosenLists = playlists.filter { it.first in c.sourceIds }
-    Row(OwnTVIcon.PLAYLIST, stringResource(R.string.settings_sort_playlist), null,
+    Row(OwnTVIcon.PLAYLIST, stringResource(R.string.settings_cl_live_sport_playlists), null,
         SettingValue.Opens(if (chosenLists.isEmpty()) stringResource(R.string.sports_all_playlists) else chosenLists.joinToString(", ") { it.second })) { open(SportsSettingsPage.PLAYLISTS) }
     Row(OwnTVIcon.EPG, stringResource(R.string.sports_only_confirmed), stringResource(R.string.sports_only_confirmed_description), SettingValue.Switch(c.onlyConfirmed)) {
         vm.update { it.copy(onlyConfirmed = !it.onlyConfirmed) }
@@ -191,11 +194,11 @@ private fun MainRows(vm: SportsSettingsViewModel, c: SportsConfig, shown: Boolea
     Row(OwnTVIcon.LIVE_TV, stringResource(R.string.sports_score_info_bar), stringResource(R.string.sports_score_info_bar_description), SettingValue.Switch(c.scoreInInfoBar)) {
         vm.update { it.copy(scoreInInfoBar = !it.scoreInInfoBar) }
     }
-    Row(OwnTVIcon.BELL, stringResource(R.string.sports_channel_goal_alerts), stringResource(R.string.sports_goal_alerts_description), SettingValue.Opens(alertsSummary(c))) { open(SportsSettingsPage.ALERTS) }
+    Row(OwnTVIcon.BELL, stringResource(R.string.sports_channel_goal_alerts), stringResource(R.string.sports_goal_alerts_description), SettingValue.Choice(alertsSummary(c))) { panel = SportsPanel.ALERTS }
     val leads = SportsConfig.REMINDER_LEAD_CHOICES
-    val stepLead: (Int) -> Unit = { d -> vm.update { s -> s.copy(reminderLeadMinutes = leads[(leads.indexOf(s.reminderLeadMinutes).coerceAtLeast(0) + d).mod(leads.size)]) } }
+    val stepLead: (Int) -> Unit = { d -> vm.update { s -> s.copy(reminderLeadMinutes = leads[(leads.indexOf(s.reminderLeadMinutes).coerceAtLeast(0) + d).coerceIn(0, leads.lastIndex)]) } }
     Row(OwnTVIcon.CLOCK, stringResource(R.string.sports_channel_match_reminders), stringResource(R.string.sports_match_reminders_description),
-        SettingValue.Stepper(pluralStringResource(R.plurals.recording_minutes, c.reminderLeadMinutes, c.reminderLeadMinutes)), onStep = stepLead) { stepLead(1) }
+        SettingValue.Stepper(pluralStringResource(R.plurals.recording_minutes, c.reminderLeadMinutes, c.reminderLeadMinutes)), onStep = stepLead) { panel = SportsPanel.REMINDER_LEAD }
 
     StageSettingsHeading(stringResource(R.string.content_channel_overlay_title), 2)
     val first = c.rememberedChannels.entries.firstOrNull()
@@ -209,22 +212,71 @@ private fun MainRows(vm: SportsSettingsViewModel, c: SportsConfig, shown: Boolea
         vm.update { it.copy(showLikely = !it.showLikely) }
     }
 
-    StageSettingsHeading(stringResource(R.string.sports_settings_data), 4)
+    StageSettingsHeading(stringResource(R.string.sports_settings_data), 3)
     val modes = AutoRebuild.entries
-    val stepMode: (Int) -> Unit = { d -> vm.update { s -> s.copy(autoRebuild = modes[(s.autoRebuild.ordinal + d).mod(modes.size)]) } }
+    val stepMode: (Int) -> Unit = { d -> vm.update { s -> s.copy(autoRebuild = modes[(s.autoRebuild.ordinal + d).coerceIn(0, modes.lastIndex)]) } }
     Row(OwnTVIcon.HISTORY, stringResource(R.string.sports_auto_rebuild), stringResource(R.string.sports_auto_rebuild_description),
-        SettingValue.Stepper(rebuildLabel(c.autoRebuild)), onStep = stepMode) { stepMode(1) }
+        SettingValue.Choice(rebuildLabel(c.autoRebuild)), onStep = stepMode) { panel = SportsPanel.AUTO_REBUILD }
     val refresh = SportsRefreshPolicy.LIVE_SECONDS_CHOICES
-    val stepRefresh: (Int) -> Unit = { d -> vm.update { s -> s.copy(liveRefreshSeconds = refresh[(refresh.indexOf(s.liveRefreshSeconds).coerceAtLeast(0) + d).mod(refresh.size)]) } }
+    val stepRefresh: (Int) -> Unit = { d -> vm.update { s -> s.copy(liveRefreshSeconds = refresh[(refresh.indexOf(s.liveRefreshSeconds).coerceAtLeast(0) + d).coerceIn(0, refresh.lastIndex)]) } }
     Row(OwnTVIcon.LIVE_TV, stringResource(R.string.sports_live_refresh), stringResource(R.string.sports_live_refresh_description),
-        SettingValue.Stepper(pluralStringResource(R.plurals.settings_nav_hide_after_seconds, c.liveRefreshSeconds, c.liveRefreshSeconds)), onStep = stepRefresh) { stepRefresh(1) }
+        SettingValue.Stepper(pluralStringResource(R.plurals.settings_nav_hide_after_seconds, c.liveRefreshSeconds, c.liveRefreshSeconds)), onStep = stepRefresh) { panel = SportsPanel.LIVE_REFRESH }
     val rebuilding by vm.rebuilding.collectAsStateWithLifecycle()
     val rebuiltAt by vm.rebuiltAt.collectAsStateWithLifecycle()
     val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
     val last = rebuiltAt?.let { at -> (dayOf(at, locale) ?: stringResource(R.string.content_epg_today)) + sep + timeText(at) }
+    // Where the data comes from (the old About page) is this row's panel text now.
     Row(OwnTVIcon.REFRESH, stringResource(R.string.sports_refresh_data_now),
-        if (rebuilding) stringResource(R.string.sports_rebuilding) else last?.let { stringResource(R.string.sports_last_updated, it) }, null) { if (!rebuilding) vm.rebuild() }
-    Row(OwnTVIcon.INFO, stringResource(R.string.sports_about), stringResource(R.string.sports_about_summary), SettingValue.Opens(null)) { open(SportsSettingsPage.ABOUT) }
+        if (rebuilding) stringResource(R.string.sports_rebuilding) else last?.let { stringResource(R.string.sports_last_updated, it) }, null,
+        help = stringResource(R.string.sports_about_summary)) { if (!rebuilding) vm.rebuild() }
+
+    when (panel) {
+        SportsPanel.QUALITY -> tv.own.owntv.features.settings.PickerDialog(
+            title = stringResource(R.string.settings_cl_live_sport_min_quality),
+            options = MinQuality.entries.map { it.name to qualityLabel(it) },
+            selected = c.minQuality.name,
+            onSelect = { name -> vm.update { it.copy(minQuality = MinQuality.valueOf(name)) }; close() },
+            onDismiss = close,
+        )
+        SportsPanel.ALERTS -> {
+            val a = c.alerts
+            val switches: @Composable () -> Unit = {
+                tv.own.owntv.features.settings.PanelSwitches(
+                    listOf(
+                        Triple(stringResource(R.string.sports_channel_goal_alerts), a.enabled) { vm.update { it.copy(alerts = it.alerts.copy(enabled = !it.alerts.enabled)) } },
+                        Triple(stringResource(R.string.sports_my_teams), a.myTeams) { vm.update { it.copy(alerts = it.alerts.copy(myTeams = !it.alerts.myTeams)) } },
+                        Triple(stringResource(R.string.sports_followed_leagues), a.followedLeagues) { vm.update { it.copy(alerts = it.alerts.copy(followedLeagues = !it.alerts.followedLeagues)) } },
+                    ),
+                    onDone = close,
+                )
+            }
+            if (!tv.own.owntv.features.settings.panelEditor(close) { switches() }) {
+                tv.own.owntv.ui.stage.StagePopup(onDismiss = close, title = stringResource(R.string.sports_channel_goal_alerts), body = stringResource(R.string.sports_goal_alerts_description)) { switches() }
+            }
+        }
+        SportsPanel.REMINDER_LEAD -> tv.own.owntv.features.settings.PickerDialog(
+            title = stringResource(R.string.sports_channel_match_reminders),
+            options = leads.map { it.toString() to pluralStringResource(R.plurals.recording_minutes, it, it) },
+            selected = c.reminderLeadMinutes.toString(),
+            onSelect = { m -> vm.update { it.copy(reminderLeadMinutes = m.toInt()) }; close() },
+            onDismiss = close,
+        )
+        SportsPanel.AUTO_REBUILD -> tv.own.owntv.features.settings.PickerDialog(
+            title = stringResource(R.string.sports_auto_rebuild),
+            options = modes.map { it.name to rebuildLabel(it) },
+            selected = c.autoRebuild.name,
+            onSelect = { name -> vm.update { it.copy(autoRebuild = AutoRebuild.valueOf(name)) }; close() },
+            onDismiss = close,
+        )
+        SportsPanel.LIVE_REFRESH -> tv.own.owntv.features.settings.PickerDialog(
+            title = stringResource(R.string.sports_live_refresh),
+            options = refresh.map { it.toString() to pluralStringResource(R.plurals.settings_nav_hide_after_seconds, it, it) },
+            selected = c.liveRefreshSeconds.toString(),
+            onSelect = { s -> vm.update { it.copy(liveRefreshSeconds = s.toInt()) }; close() },
+            onDismiss = close,
+        )
+        null -> Unit
+    }
 }
 
 /** "My teams", "Followed leagues", both, or Off — what Goal alerts covers on this profile. */
@@ -444,22 +496,6 @@ private fun TeamRows(vm: SportsSettingsViewModel, c: SportsConfig) {
                 if (team != null) vm.toggleTeam(team) else vm.toggleLeague(s.key)
             }
         }
-    }
-}
-
-/** Goal alerts on the TV: the in-player toast only (no background alerts on a television). */
-@Composable
-private fun AlertRows(vm: SportsSettingsViewModel, c: SportsConfig) {
-    val a = c.alerts
-    Row(OwnTVIcon.BELL, stringResource(R.string.sports_channel_goal_alerts), stringResource(R.string.sports_goal_alerts_description), SettingValue.Switch(a.enabled)) {
-        vm.update { it.copy(alerts = it.alerts.copy(enabled = !it.alerts.enabled)) }
-    }
-    StageSettingsHeading(stringResource(R.string.sports_alerts_for), 2)
-    Row(OwnTVIcon.STAR, stringResource(R.string.sports_my_teams), null, SettingValue.Switch(a.myTeams)) {
-        vm.update { it.copy(alerts = it.alerts.copy(myTeams = !it.alerts.myTeams)) }
-    }
-    Row(OwnTVIcon.LAYERS, stringResource(R.string.sports_followed_leagues), stringResource(R.string.sports_followed_leagues_description), SettingValue.Switch(a.followedLeagues)) {
-        vm.update { it.copy(alerts = it.alerts.copy(followedLeagues = !it.alerts.followedLeagues)) }
     }
 }
 

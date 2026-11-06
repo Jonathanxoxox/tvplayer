@@ -83,6 +83,8 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Within "Add source": null = the Remote|Manual chooser, else the chosen path.
     var addMode by remember { mutableStateOf<AddMode?>(null) }
     var editingSource by remember { mutableStateOf<SourceEntity?>(null) }
+    // The playlist whose own playback settings (Wiedergabe) are open.
+    var playbackSource by remember { mutableStateOf<SourceEntity?>(null) }
     var confirmDelete by remember { mutableStateOf<SourceEntity?>(null) }
     var resyncChoice by remember { mutableStateOf<SourceEntity?>(null) }
     // Set while the "this will stop playback and take a while" confirmation is on screen.
@@ -101,8 +103,8 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // Whenever the list view is showing (no add form / edit form / delete dialog on top), restore
     // focus inside the list — not on "Add Source" as before, which is what pushed focus out of the
     // menu. contextId/contextFocus decide the specific row; firstRowFocus is the empty-list fallback.
-    LaunchedEffect(showAdd, editingSource, confirmDelete) {
-        if (showAdd || editingSource != null || confirmDelete != null) return@LaunchedEffect
+    LaunchedEffect(showAdd, editingSource, confirmDelete, playbackSource) {
+        if (showAdd || editingSource != null || confirmDelete != null || playbackSource != null) return@LaunchedEffect
         kotlinx.coroutines.delay(120)
         val targetId = contextId
         if (targetId != null && sources.any { it.id == targetId }) {
@@ -146,12 +148,16 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
         when {
             showAdd -> { showAdd = false; addMode = null; vm.stopRemoteListener(); vm.cancelImport() }
             editingSource != null -> editingSource = null
+            playbackSource != null -> playbackSource = null
             else -> onBack()
         }
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-        if (editingSource != null) {
+        val playback = playbackSource
+        if (playback != null) {
+            PlaylistPlaybackPage(playback, onBack = { playbackSource = null })
+        } else if (editingSource != null) {
             val src = editingSource!!
             AddSourceScreen(
                 initial = src,
@@ -277,7 +283,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
             // The playlists as rows; the focused one's Edit / Info / Re-sync / Delete in the panel.
             val actionsFocus = remember { FocusRequester() }
             StageFullPage(
-                parents = listOf(stringResource(R.string.settings_group_sources)),
+                parents = listOf(stringResource(tv.own.owntv.features.shell.components.SettingsGroup.SOURCES.titleRes)),
                 title = stringResource(R.string.settings_playlists),
                 count = "",
                 onBack = onBack,
@@ -313,6 +319,7 @@ fun ManageSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                         keepPanel = source.id == contextId,
                         onFocused = { contextId = source.id; contextIndex = index },
                         onEdit = { contextId = source.id; contextIndex = index; editingSource = source },
+                        onPlayback = { contextId = source.id; contextIndex = index; playbackSource = source },
                         onTest = { contextId = source.id; contextIndex = index; vm.testSource(source) },
                         onResync = { contextId = source.id; contextIndex = index; resyncChoice = source },
                         onCancelSync = { contextId = source.id; contextIndex = index; vm.cancelResync(source) },
@@ -380,6 +387,7 @@ private fun SourceRow(
     keepPanel: Boolean,
     onFocused: () -> Unit,
     onEdit: () -> Unit,
+    onPlayback: () -> Unit,
     onTest: () -> Unit,
     onResync: () -> Unit,
     onCancelSync: () -> Unit,
@@ -403,6 +411,7 @@ private fun SourceRow(
         if (!visibleCounts.isNullOrBlank()) add(visibleCounts)
         else if (activeSync != null) add(stringResource(R.string.settings_sources_preparing_detail))
         if (autoRefresh.mode != PlaylistAutoRefresh.OFF) add(stringResource(R.string.settings_sources_auto_refresh, playlistAutoRefreshLabel(autoRefresh)))
+        source.playbackOverrideCount().takeIf { it > 0 }?.let { add(androidx.compose.ui.res.pluralStringResource(R.plurals.settings_src_overrides, it, it)) }
         if (!expiry.isNullOrBlank()) add(stringResource(R.string.settings_sources_expiry, expiry))
     }.joinToString(sep)
     val status = when {
@@ -415,6 +424,8 @@ private fun SourceRow(
     val back = rowFocus ?: remember { FocusRequester() }
     val actions = if (isDeleting) emptyList() else listOf(
         StageAction(OwnTVIcon.PENCIL, stringResource(R.string.settings_sources_edit), onEdit),
+        // The playlist's own players, buffering and catch-up clock (Settings clean-up, 6 Nov 2026).
+        StageAction(OwnTVIcon.PLAY, stringResource(R.string.settings_src_playback), onPlayback),
         // "Info", not "Test": the expensive measurement lives behind Re-test inside the popup.
         StageAction(OwnTVIcon.INFO, stringResource(R.string.settings_sources_info), onTest),
         StageAction(

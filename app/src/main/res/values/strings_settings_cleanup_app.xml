@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings cleanup (6 Nov 2026), the frame, System, Profiles and More's places. Moves to the core fork later. -->
+<resources>
+    <string name="settings_cleanup_group_system">System</string>
+    <string name="settings_cleanup_heading_saved">Remembered values</string>
+</resources>

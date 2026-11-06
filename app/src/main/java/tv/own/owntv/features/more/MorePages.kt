@@ -67,7 +67,6 @@ import tv.own.owntv.features.downloads.recordingWhen
 import tv.own.owntv.features.home.ChannelPlate
 import tv.own.owntv.features.home.OnNowCard
 import tv.own.owntv.features.home.timeLeftText
-import tv.own.owntv.features.shell.components.ClearHistoryDialog
 import tv.own.owntv.features.shell.components.GITHUB_REPO
 import tv.own.owntv.features.shell.components.playbackDisplayName
 import tv.own.owntv.features.update.UpdateDialog
@@ -690,6 +689,56 @@ private fun StartLogPanel(modifier: Modifier = Modifier) {
                         )
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Stable, non-display choices for the history picker. */
+private enum class HistoryScope(val type: tv.own.owntv.core.model.MediaType?, val labelRes: Int) {
+    LIVE(tv.own.owntv.core.model.MediaType.LIVE, R.string.settings_history_live),
+    MOVIES(tv.own.owntv.core.model.MediaType.MOVIE, R.string.settings_history_movies),
+    SERIES(tv.own.owntv.core.model.MediaType.SERIES, R.string.settings_history_series),
+    ALL(null, R.string.settings_history_all),
+}
+
+/**
+ * History's "Clear history": pick what watch history to clear: everything, or just Live TV / Movies / Series. Over a dimmed scrim;
+ * Cancel is focused first so a stray OK doesn't wipe anything. [onClear] gets null for "all".
+ */
+@Composable
+private fun ClearHistoryDialog(
+    onClear: (tv.own.owntv.core.model.MediaType?) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var pending by remember { mutableStateOf<HistoryScope?>(null) }
+    val firstFocus = remember { FocusRequester() }
+    LaunchedEffect(pending) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
+    val p = pending
+    // One popup, two steps: what to clear, then "can't be undone" (focus on No). Back steps back first.
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = { if (pending != null) pending = null else onDismiss() },
+        title = if (p == null) stringResource(R.string.settings_clear_history) else stringResource(R.string.settings_clear_history_confirm, stringResource(p.labelRes)),
+        body = if (p == null) stringResource(R.string.settings_choose_history) else stringResource(R.string.settings_cannot_undo),
+        width = 760.mpx,
+        buttons = {
+            if (p == null) {
+                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19)
+            } else {
+                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_no), onClick = { pending = null }, height = 56.mpx, textSize = 19, modifier = Modifier.focusRequester(firstFocus))
+                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_yes_clear), onClick = { onClear(p.type) }, height = 56.mpx, textSize = 19, tinted = true)
+            }
+        },
+    ) {
+        if (p == null) {
+            listOf(HistoryScope.LIVE to OwnTVIcon.LIVE_TV, HistoryScope.MOVIES to OwnTVIcon.MOVIES, HistoryScope.SERIES to OwnTVIcon.SERIES, HistoryScope.ALL to OwnTVIcon.TRASH).forEachIndexed { i, (scope, icon) ->
+                val all = scope == HistoryScope.ALL
+                tv.own.owntv.ui.stage.StagePopupOption(
+                    title = stringResource(if (all) R.string.settings_all_history else scope.labelRes),
+                    onClick = { pending = scope }, danger = all,
+                    modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
+                    leading = { tv.own.owntv.ui.stage.StagePopupIcon(icon, if (all) tv.own.owntv.ui.theme.StageColors.Danger else tv.own.owntv.ui.theme.StageColors.Text) },
+                )
             }
         }
     }

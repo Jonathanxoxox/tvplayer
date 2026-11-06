@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_mayo_group_sources">Playlists &amp; EPG</string>
-    <string name="settings_mayo_group_live">Live TV &amp; Sport</string>
+    <string name="settings_mayo_group_live">Live-TV &amp; Sport</string>
     <string name="settings_mayo_group_playback">Wiedergabe</string>
     <string name="settings_mayo_group_picture_sound">Bild &amp; Ton</string>
     <string name="settings_mayo_group_language">Sprache &amp; Untertitel</string>

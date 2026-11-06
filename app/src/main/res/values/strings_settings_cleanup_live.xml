@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings › Live TV & sport after the clean-up (6 Nov 2026): headings, row titles, lines and help. -->
+<resources>
+    <!-- Headings on the group page. -->
+    <string name="settings_cl_live_heading_guide">TV guide</string>
+    <string name="settings_cl_live_heading_rewind">Rewind &amp; catch-up</string>
+    <string name="settings_cl_live_heading_reception">Reception</string>
+    <string name="settings_cl_live_heading_multiview_sport">Multiview &amp; sport</string>
+
+    <!-- Row titles. -->
+    <string name="settings_cl_live_reminders">Reminders</string>
+    <string name="settings_cl_live_guide_offset">TV guide time offset</string>
+    <string name="settings_cl_live_guide_days">Days in the TV guide</string>
+    <string name="settings_cl_live_rewind_step">Skip step on live TV</string>
+    <string name="settings_cl_live_catchup_timezone">Catch-up time zone</string>
+    <string name="settings_cl_live_preroll">Pre-buffer</string>
+    <string name="settings_cl_live_tune_timeout">Stop tuning after</string>
+
+    <!-- Short lines under the titles. -->
+    <string name="settings_cl_live_line_guide_offset">Moves every time in the TV guide when they are off</string>
+    <string name="settings_cl_live_line_guide_days">How many days ahead the TV guide is kept</string>
+    <string name="settings_cl_live_line_guide_width">How wide the channel list and the timeline are</string>
+    <string name="settings_cl_live_line_rewind_step">How far back and forward jump on a live channel</string>
+    <string name="settings_cl_live_line_catchup_player">Which player plays programs from the archive</string>
+    <string name="settings_cl_live_line_timeshift_resume">What happens when you come back to a saved channel</string>
+    <string name="settings_cl_live_line_preroll">How much video is gathered before a channel starts</string>
+    <string name="settings_cl_live_line_tune_timeout">When Mayo TV gives up on a channel with no picture</string>
+    <string name="settings_cl_live_line_sport">Leagues, teams, alerts and sports data</string>
+
+    <!-- Help in the panel. -->
+    <string name="settings_cl_live_help_guide_offset">Moves every program in the TV guide when the times of your EPG data are off as a whole. For a single channel, hold it in Live TV or in the TV guide and set its own time offset there.</string>
+    <string name="settings_cl_live_help_guide_days">How many days ahead Mayo TV keeps the EPG data. Fewer days make refreshes faster and the database smaller.</string>
+    <string name="settings_cl_live_help_catchup_timezone">Catch-up plays programs from your provider’s archive. Automatic uses the time zone your provider reports, otherwise your TV’s clock. Choose Manual and a fixed UTC offset if catch-up still starts at the wrong time.</string>
+    <string name="settings_cl_live_help_catchup_player">Which player plays a program from the catch-up archive. With Always ask, you choose each time you start a program from the beginning.</string>
+    <string name="settings_cl_live_help_tiles">The most channels Multiview shows at once. It always opens with two; every further tile needs its own connection to your provider and its own decoder.</string>
+
+    <!-- Settings › Sport. -->
+    <string name="settings_cl_live_sport_min_quality">Minimum quality</string>
+    <string name="settings_cl_live_sport_playlists">Playlists</string>
+</resources>

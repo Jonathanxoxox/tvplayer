@@ -36,12 +36,12 @@
     <string name="settings_dns_enter_server">Gib den Host eines DNS-Servers oder eine DoH-URL ein.</string>
     <string name="settings_dns_explanation">Benutzerdefiniertes DNS kann dabei helfen, Domain-Sperren durch den Internetanbieter oder Geoblocking mithilfe von SmartDNS-Diensten zu umgehen. DNS-over-HTTPS (DoH) wird empfohlen – dabei werden deine Abfragen verschlüsselt.</string>
     <string name="settings_dns_network_unreachable">Netzwerk nicht erreichbar – prüf die Serveradresse.</string>
-    <string name="settings_dns_server_missing">Benutzerdefiniertes DNS ist aktiviert, aber es wurde kein Server eingerichtet. Gib eine Serveradresse ein und wähle „Speichern“ oder schalte diese Option aus.</string>
+    <string name="settings_dns_server_missing">Noch kein Server eingetragen. Gib eine Serveradresse ein, wähl einen Anbieter oder schalte das aus.</string>
     <string name="settings_dns_test_failed">DNS-Test fehlgeschlagen – prüf die Serveradresse.</string>
     <string name="settings_download_remote_description">Scanne auf einem beliebigen Gerät mit Browser im selben WLAN – Smartphone, Computer oder ein anderer Fernseher – den QR-Code (oder öffne die URL), gib diese PIN ein und lade deine Sicherungsdatei herunter, um sie aufzubewahren.</string>
-    <string name="settings_epg_sources_name_hint">z. B. TV-Guide UK</string>
+    <string name="settings_epg_sources_name_hint">z. B. EPG UK</string>
     <string name="settings_epg_sources_nav_description">XMLTV-Programmdaten für den TV-Guide hinzufügen</string>
-    <string name="settings_epg_sources_use_logos">Senderlogos aus diesem TV-Guide verwenden</string>
+    <string name="settings_epg_sources_use_logos">Senderlogos dieser EPG-Quelle</string>
     <string name="settings_group_summary_quick">Die Schalter, die du am häufigsten brauchst</string>
     <string name="settings_guide_sync_failed">Synchronisierung des TV-Guides fehlgeschlagen</string>
     <string name="settings_guide_synced">TV-Guide synchronisiert</string>
@@ -55,7 +55,7 @@
     <string name="settings_help_channel_numbers">Zeigt die Sendernummer deines Anbieters neben dem Namen in der Live-TV-Liste, der Senderliste im Player und im Player selbst, und du kannst im Vollbild eine Nummer auf der Fernbedienung eingeben, um zu diesem Sender zu springen.</string>
     <string name="settings_help_customize">Blende Kategorien und Einträge aus, die du nie ansiehst, gib Kategorien eigene Namen und bring sie in deine Reihenfolge. Ausgeblendetes holst du hier zurück — nichts geht verloren.</string>
     <string name="settings_help_dns">Löst die Adressen deines Anbieters über einen DNS-Server deiner Wahl statt über den deines Netzes auf — hilfreich, wenn dein Netz sie sperrt oder umleitet.</string>
-    <string name="settings_help_epg_sources">Füg einen XMLTV-Guide per Link hinzu, aktualisiere oder entferne ihn. Die Quellen füllen den TV-Guide und die Sendungszeilen in Live-TV.</string>
+    <string name="settings_help_epg_sources">Füg eine EPG-Quelle (XMLTV) per Link hinzu, synchronisiere sie neu oder entferne sie. EPG-Quellen füllen den TV-Guide und die Sendungszeilen in Live-TV.</string>
     <string name="settings_help_focus">Der Ring um das, was den Fokus hat. Wähle Farbe und Stärke, damit er vom Sofa aus gut zu verfolgen ist.</string>
     <string name="settings_help_home">Wähle, welche Zeilen die Startseite in welcher Reihenfolge zeigt und wie die Zeile „Gerade angesagt“ aussieht.</string>
     <string name="settings_help_hw">Nutzt den Hardware-Decoder des Fernsehers: flüssiges 4K und weniger Wärme. Schalte ihn nur aus, wenn Streams ruckeln oder Blöcke zeigen; dann übernimmt der Software-Decoder.</string>
@@ -84,11 +84,11 @@
     <string name="settings_metadata_empty_title">Gib einen Titel für die Suche ein.</string>
     <string name="settings_metadata_key_from_phone_desc">Öffne die Adresse im Browser eines beliebigen Geräts – Smartphone, Computer oder ein anderer Fernseher –, melde dich dort bei TMDB an und schick den Schlüssel herüber. Nichts mit der Fernbedienung zu tippen.</string>
     <string name="settings_metadata_limit_reached">Tagesanteil an Metadaten aufgebraucht — füg unter Einstellungen → Metadaten deinen eigenen TMDB-Schlüssel hinzu, um diese Beschränkung aufzuheben.</string>
-    <string name="settings_metadata_provider_description">Nur die Daten deiner Wiedergabeliste verwenden. Keine TMDB-Abfragen.</string>
-    <string name="settings_metadata_provider_tmdb_description">Die Angaben deiner Wiedergabeliste haben Vorrang; TMDB füllt Lücken und ergänzt Besetzung, Genres und Hintergrundbilder.</string>
+    <string name="settings_metadata_provider_description">Nur die Daten deiner Playlist verwenden. Keine TMDB-Abfragen.</string>
+    <string name="settings_metadata_provider_tmdb_description">Die Angaben deiner Playlist haben Vorrang; TMDB füllt Lücken und ergänzt Besetzung, Genres und Hintergrundbilder.</string>
     <string name="settings_metadata_server_description">Lass beide Felder leer, um den integrierten gemeinsamen Server zu verwenden (keine Einrichtung nötig). Gib deinen eigenen TMDB-API-Schlüssel ein, um TMDB direkt aufzurufen, oder die URL eines selbst gehosteten Servers, um deinen eigenen Proxy/Spiegelserver zu verwenden. Eine URL hat Vorrang vor einem Schlüssel.</string>
     <string name="settings_metadata_source_description">Wähle aus, woher die Details zu Filmen und Serien stammen.</string>
-    <string name="settings_metadata_tmdb_only_description">TMDB für jedes Feld bevorzugen; nur auf deine Wiedergabeliste zurückgreifen, wenn TMDB keine Angaben enthält.</string>
+    <string name="settings_metadata_tmdb_only_description">TMDB für jedes Feld bevorzugen; nur auf deine Playlist zurückgreifen, wenn TMDB keine Angaben enthält.</string>
     <string name="settings_mini_player_description">Der kleine schwebende Player, der erscheint, wenn du beim Stöbern einen Sender andockst (PiP). Ändere diese Einstellungen hier oder direkt über die Knöpfe zum Vergrößern und Verschieben am Mini-Player.</string>
     <string name="settings_move_category_description">Das Element wird aus „<xliff:g id="name">%1$s</xliff:g>“ entfernt, sofern du es nicht auch dort behältst.</string>
     <string name="settings_multiview_description">Mehrere Livekanäle gleichzeitig ansehen. Wie viele es sind, entscheidest du jedes Mal selbst, höchstens jedoch so viele — jede Kachel belegt eine Verbindung deines Anbieters.</string>
@@ -106,7 +106,6 @@
     <string name="settings_subtitle_color_hex_hint">Gib 6 Hexadezimalziffern ein, z. B. FFEB3B</string>
     <string name="settings_subtitle_customize_description">Schalte diese Option ein und ändere dann nur das Gewünschte – alles, was auf „Standard“ bleibt, behält die Originaldarstellung einschließlich der Farben und Positionierung, die Sender in Live-TV-Untertiteln vorgeben.</string>
     <string name="settings_subtitle_delete_help">Löschen gibt den Speicher frei; im Player kannst du die Datei erneut herunterladen.</string>
-    <string name="settings_sync_guide_description">Den TV-Guide (EPG) für „<xliff:g id="source">%1$s</xliff:g>“ herunterladen. Du kannst das auch später unter Einstellungen → Quellen und Programm → EPG-Quellen tun.</string>
     <string name="settings_sync_guide_question">TV-Guide jetzt synchronisieren?</string>
     <string name="settings_syncing_guide">TV-Guide wird synchronisiert…</string>
     <string name="settings_tier_key">Dein TMDB-Schlüssel</string>

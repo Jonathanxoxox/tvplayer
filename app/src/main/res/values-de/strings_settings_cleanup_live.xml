@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Einstellungen › Live-TV & Sport nach dem Aufräumen (6. Nov. 2026). -->
+<resources>
+    <string name="settings_cl_live_heading_guide">TV-Guide</string>
+    <string name="settings_cl_live_heading_rewind">Zurückspulen &amp; Catch-up</string>
+    <string name="settings_cl_live_heading_reception">Empfang</string>
+    <string name="settings_cl_live_heading_multiview_sport">Multiview &amp; Sport</string>
+
+    <string name="settings_cl_live_reminders">Erinnerungen</string>
+    <string name="settings_cl_live_guide_offset">Zeitversatz im TV-Guide</string>
+    <string name="settings_cl_live_guide_days">Tage im TV-Guide</string>
+    <string name="settings_cl_live_rewind_step">Sprungweite bei Live-TV</string>
+    <string name="settings_cl_live_catchup_timezone">Catch-up-Zeitzone</string>
+    <string name="settings_cl_live_preroll">Vorpuffern</string>
+    <string name="settings_cl_live_tune_timeout">Umschalten abbrechen nach</string>
+
+    <string name="settings_cl_live_line_guide_offset">Verschiebt alle Zeiten im TV-Guide, wenn sie nicht stimmen</string>
+    <string name="settings_cl_live_line_guide_days">Wie viele Tage im Voraus der TV-Guide gespeichert wird</string>
+    <string name="settings_cl_live_line_guide_width">Wie breit Senderliste und Zeitleiste sind</string>
+    <string name="settings_cl_live_line_rewind_step">Wie weit Zurück und Vor auf einem Live-Sender springen</string>
+    <string name="settings_cl_live_line_catchup_player">Welcher Player Sendungen aus dem Archiv abspielt</string>
+    <string name="settings_cl_live_line_timeshift_resume">Was passiert, wenn du zu einem gespeicherten Sender zurückkehrst</string>
+    <string name="settings_cl_live_line_preroll">Wie viel Video vor dem Senderstart gesammelt wird</string>
+    <string name="settings_cl_live_line_tune_timeout">Wann Mayo TV bei einem Sender ohne Bild aufgibt</string>
+    <string name="settings_cl_live_line_sport">Ligen, Teams, Benachrichtigungen und Sportdaten</string>
+
+    <string name="settings_cl_live_help_guide_offset">Verschiebt jede Sendung im TV-Guide, wenn die Zeiten deiner EPG-Daten insgesamt nicht stimmen. Für einen einzelnen Sender hältst du ihn in Live-TV oder im TV-Guide gedrückt und stellst dort seinen eigenen Zeitversatz ein.</string>
+    <string name="settings_cl_live_help_guide_days">Wie viele Tage im Voraus Mayo TV die EPG-Daten speichert. Weniger Tage machen Aktualisierungen schneller und die Datenbank kleiner.</string>
+    <string name="settings_cl_live_help_catchup_timezone">Catch-up spielt Sendungen aus dem Archiv deines Anbieters ab. Automatisch nimmt die Zeitzone, die dein Anbieter meldet, sonst die Uhr des Fernsehers. Wähle Manuell und einen festen UTC-Versatz, wenn Catch-up trotzdem zur falschen Zeit beginnt.</string>
+    <string name="settings_cl_live_help_catchup_player">Welcher Player eine Sendung aus dem Catch-up-Archiv abspielt. Bei Immer fragen wählst du ihn jedes Mal, wenn du eine Sendung von vorn startest.</string>
+    <string name="settings_cl_live_help_tiles">Wie viele Sender Multiview höchstens gleichzeitig zeigt. Es startet immer mit zwei; jede weitere Kachel braucht eine eigene Verbindung deines Anbieters und einen eigenen Decoder.</string>
+
+    <string name="settings_cl_live_sport_min_quality">Mindestqualität</string>
+    <string name="settings_cl_live_sport_playlists">Playlists</string>
+</resources>
