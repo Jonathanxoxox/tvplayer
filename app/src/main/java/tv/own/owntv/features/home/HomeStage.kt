@@ -254,7 +254,7 @@ internal fun HomeStage(
             // A match with a picture shows it full width like any highlight; without one, its crests (below).
             is Highlight.Sport -> sportArt?.let { url ->
                 SpotlightArt(state = ArtState.Picture(url), channel = picChannel, logo = {}, corner = {})
-            }
+            } ?: SportColorsBackdrop(hl.match)
             is Highlight.Resume -> HighlightPicture(hl)
             else -> SpotlightArt(
                 state = artState,
@@ -364,7 +364,7 @@ internal fun HomeStage(
                 )
                 if (spotlight) {
                     // The picture is the full-width one behind; a match shows its crests here.
-                    if (video == null && hl is Highlight.Sport && sportArt == null) HighlightPicture(hl)
+                    // A match is drawn full width behind (picture, or the clubs' colours with their crests).
                 } else if (video == null && hl != null && hl !is Highlight.Live) {
                     HighlightPicture(hl)
                 } else if (video == null) {
