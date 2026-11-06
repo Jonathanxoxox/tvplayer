@@ -120,17 +120,17 @@ fun EpgSourcesScreen(onBack: () -> Unit, modifier: Modifier = Modifier, startOnA
         return
     }
 
-    // The guides as rows; the focused one's Re-sync / Edit / Delete in the panel.
+    // The EPG sources as rows; the focused one's Edit / Re-sync / Delete in the panel (Playlists' order).
     val actionsFocus = remember { FocusRequester() }
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_sources)),
+        parents = listOf(stringResource(tv.own.owntv.features.shell.components.SettingsGroup.SOURCES.titleRes)),
         title = stringResource(R.string.settings_epg_sources_title),
         count = "",
         onBack = onBack,
         modifier = modifier,
         toolbar = {
             tv.own.owntv.ui.stage.StageTool(
-                stringResource(R.string.content_epg_add), onClick = { adding = true },
+                stringResource(R.string.settings_epg_sources_add), onClick = { adding = true },
                 icon = OwnTVIcon.ADD, boxed = true, modifier = Modifier.focusRequester(addFocus),
             )
         },
@@ -274,13 +274,13 @@ private fun EpgRow(
     val back = rowFocus ?: remember { FocusRequester() }
     // While the guide data is being deleted the actions go: the row is on its way out.
     val actions = if (deleting) emptyList() else listOf(
+        StageAction(OwnTVIcon.PENCIL, stringResource(R.string.settings_sources_edit), onEdit),
         StageAction(
             OwnTVIcon.REFRESH,
-            stringResource(if (syncState.isActive) R.string.common_cancel else R.string.settings_sources_resync),
+            stringResource(if (syncState.isActive) R.string.settings_sources_cancel else R.string.settings_sources_resync),
             if (syncState.isActive) onCancelSync else onResync,
         ),
-        StageAction(OwnTVIcon.PENCIL, stringResource(R.string.common_edit), onEdit),
-        StageAction(OwnTVIcon.TRASH, stringResource(R.string.common_delete), onDelete, danger = true),
+        StageAction(OwnTVIcon.TRASH, stringResource(R.string.settings_sources_delete), onDelete, danger = true),
     )
     StageSettingRow(
         icon = OwnTVIcon.EPG,
@@ -360,7 +360,7 @@ internal fun EpgSourceForm(
     fun keys(vararg k: Pair<String, String>) = listOfNotNull(*k.dropLast(1).toTypedArray(), submitHint, k.last())
     StageFullPage(
         parents = listOf(parent),
-        title = stringResource(if (initial == null) R.string.content_epg_add else R.string.settings_epg_sources_edit),
+        title = stringResource(if (initial == null) R.string.settings_epg_sources_add else R.string.settings_epg_sources_edit),
         count = "",
         onBack = onCancel,
         modifier = modifier,

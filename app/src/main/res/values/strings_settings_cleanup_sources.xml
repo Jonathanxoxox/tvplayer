@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings clean-up (6 Nov 2026), Playlists & EPG: one word per thing (Playlist, EPG source, TV guide) and the
+     per-playlist playback settings on the playlist itself. Core texts overridden by name, plus this area's new keys. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Core overrides -->
+    <string name="settings_playlists">Playlists</string>
+    <string name="settings_sources_add">Add playlist</string>
+    <string name="settings_sources_empty">No playlists yet. Add one by link, Xtream login, Stalker portal or file.</string>
+    <string name="settings_sources_resync">Re-sync</string>
+    <string name="settings_sources_test_title">Playlist info</string>
+    <string name="settings_sources_delete_message">This removes the playlist and all of its channels, movies and series from every profile.</string>
+    <string name="settings_customize">Customize categories</string>
+    <string name="settings_metadata_remote_advanced">TMDB access</string>
+    <string name="settings_metadata_provider_only">Playlist only</string>
+    <string name="settings_metadata_provider_plus_tmdb">Playlist + TMDB</string>
+    <string name="settings_epg_sources_empty">No EPG sources yet. Add an XMLTV link.</string>
+    <string name="settings_epg_sources_fill_playlist">Fill from playlist</string>
+    <string name="settings_epg_sources_none_playlist">None of your playlists offers an EPG address.</string>
+    <string name="settings_epg_sources_portal_guide">EPG from the portal</string>
+    <string name="settings_epg_sources_logos_description">Show the logos from this EPG source instead of your playlist\'s. Channels it has no logo for keep the playlist\'s logo.</string>
+    <string name="settings_help_epg_name">Shown in the list of EPG sources and under Pick EPG manually.</string>
+    <string name="settings_line_epg_auto_refresh">Keeps the EPG data up to date</string>
+    <string name="settings_dns_use_custom">Use your own DNS server</string>
+
+    <!-- New keys -->
+    <string name="settings_src_line_playlists">Add your playlists and keep them in sync</string>
+    <string name="settings_src_line_epg">Where the TV guide gets its programmes</string>
+    <string name="settings_src_playback">Playback</string>
+    <string name="settings_src_follow">Same as general</string>
+    <string name="settings_src_pp_live_engine">Live TV player</string>
+    <string name="settings_src_pp_vod_engine">Movies &amp; series player</string>
+    <string name="settings_src_pp_latency">Live latency</string>
+    <string name="settings_src_pp_preroll">Pre-buffer</string>
+    <string name="settings_src_pp_tune_timeout">Stop switching after</string>
+    <string name="settings_src_pp_catchup">Catch-up time zone</string>
+    <string name="settings_src_pp_line_live_engine">Which player plays this playlist\'s channels</string>
+    <string name="settings_src_pp_line_vod_engine">Which player plays this playlist\'s movies and series</string>
+    <string name="settings_src_pp_line_latency">How much buffer live TV keeps for this playlist</string>
+    <string name="settings_src_pp_line_preroll">How long a channel buffers before it starts</string>
+    <string name="settings_src_pp_line_tune_timeout">When a channel that won\'t start is given up</string>
+    <string name="settings_src_pp_line_catchup">The clock this playlist\'s archive runs on</string>
+    <string name="settings_src_pp_help">Applies to this playlist only. “Same as general” follows the setting you chose for all playlists.</string>
+    <string name="settings_src_pp_help_page">Choose how this playlist plays. Anything left on “Same as general” follows your general settings.</string>
+    <plurals name="settings_src_overrides">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> own setting</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> own settings</item>
+    </plurals>
+    <string name="settings_src_sync_guide_description">Download the EPG for “<xliff:g id="source">%1$s</xliff:g>” now. You can also do this later under <xliff:g id="path">%2$s</xliff:g>.</string>
+    <string name="settings_src_dns_presets">DNS provider</string>
+</resources>

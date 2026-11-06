@@ -11,7 +11,6 @@ import tv.own.owntv.R
 
 /** The short line under the title. */
 internal val SETTING_LINE: Map<String, Int> = mapOf(
-    "catchup_sources" to R.string.settings_line_catchup_sources,
     "home_layout" to R.string.settings_ca_line_home_layout,
     "home_row_titles" to R.string.settings_ca_line_row_titles,
     "tab_SPOTLIGHT" to R.string.settings_ca_line_spotlight_sources,
@@ -36,6 +35,8 @@ internal val SETTING_LINE: Map<String, Int> = mapOf(
     "remember_last_series" to R.string.settings_ca_line_remember_series,
     "tab_CONTENT_MENUS" to R.string.settings_ca_line_long_press_menus,
     "app_startup" to R.string.settings_ca_line_opens_with,
+    "tab_SOURCES" to R.string.settings_src_line_playlists,
+    "tab_EPG" to R.string.settings_src_line_epg,
     "tab_CUSTOMIZE" to R.string.settings_line_customize,
     "tab_METADATA" to R.string.settings_line_metadata,
     "tab_OPEN_SUBTITLES" to R.string.settings_line_open_subtitles,
@@ -46,10 +47,8 @@ internal val SETTING_LINE: Map<String, Int> = mapOf(
     "tab_NETWORK" to R.string.settings_line_proxy,
     "tab_DNS" to R.string.settings_line_dns,
     "vp_live_engine" to R.string.settings_line_live_engine,
-    "vp_live_engine_sources" to R.string.settings_line_override_playlist,
     "vp_reset_live_pins" to R.string.settings_line_saved_live_choices,
     "vp_vod_engine" to R.string.settings_line_vod_engine,
-    "vp_vod_engine_sources" to R.string.settings_line_override_playlist,
     "vp_reset_pins" to R.string.settings_line_saved_choices,
     "vp_external" to R.string.settings_line_external,
     "vp_vod_buffer" to R.string.settings_line_vod_buffer,
@@ -85,11 +84,8 @@ internal val SETTING_LINE: Map<String, Int> = mapOf(
     "vp_timeshift_resume" to R.string.settings_cl_live_line_timeshift_resume,
     "vp_live_left_right" to R.string.settings_line_left_right,
     "vp_live_latency" to R.string.settings_line_latency,
-    "vp_latency_sources" to R.string.settings_line_override_playlist,
     "vp_preroll" to R.string.settings_cl_live_line_preroll,
-    "vp_preroll_sources" to R.string.settings_line_override_playlist,
     "vp_tune_timeout" to R.string.settings_cl_live_line_tune_timeout,
-    "vp_tune_timeout_sources" to R.string.settings_line_override_playlist,
     "vp_seek_step" to R.string.settings_line_seek_step,
     "vp_rewind_step" to R.string.settings_cl_live_line_rewind_step,
     "vp_resume" to R.string.settings_line_resume,
@@ -123,7 +119,6 @@ internal val SETTING_TITLE: Map<String, Int> = mapOf(
 internal val SETTING_HELP: Map<String, Int> = mapOf(
     "tab_SOURCES" to R.string.settings_help_playlists,
     "tab_EPG" to R.string.settings_help_epg_sources,
-    "catchup_sources" to R.string.settings_catchup_timezone_per_playlist_description,
     "theme" to R.string.settings_help_theme,
     "accent" to R.string.settings_help_accent,
     "focus_highlight" to R.string.settings_help_focus,
