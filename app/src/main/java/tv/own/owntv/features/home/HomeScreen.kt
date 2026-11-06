@@ -261,7 +261,8 @@ fun HomeScreen(
             val now = System.currentTimeMillis()
             val fresh = magentaGuide.picks(pickChannels, docsOn, now - PICKS_BACK_MS, now + PICKS_AHEAD_MS)
             if (fresh.isNotEmpty() || value.isEmpty()) value = fresh
-            kotlinx.coroutines.delay(PICKS_REFRESH_MS)
+            // Nothing came back (no network yet, e.g. just woken): ask again soon, not in half an hour.
+            kotlinx.coroutines.delay(if (fresh.isEmpty()) PICKS_RETRY_MS else PICKS_REFRESH_MS)
         }
     }
     val spotlightSources = remember(launcherConfig.spotlightOrder, launcherConfig.spotlightOff) {
@@ -1650,6 +1651,7 @@ private const val ARTE_KEY = "arte"
 /** Home settles first; then the guide is asked for today's picks, and again every half hour. */
 private const val PICKS_FIRST_DELAY_MS = 3_000L
 private const val PICKS_REFRESH_MS = 30 * 60_000L
+private const val PICKS_RETRY_MS = 30_000L
 /** From a little back (programmes on now) to late tonight. */
 private const val PICKS_BACK_MS = 3 * 60 * 60_000L
 private const val PICKS_AHEAD_MS = 12 * 60 * 60_000L

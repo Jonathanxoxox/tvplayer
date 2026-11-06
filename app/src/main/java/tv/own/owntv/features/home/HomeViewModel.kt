@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.first
@@ -138,6 +139,8 @@ private const val PROVIDER_EPG_PARALLEL = 6
 
 /** How many recently watched live channels the Spotlight looks at for habits. */
 private const val WATCHED_FOR_SPOTLIGHT = 40
+/** How often ended programmes in the category row are replaced by what is on now. */
+private const val ON_NOW_REFRESH_MS = 5 * 60_000L
 
 class HomeViewModel(
     private val feed: HomeFeedReader,
@@ -159,6 +162,7 @@ class HomeViewModel(
     private val customize: tv.own.owntv.core.customize.CustomizationStore,
     private val catalog: HomeCatalog,
     private val liveEpg: tv.own.owntv.core.live.LiveEpgReader,
+    private val connectivity: tv.own.owntv.core.network.ConnectivityObserver,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -204,6 +208,23 @@ class HomeViewModel(
         viewModelScope.launch {
             catalog.changes.drop(1).collect { reloadRequests.emit(null) }
         }
+        // Back online: what is on now for the channels whose guide could not be asked while the network was
+        // down. Waking the box, Home asked ~4 s before the Wi-Fi was back, every request failed, and the row
+        // and the Spotlight showed channel names only until the next restart (Jonathan, 6 Nov 2026).
+        viewModelScope.launch {
+            connectivity.isOnline
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { online -> if (online) fillCatalogOnNow() }
+        }
+        // A programme that has ended is replaced by the one after it (09:59 still showed the 05:30–09:00
+        // morning show). Only ended ones are asked again, a few channels per round.
+        viewModelScope.launch {
+            while (true) {
+                kotlinx.coroutines.delay(ON_NOW_REFRESH_MS)
+                fillCatalogOnNow()
+            }
+        }
     }
 
     /** Hides [channel] from Home's category row; Live TV still shows it. */
@@ -226,7 +247,10 @@ class HomeViewModel(
     private fun fillCatalogOnNow() {
         viewModelScope.launch {
             val pid = currentProfileId() ?: return@launch
-            val missing = _uiState.value.catalog?.channels.orEmpty().filter { it.id !in _uiState.value.recentOnNow }
+            val now = System.currentTimeMillis()
+            val known = _uiState.value.recentOnNow
+            // Never asked, asked without an answer, or over: the programme on now is not known.
+            val missing = _uiState.value.catalog?.channels.orEmpty().filter { known[it.id]?.let { p -> p.stopMs <= now } ?: true }
             if (missing.isEmpty()) return@launch
             val found = onNowFor(pid, missing, providerFallback = true)
             if (found.isNotEmpty()) _uiState.value = _uiState.value.copy(recentOnNow = _uiState.value.recentOnNow + found)
