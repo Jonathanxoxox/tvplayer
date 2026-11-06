@@ -67,6 +67,9 @@ internal const val SECTION_SOUND = 8
 private const val SECTION_LANGUAGES = 9
 private const val SECTION_RESUME = 10
 private const val SECTION_DIAGNOSTICS = 11
+// Live-TV & Sport (6 Nov 2026): the TV guide's rows, and pausing, rewinding and catch-up together.
+private const val SECTION_GUIDE = 12
+private const val SECTION_REWIND = 13
 
 /**
  * The Settings groups that hold Video player rows: each part is a sub-heading and the sections
@@ -74,7 +77,14 @@ private const val SECTION_DIAGNOSTICS = 11
  */
 internal enum class VideoGroup(val titleRes: Int, val parts: List<Pair<Int, List<Int>>>) {
     // Mayo TV (1 Nov 2026): the Video player's rows by what they are about, not by the old player tabs.
-    LIVE(R.string.settings_mayo_group_live, listOf(R.string.settings_live_tv to listOf(SECTION_LIVE), R.string.settings_vp_cat_live_tuning to listOf(SECTION_LIVE_TUNING), R.string.settings_vp_cat_multiview to listOf(SECTION_MULTIVIEW))),
+    // Live-TV & Sport (6 Nov 2026): Live-TV · TV-Guide · Zurückspulen & Catch-up · Empfang · Multiview & Sport (the Sport row follows as a root row).
+    LIVE(R.string.settings_mayo_group_live, listOf(
+        R.string.settings_live_tv to listOf(SECTION_LIVE),
+        R.string.settings_cl_live_heading_guide to listOf(SECTION_GUIDE),
+        R.string.settings_cl_live_heading_rewind to listOf(SECTION_REWIND),
+        R.string.settings_cl_live_heading_reception to listOf(SECTION_LIVE_TUNING),
+        R.string.settings_cl_live_heading_multiview_sport to listOf(SECTION_MULTIVIEW),
+    )),
     PLAYBACK(R.string.settings_mayo_group_playback, listOf(R.string.settings_vp_cat_player to listOf(SECTION_PLAYER), R.string.settings_vp_cat_controls_resume to listOf(SECTION_CONTROLS, SECTION_RESUME), R.string.settings_vp_cat_streaming to listOf(SECTION_STREAMING))),
     PICTURE_SOUND(R.string.settings_mayo_group_picture_sound, listOf(R.string.settings_vp_cat_picture to listOf(SECTION_PICTURE), R.string.settings_vp_cat_frame_rate to listOf(SECTION_FRAME_RATE), R.string.settings_vp_section_sound to listOf(SECTION_SOUND))),
     LANGUAGES(R.string.settings_mayo_group_language, listOf(R.string.settings_vp_cat_languages to listOf(SECTION_LANGUAGES))),
@@ -127,11 +137,14 @@ internal fun videoSectionCounts(vm: SettingsViewModel): List<Int> {
         4 + (if (vm.tunnelingSupported) 1 else 0),
         3,
         3,
-        4 + (if (livePreview) 1 else 0) + (if (timeshift) 1 else 0),
+        2 + (if (livePreview) 1 else 0),
         3,
-        2,
-        2 + (if (multiview) 1 else 0),
+        1,
+        1 + (if (multiview) 1 else 0),
         7, 3, 2, 2,
+        // TV guide; then rewind & catch-up (timeshift, its two rows while on, Left/Right, skip step, catch-up ×2).
+        5,
+        5 + (if (timeshift) 2 else 0),
     )
 }
 
@@ -194,20 +207,27 @@ internal val VIDEO_QUICK_ROWS: List<VideoQuickRef> = listOf(
     VideoQuickRef("vp_channel_numbers", SECTION_LIVE, OwnTVIcon.LIVE_TV, R.string.settings_channel_numbers, R.string.settings_channel_numbers_description),
     VideoQuickRef("vp_live_preview", SECTION_LIVE, OwnTVIcon.LIVE_TV, R.string.settings_quick_live_preview, R.string.settings_live_preview_description),
     VideoQuickRef("vp_preview_audio", SECTION_LIVE, OwnTVIcon.AUDIO, R.string.settings_preview_audio, R.string.settings_preview_audio_description),
-    VideoQuickRef("vp_timeshift", SECTION_LIVE, OwnTVIcon.REWIND, R.string.settings_timeshift, R.string.settings_timeshift_description),
-    VideoQuickRef("vp_timeshift_window", SECTION_LIVE, OwnTVIcon.REWIND, R.string.settings_timeshift_window, R.string.settings_timeshift_window_description),
-    VideoQuickRef("vp_timeshift_resume", SECTION_LIVE, OwnTVIcon.PLAY, R.string.settings_timeshift_resume, R.string.settings_timeshift_resume_description),
-    VideoQuickRef("vp_live_left_right", SECTION_LIVE, OwnTVIcon.SEEK_BACK, R.string.settings_live_left_right_rewinds, R.string.settings_live_left_right_rewinds_description),
+    VideoQuickRef("vp_guide_reminders", SECTION_GUIDE, OwnTVIcon.BELL, R.string.settings_cl_live_reminders, R.string.settings_reminders_description),
+    VideoQuickRef("vp_guide_reminder_lead", SECTION_GUIDE, OwnTVIcon.CLOCK, R.string.settings_reminder_lead, R.string.settings_reminder_lead_description),
+    VideoQuickRef("vp_guide_offset", SECTION_GUIDE, OwnTVIcon.EPG, R.string.settings_cl_live_guide_offset, R.string.settings_cl_live_help_guide_offset),
+    VideoQuickRef("vp_guide_days", SECTION_GUIDE, OwnTVIcon.EPG, R.string.settings_cl_live_guide_days, R.string.settings_cl_live_help_guide_days),
+    VideoQuickRef("vp_guide_width", SECTION_GUIDE, OwnTVIcon.EPG, R.string.settings_guide_width, R.string.settings_guide_width_description),
+    VideoQuickRef("vp_timeshift", SECTION_REWIND, OwnTVIcon.REWIND, R.string.settings_timeshift, R.string.settings_timeshift_description),
+    VideoQuickRef("vp_timeshift_window", SECTION_REWIND, OwnTVIcon.REWIND, R.string.settings_timeshift_window, R.string.settings_timeshift_window_description),
+    VideoQuickRef("vp_timeshift_resume", SECTION_REWIND, OwnTVIcon.PLAY, R.string.settings_timeshift_resume, R.string.settings_timeshift_resume_description),
+    VideoQuickRef("vp_live_left_right", SECTION_REWIND, OwnTVIcon.SEEK_BACK, R.string.settings_live_left_right_rewinds, R.string.settings_live_left_right_rewinds_description),
+    VideoQuickRef("vp_rewind_step", SECTION_REWIND, OwnTVIcon.REWIND, R.string.settings_cl_live_rewind_step, R.string.settings_live_rewind_step_description),
+    VideoQuickRef("vp_catchup_timezone", SECTION_REWIND, OwnTVIcon.CATCHUP, R.string.settings_cl_live_catchup_timezone, R.string.settings_cl_live_help_catchup_timezone),
+    VideoQuickRef("vp_catchup_player", SECTION_REWIND, OwnTVIcon.CATCHUP, R.string.settings_catchup_player, R.string.settings_cl_live_help_catchup_player),
     VideoQuickRef("vp_live_latency", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_live_latency, R.string.settings_live_latency_description),
     VideoQuickRef("vp_latency_sources", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_live_latency_per_playlist, R.string.settings_live_latency_per_playlist_description),
-    VideoQuickRef("vp_preroll", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_live_preroll, R.string.settings_live_preroll_description),
+    VideoQuickRef("vp_preroll", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_cl_live_preroll, R.string.settings_live_preroll_description),
     VideoQuickRef("vp_preroll_sources", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_live_preroll_per_playlist, R.string.settings_live_preroll_per_playlist_description),
-    VideoQuickRef("vp_tune_timeout", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_live_tune_timeout, R.string.settings_live_tune_timeout_description),
+    VideoQuickRef("vp_tune_timeout", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_cl_live_tune_timeout, R.string.settings_live_tune_timeout_description),
     VideoQuickRef("vp_tune_timeout_sources", SECTION_LIVE_TUNING, OwnTVIcon.LIVE_TV, R.string.settings_live_tune_timeout_per_playlist, R.string.settings_live_tune_timeout_per_playlist_description),
     VideoQuickRef("vp_seek_step", SECTION_CONTROLS, OwnTVIcon.FORWARD, R.string.settings_seek_step, R.string.settings_seek_step_description),
-    VideoQuickRef("vp_rewind_step", SECTION_CONTROLS, OwnTVIcon.REWIND, R.string.settings_live_rewind_step, R.string.settings_live_rewind_step_description),
     VideoQuickRef("vp_multiview", SECTION_MULTIVIEW, OwnTVIcon.LIST_GRID, R.string.settings_multiview, R.string.settings_multiview_description),
-    VideoQuickRef("vp_multiview_tiles", SECTION_MULTIVIEW, OwnTVIcon.LIST_GRID, R.string.settings_multiview_tiles_max, R.string.settings_multiview_description),
+    VideoQuickRef("vp_multiview_tiles", SECTION_MULTIVIEW, OwnTVIcon.LIST_GRID, R.string.settings_multiview_tiles_max, R.string.settings_cl_live_help_tiles),
     VideoQuickRef("vp_volume", SECTION_SOUND, OwnTVIcon.VOLUME_HIGH, R.string.settings_default_volume, R.string.settings_default_volume_description),
     VideoQuickRef("vp_reset_volume", SECTION_SOUND, OwnTVIcon.VOLUME_HIGH, R.string.settings_reset_saved_volume, R.string.settings_reset_saved_volume_description),
     VideoQuickRef("vp_surround", SECTION_SOUND, OwnTVIcon.AUDIO, R.string.settings_surround_sound),
@@ -368,6 +388,36 @@ internal fun videoQuickBinding(key: String, vm: SettingsViewModel): VideoQuickBi
         "vp_rewind_step" -> {
             val secs by vm.liveRewindStepSec.collectAsStateWithLifecycle()
             link(stringResource(R.string.settings_live_buffer_seconds, secs))
+        }
+        "vp_guide_reminders" -> {
+            val mode by vm.reminderMode.collectAsStateWithLifecycle()
+            link(stringResource(reminderModeLabelRes(mode)))
+        }
+        "vp_guide_reminder_lead" -> {
+            val lead by vm.reminderLeadMinutes.collectAsStateWithLifecycle()
+            link(tv.own.owntv.features.live.reminderLeadText(lead))
+        }
+        "vp_guide_offset" -> {
+            val minutes by vm.epgOffsetMinutes.collectAsStateWithLifecycle()
+            link(tv.own.owntv.features.live.liveEpgShiftLabel(minutes), minutes != 0)
+        }
+        "vp_guide_days" -> {
+            val days by vm.guideDaysToKeep.collectAsStateWithLifecycle()
+            link(pluralStringResource(R.plurals.settings_epg_guide_days_value, days, days))
+        }
+        "vp_guide_width" -> {
+            val on by vm.guideWidthEnabled.collectAsStateWithLifecycle()
+            val shares by vm.guideWidthShares.collectAsStateWithLifecycle()
+            link(guideWidthValue(on, shares), on)
+        }
+        "vp_catchup_timezone" -> {
+            val mode by vm.catchupTimezone.collectAsStateWithLifecycle()
+            val offset by vm.catchupOffsetMinutes.collectAsStateWithLifecycle()
+            link(catchupTimezoneValue(mode, offset))
+        }
+        "vp_catchup_player" -> {
+            val player by vm.catchupPlayer.collectAsStateWithLifecycle()
+            link(stringResource(catchupPlayerLabelRes(player)))
         }
         "vp_live_preview" -> {
             val on by vm.livePreviewEnabled.collectAsStateWithLifecycle()
@@ -687,6 +737,8 @@ internal fun VideoPlayerGroupRows(
             // The custom-seconds dialog has no row of its own — it belongs to the Live latency row.
             val returnRow = when (dialog) {
                 Dialog.LIVE_CUSTOM -> Dialog.LIVE_LATENCY
+                // Nor has the Multiview warning: it belongs to the tiles row.
+                Dialog.MULTIVIEW_WARNING -> Dialog.MULTIVIEW_TILES
                 // The per-playlist value picker belongs to the playlist row that opened it.
                 Dialog.LIVE_PREROLL_SOURCE -> Dialog.LIVE_PREROLL_SOURCES
                 Dialog.LIVE_ENGINE_SOURCE -> Dialog.LIVE_ENGINE_SOURCES
@@ -1006,6 +1058,9 @@ internal fun VideoPlayerGroupRows(
                 onClick = { vm.setLivePreviewAudio(!previewAudio) },
             )
         }
+                    }
+                    SECTION_GUIDE -> LiveGuideRows(vm, scrollState)
+                    SECTION_REWIND -> {
         KeyedSettingRow(
             quickKey = "vp_timeshift",
             icon = OwnTVIcon.REWIND,
@@ -1023,7 +1078,8 @@ internal fun VideoPlayerGroupRows(
             icon = OwnTVIcon.REWIND,
             title = stringResource(R.string.settings_timeshift_window),
             desc = stringResource(R.string.settings_timeshift_window_description),
-            value = SettingValue.Choice(stringResource(R.string.player_duration_minutes, timeshiftWindowMinutes)),
+            value = SettingValue.Stepper(stringResource(R.string.player_duration_minutes, timeshiftWindowMinutes)),
+            onStep = { vm.setTimeshiftWindowMinutes(stepThrough(tv.own.owntv.core.timeshift.TimeshiftRules.WINDOW_CHOICES_MINUTES, timeshiftWindowMinutes, it)) },
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.TIMESHIFT_WINDOW)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.TIMESHIFT_WINDOW },
         )
@@ -1046,6 +1102,21 @@ internal fun VideoPlayerGroupRows(
             value = SettingValue.Switch(liveLeftRightRewinds),
             onClick = { vm.setLiveLeftRightRewinds(!liveLeftRightRewinds) },
         )
+        // Live only, so it sits with rewinding here rather than with the films' skip step in Playback.
+        KeyedSettingRow(
+            quickKey = "vp_rewind_step",
+            choices = tv.own.owntv.core.settings.SeekSteps.LIVE_REWIND_CHOICES.map { stringResource(R.string.settings_live_buffer_seconds, it) },
+            chosen = tv.own.owntv.core.settings.SeekSteps.LIVE_REWIND_CHOICES.indexOf(liveRewindStep),
+            recommended = tv.own.owntv.core.settings.SeekSteps.LIVE_REWIND_CHOICES.indexOf(tv.own.owntv.core.settings.SeekSteps.DEFAULT_LIVE_REWIND_STEP_SEC),
+            icon = OwnTVIcon.REWIND,
+            title = stringResource(R.string.settings_cl_live_rewind_step),
+            desc = stringResource(R.string.settings_live_rewind_step_description),
+            value = SettingValue.Stepper(stringResource(R.string.settings_live_buffer_seconds, liveRewindStep)),
+            onStep = { vm.setLiveRewindStepSec(stepThrough(tv.own.owntv.core.settings.SeekSteps.LIVE_REWIND_CHOICES, liveRewindStep, it)) },
+            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_REWIND_STEP)),
+            onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_REWIND_STEP },
+        )
+        LiveCatchupRows(vm, scrollState)
                     }
                     SECTION_LIVE_TUNING -> {
         KeyedSettingRow(
@@ -1085,13 +1156,14 @@ internal fun VideoPlayerGroupRows(
             chosen = tv.own.owntv.core.settings.LiveBuffer.PREROLL_CHOICES.indexOf(livePreroll.coerceAtLeast(0)),
             recommended = 0,
             icon = OwnTVIcon.LIVE_TV,
-            title = stringResource(R.string.settings_live_preroll),
+            title = stringResource(R.string.settings_cl_live_preroll),
             desc = stringResource(R.string.settings_live_preroll_description),
-            value = SettingValue.Choice(if (livePreroll <= 0) {
+            value = SettingValue.Stepper(if (livePreroll <= 0) {
                     stringResource(R.string.common_off)
                 } else {
                     stringResource(R.string.settings_live_buffer_seconds, livePreroll)
                 }),
+            onStep = { vm.setLivePrerollSecs(stepThrough(tv.own.owntv.core.settings.LiveBuffer.PREROLL_CHOICES, livePreroll.coerceAtLeast(0), it)) },
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_PREROLL)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_PREROLL },
         )
@@ -1115,13 +1187,14 @@ internal fun VideoPlayerGroupRows(
             chosen = tv.own.owntv.player.LiveLadder.BUDGET_CHOICES_SECS.indexOf(liveTuneTimeout.coerceAtLeast(0)),
             recommended = tv.own.owntv.player.LiveLadder.BUDGET_CHOICES_SECS.indexOf(tv.own.owntv.player.LiveLadder.DEFAULT_BUDGET_SECS),
             icon = OwnTVIcon.LIVE_TV,
-            title = stringResource(R.string.settings_live_tune_timeout),
+            title = stringResource(R.string.settings_cl_live_tune_timeout),
             desc = stringResource(R.string.settings_live_tune_timeout_description),
-            value = SettingValue.Choice(if (liveTuneTimeout <= 0) {
+            value = SettingValue.Stepper(if (liveTuneTimeout <= 0) {
                     stringResource(R.string.common_never)
                 } else {
                     stringResource(R.string.settings_live_buffer_seconds, liveTuneTimeout)
                 }),
+            onStep = { vm.setLiveTuneTimeoutSecs(stepThrough(tv.own.owntv.player.LiveLadder.BUDGET_CHOICES_SECS, liveTuneTimeout.coerceAtLeast(0), it)) },
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_TUNE_TIMEOUT)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_TUNE_TIMEOUT },
         )
@@ -1153,18 +1226,6 @@ internal fun VideoPlayerGroupRows(
             modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.SEEK_STEP)),
             onClick = { savedScroll = scrollState.value; dialog = Dialog.SEEK_STEP },
         )
-        KeyedSettingRow(
-            quickKey = "vp_rewind_step",
-            choices = tv.own.owntv.core.settings.SeekSteps.LIVE_REWIND_CHOICES.map { stringResource(R.string.settings_live_buffer_seconds, it) },
-            chosen = tv.own.owntv.core.settings.SeekSteps.LIVE_REWIND_CHOICES.indexOf(liveRewindStep),
-            recommended = tv.own.owntv.core.settings.SeekSteps.LIVE_REWIND_CHOICES.indexOf(tv.own.owntv.core.settings.SeekSteps.DEFAULT_LIVE_REWIND_STEP_SEC),
-            icon = OwnTVIcon.REWIND,
-            title = stringResource(R.string.settings_live_rewind_step),
-            desc = stringResource(R.string.settings_live_rewind_step_description),
-            value = SettingValue.Choice(stringResource(R.string.settings_live_buffer_seconds, liveRewindStep)),
-            modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.LIVE_REWIND_STEP)),
-            onClick = { savedScroll = scrollState.value; dialog = Dialog.LIVE_REWIND_STEP },
-        )
                     }
                     SECTION_MULTIVIEW -> {
         KeyedSettingRow(
@@ -1180,11 +1241,22 @@ internal fun VideoPlayerGroupRows(
                 quickKey = "vp_multiview_tiles",
                 icon = OwnTVIcon.LIST_GRID,
                 title = stringResource(R.string.settings_multiview_tiles_max),
-                desc = stringResource(R.string.settings_multiview_description),
+                desc = stringResource(R.string.settings_cl_live_help_tiles),
                 // "Max 4", not "4": the number is the ceiling, and the grid opens with two and grows
                 // only when the user asks. A bare number read as "every grid is this big", which is
                 // what it used to be and what made watching two channels impossible.
-                value = SettingValue.Choice(stringResource(R.string.settings_multiview_tiles_max_value, multiviewTiles)),
+                value = SettingValue.Stepper(stringResource(R.string.settings_multiview_tiles_max_value, multiviewTiles)),
+                // ◀ ▶ in place; above two the same one-time warning as the picker asks first.
+                onStep = { d ->
+                    val tiles = (multiviewTiles + d).coerceIn(tv.own.owntv.core.live.MIN_MULTIVIEW_TILES, tv.own.owntv.core.live.MAX_MULTIVIEW_TILES)
+                    if (tiles > tv.own.owntv.core.live.DEFAULT_MULTIVIEW_TILES && !multiviewWarningAccepted) {
+                        pendingTiles = tiles
+                        savedScroll = scrollState.value
+                        dialog = Dialog.MULTIVIEW_WARNING
+                    } else if (tiles != multiviewTiles) {
+                        vm.setMultiviewTiles(tiles)
+                    }
+                },
                 modifier = Modifier.focusRequester(dialogRowFocus.getValue(Dialog.MULTIVIEW_TILES)),
                 onClick = { savedScroll = scrollState.value; dialog = Dialog.MULTIVIEW_TILES },
             )
@@ -2480,4 +2552,259 @@ private fun audioOutputName(output: tv.own.owntv.core.player.AudioOutputKind): I
     tv.own.owntv.core.player.AudioOutputKind.BLUETOOTH -> R.string.settings_audio_output_bluetooth
     tv.own.owntv.core.player.AudioOutputKind.SPEAKER -> R.string.settings_audio_output_speaker
     tv.own.owntv.core.player.AudioOutputKind.OTHER -> R.string.settings_audio_output_other
+}
+
+/** The next value of a list setting stepped with ◀ ▶: clamped at both ends, never wrapping round. */
+private fun <T> stepThrough(choices: List<T>, current: T, delta: Int): T =
+    choices[(choices.indexOf(current).coerceAtLeast(0) + delta).coerceIn(0, choices.lastIndex)]
+
+private fun reminderModeLabelRes(mode: tv.own.owntv.core.settings.SettingsRepository.ReminderMode): Int = when (mode) {
+    tv.own.owntv.core.settings.SettingsRepository.ReminderMode.ASK -> R.string.settings_reminder_ask
+    tv.own.owntv.core.settings.SettingsRepository.ReminderMode.SWITCH -> R.string.settings_reminder_switch
+    tv.own.owntv.core.settings.SettingsRepository.ReminderMode.NOTIFY -> R.string.settings_reminder_notify
+}
+
+private fun catchupPlayerLabelRes(player: tv.own.owntv.core.settings.SettingsRepository.CatchupPlayer): Int = when (player) {
+    tv.own.owntv.core.settings.SettingsRepository.CatchupPlayer.ASK -> R.string.settings_catchup_player_ask
+    tv.own.owntv.core.settings.SettingsRepository.CatchupPlayer.INTERNAL -> R.string.settings_catchup_player_internal
+    tv.own.owntv.core.settings.SettingsRepository.CatchupPlayer.EXTERNAL -> R.string.settings_catchup_player_external
+}
+
+private fun catchupTimezoneLabelRes(mode: tv.own.owntv.core.settings.SettingsRepository.CatchupTimezone): Int = when (mode) {
+    tv.own.owntv.core.settings.SettingsRepository.CatchupTimezone.AUTOMATIC -> R.string.settings_catchup_timezone_automatic
+    tv.own.owntv.core.settings.SettingsRepository.CatchupTimezone.DEVICE -> R.string.settings_catchup_timezone_device
+    tv.own.owntv.core.settings.SettingsRepository.CatchupTimezone.MANUAL -> R.string.settings_manual
+}
+
+/** "UTC", "UTC+05:00", "UTC-03:30": a manual catch-up offset in minutes. */
+private fun catchupUtcLabel(minutes: Int): String {
+    if (minutes == 0) return "UTC"
+    val sign = if (minutes < 0) "-" else "+"
+    val abs = kotlin.math.abs(minutes)
+    return "UTC$sign%02d:%02d".format(java.util.Locale.ROOT, abs / 60, abs % 60)
+}
+
+/** The catch-up time zone as its row shows it: Automatic, Device, or the manual UTC offset. */
+@Composable
+private fun catchupTimezoneValue(mode: tv.own.owntv.core.settings.SettingsRepository.CatchupTimezone, offsetMinutes: Int): String =
+    if (mode == tv.own.owntv.core.settings.SettingsRepository.CatchupTimezone.MANUAL) catchupUtcLabel(offsetMinutes)
+    else stringResource(catchupTimezoneLabelRes(mode))
+
+/** The panels the TV guide and catch-up rows open; CATCHUP_OFFSET belongs to the time zone row. */
+private enum class LiveDialog { REMINDERS, REMINDER_LEAD, GUIDE_OFFSET, GUIDE_DAYS, GUIDE_WIDTH, CATCHUP_TIMEZONE, CATCHUP_OFFSET, CATCHUP_PLAYER }
+
+/**
+ * Which panel of the TV guide or catch-up rows is open, and the row that gets focus back when it
+ * closes, with the page's scroll held still meanwhile, as the other rows here do.
+ */
+@androidx.compose.runtime.Stable
+private class LiveDialogState {
+    var open by mutableStateOf<LiveDialog?>(null)
+    val focus = LiveDialog.entries.associateWith { FocusRequester() }
+    var returnTo: FocusRequester? = null
+    var savedScroll = 0
+}
+
+@Composable
+private fun rememberLiveDialogState(scrollState: androidx.compose.foundation.ScrollState): LiveDialogState {
+    val state = remember { LiveDialogState() }
+    LaunchedEffect(state.open) {
+        val opener = state.returnTo
+        if (state.open == null && opener != null) {
+            tv.own.owntv.ui.components.restoreAfterDialogClose(opener, scrollState, state.savedScroll)
+            state.returnTo = null
+        }
+    }
+    return state
+}
+
+/** Opens [d]'s panel and remembers its row for the way back. */
+private fun LiveDialogState.show(d: LiveDialog, scrollState: androidx.compose.foundation.ScrollState) {
+    savedScroll = scrollState.value
+    returnTo = focus.getValue(d)
+    open = d
+}
+
+/** Live-TV & Sport › TV-Guide: reminders, the guide's clock, how far ahead it is kept, its column widths. */
+@Composable
+private fun LiveGuideRows(vm: SettingsViewModel, scrollState: androidx.compose.foundation.ScrollState) {
+    val state = rememberLiveDialogState(scrollState)
+    val close = { state.open = null }
+    val reminderMode by vm.reminderMode.collectAsStateWithLifecycle()
+    val lead by vm.reminderLeadMinutes.collectAsStateWithLifecycle()
+    val offset by vm.epgOffsetMinutes.collectAsStateWithLifecycle()
+    val days by vm.guideDaysToKeep.collectAsStateWithLifecycle()
+    val widthOn by vm.guideWidthEnabled.collectAsStateWithLifecycle()
+    val shares by vm.guideWidthShares.collectAsStateWithLifecycle()
+    val modes = tv.own.owntv.core.settings.SettingsRepository.ReminderMode.entries
+    val leads = tv.own.owntv.core.reminder.ReminderSchedule.LEAD_CHOICES
+    val minDays = tv.own.owntv.core.settings.GuideRetention.MIN_DAYS
+    val maxDays = tv.own.owntv.core.settings.GuideRetention.MAX_DAYS
+
+    KeyedSettingRow(
+        quickKey = "vp_guide_reminders",
+        choices = modes.map { stringResource(reminderModeLabelRes(it)) },
+        chosen = reminderMode.ordinal,
+        icon = OwnTVIcon.BELL,
+        title = stringResource(R.string.settings_cl_live_reminders),
+        desc = stringResource(R.string.settings_reminders_description),
+        value = SettingValue.Choice(stringResource(reminderModeLabelRes(reminderMode))),
+        modifier = Modifier.focusRequester(state.focus.getValue(LiveDialog.REMINDERS)),
+        onClick = { state.show(LiveDialog.REMINDERS, scrollState) },
+    )
+    KeyedSettingRow(
+        quickKey = "vp_guide_reminder_lead",
+        choices = leads.map { tv.own.owntv.features.live.reminderLeadText(it) },
+        chosen = leads.indexOf(lead),
+        icon = OwnTVIcon.CLOCK,
+        title = stringResource(R.string.settings_reminder_lead),
+        desc = stringResource(R.string.settings_reminder_lead_description),
+        value = SettingValue.Stepper(tv.own.owntv.features.live.reminderLeadText(lead)),
+        onStep = { vm.setReminderLeadMinutes(stepThrough(leads, lead, it)) },
+        modifier = Modifier.focusRequester(state.focus.getValue(LiveDialog.REMINDER_LEAD)),
+        onClick = { state.show(LiveDialog.REMINDER_LEAD, scrollState) },
+    )
+    KeyedSettingRow(
+        quickKey = "vp_guide_offset",
+        icon = OwnTVIcon.EPG,
+        title = stringResource(R.string.settings_cl_live_guide_offset),
+        desc = stringResource(R.string.settings_cl_live_help_guide_offset),
+        value = SettingValue.Stepper(tv.own.owntv.features.live.liveEpgShiftLabel(offset)),
+        // Half an hour per press, as the panel steps.
+        onStep = { vm.adjustEpgOffset(it * 30) },
+        modifier = Modifier.focusRequester(state.focus.getValue(LiveDialog.GUIDE_OFFSET)),
+        onClick = { state.show(LiveDialog.GUIDE_OFFSET, scrollState) },
+    )
+    KeyedSettingRow(
+        quickKey = "vp_guide_days",
+        icon = OwnTVIcon.EPG,
+        title = stringResource(R.string.settings_cl_live_guide_days),
+        desc = stringResource(R.string.settings_cl_live_help_guide_days),
+        value = SettingValue.Stepper(pluralStringResource(R.plurals.settings_epg_guide_days_value, days, days)),
+        onStep = { vm.setGuideDaysToKeep((days + it).coerceIn(minDays, maxDays)) },
+        modifier = Modifier.focusRequester(state.focus.getValue(LiveDialog.GUIDE_DAYS)),
+        onClick = { state.show(LiveDialog.GUIDE_DAYS, scrollState) },
+    )
+    // The widths are edited in the page's panel, beside a drawing of the two columns: no page of their own.
+    KeyedSettingRow(
+        quickKey = "vp_guide_width",
+        icon = OwnTVIcon.EPG,
+        title = stringResource(R.string.settings_guide_width),
+        desc = stringResource(R.string.settings_guide_width_description),
+        value = SettingValue.Choice(guideWidthValue(widthOn, shares)),
+        modifier = Modifier.focusRequester(state.focus.getValue(LiveDialog.GUIDE_WIDTH)),
+        onClick = { state.show(LiveDialog.GUIDE_WIDTH, scrollState) },
+    )
+
+    when (state.open) {
+        LiveDialog.REMINDERS -> PickerDialog(
+            title = stringResource(R.string.settings_cl_live_reminders),
+            subtitle = stringResource(R.string.settings_reminders_description),
+            options = modes.map { it.name to stringResource(reminderModeLabelRes(it)) },
+            selected = reminderMode.name,
+            onSelect = { vm.setReminderMode(tv.own.owntv.core.settings.SettingsRepository.ReminderMode.valueOf(it)); close() },
+            onDismiss = close,
+        )
+        LiveDialog.REMINDER_LEAD -> PickerDialog(
+            title = stringResource(R.string.settings_reminder_lead),
+            subtitle = stringResource(R.string.settings_reminder_lead_description),
+            options = leads.map { it.toString() to tv.own.owntv.features.live.reminderLeadText(it) },
+            selected = lead.toString(),
+            onSelect = { vm.setReminderLeadMinutes(it.toInt()); close() },
+            onDismiss = close,
+        )
+        LiveDialog.GUIDE_OFFSET -> StepperDialog(
+            title = stringResource(R.string.settings_cl_live_guide_offset),
+            value = offset,
+            step = 30,
+            min = vm.epgOffsetRangeMinutes.first,
+            max = vm.epgOffsetRangeMinutes.last,
+            format = { tv.own.owntv.features.live.liveEpgShiftLabel(it) },
+            onSet = { vm.setEpgOffsetMinutes(it) },
+            onReset = { vm.setEpgOffsetMinutes(0) },
+            onDismiss = close,
+        )
+        LiveDialog.GUIDE_DAYS -> StepperDialog(
+            title = stringResource(R.string.settings_cl_live_guide_days),
+            value = days,
+            step = 1,
+            min = minDays,
+            max = maxDays,
+            format = { pluralStringResource(R.plurals.settings_epg_guide_days_value, it, it) },
+            onSet = { vm.setGuideDaysToKeep(it) },
+            onReset = { vm.setGuideDaysToKeep(tv.own.owntv.core.settings.GuideRetention.DEFAULT_DAYS) },
+            onDismiss = close,
+        )
+        LiveDialog.GUIDE_WIDTH -> GuideWidthPanel(vm, onDismiss = close)
+        else -> Unit
+    }
+}
+
+/** Live-TV & Sport › Zurückspulen & Catch-up: the catch-up time zone and the catch-up player, a row each. */
+@Composable
+private fun LiveCatchupRows(vm: SettingsViewModel, scrollState: androidx.compose.foundation.ScrollState) {
+    val state = rememberLiveDialogState(scrollState)
+    val close = { state.open = null }
+    val mode by vm.catchupTimezone.collectAsStateWithLifecycle()
+    val offset by vm.catchupOffsetMinutes.collectAsStateWithLifecycle()
+    val player by vm.catchupPlayer.collectAsStateWithLifecycle()
+    val modes = tv.own.owntv.core.settings.SettingsRepository.CatchupTimezone.entries
+    val players = tv.own.owntv.core.settings.SettingsRepository.CatchupPlayer.entries
+
+    KeyedSettingRow(
+        quickKey = "vp_catchup_timezone",
+        choices = modes.map { stringResource(catchupTimezoneLabelRes(it)) },
+        chosen = mode.ordinal,
+        icon = OwnTVIcon.CATCHUP,
+        title = stringResource(R.string.settings_cl_live_catchup_timezone),
+        desc = stringResource(R.string.settings_cl_live_help_catchup_timezone),
+        value = SettingValue.Choice(catchupTimezoneValue(mode, offset)),
+        modifier = Modifier.focusRequester(state.focus.getValue(LiveDialog.CATCHUP_TIMEZONE)),
+        onClick = { state.show(LiveDialog.CATCHUP_TIMEZONE, scrollState) },
+    )
+    KeyedSettingRow(
+        quickKey = "vp_catchup_player",
+        choices = players.map { stringResource(catchupPlayerLabelRes(it)) },
+        chosen = player.ordinal,
+        icon = OwnTVIcon.CATCHUP,
+        title = stringResource(R.string.settings_catchup_player),
+        desc = stringResource(R.string.settings_cl_live_help_catchup_player),
+        value = SettingValue.Choice(stringResource(catchupPlayerLabelRes(player))),
+        modifier = Modifier.focusRequester(state.focus.getValue(LiveDialog.CATCHUP_PLAYER)),
+        onClick = { state.show(LiveDialog.CATCHUP_PLAYER, scrollState) },
+    )
+
+    when (state.open) {
+        LiveDialog.CATCHUP_TIMEZONE -> PickerDialog(
+            title = stringResource(R.string.settings_cl_live_catchup_timezone),
+            options = modes.map { it.name to stringResource(catchupTimezoneLabelRes(it)) },
+            selected = mode.name,
+            onSelect = { name ->
+                val picked = tv.own.owntv.core.settings.SettingsRepository.CatchupTimezone.valueOf(name)
+                vm.setCatchupTimezone(picked)
+                // Manual goes on to its offset, the way Live latency's Custom goes on to its seconds.
+                state.open = if (picked == tv.own.owntv.core.settings.SettingsRepository.CatchupTimezone.MANUAL) LiveDialog.CATCHUP_OFFSET else null
+            },
+            onDismiss = close,
+        )
+        LiveDialog.CATCHUP_OFFSET -> StepperDialog(
+            title = stringResource(R.string.settings_cl_live_catchup_timezone),
+            value = offset,
+            step = vm.catchupOffsetStepMinutes,
+            min = vm.catchupOffsetRangeMinutes.first,
+            max = vm.catchupOffsetRangeMinutes.last,
+            format = { catchupUtcLabel(it) },
+            onSet = { vm.adjustCatchupOffset(it - offset) },
+            onReset = { vm.adjustCatchupOffset(-offset) },
+            onDismiss = close,
+        )
+        LiveDialog.CATCHUP_PLAYER -> PickerDialog(
+            title = stringResource(R.string.settings_catchup_player),
+            options = players.map { it.name to stringResource(catchupPlayerLabelRes(it)) },
+            selected = player.name,
+            onSelect = { vm.setCatchupPlayer(tv.own.owntv.core.settings.SettingsRepository.CatchupPlayer.valueOf(it)); close() },
+            onDismiss = close,
+        )
+        else -> Unit
+    }
 }

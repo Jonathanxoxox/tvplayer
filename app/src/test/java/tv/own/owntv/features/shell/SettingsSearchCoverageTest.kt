@@ -37,7 +37,8 @@ class SettingsSearchCoverageTest {
      * Tabs deliberately absent from search. Backup and Local sync live under ⋯ More, not Settings, and
      * the code says so: a result that lands somewhere the row is not is worse than no result.
      */
-    private val notSearchable = setOf("ROOT", "BACKUP", "LOCAL_SYNC")
+    // GUIDE_WIDTH is no page any more: it only forwards to its row (Live-TV & Sport › TV-Guide), which search finds.
+    private val notSearchable = setOf("ROOT", "BACKUP", "LOCAL_SYNC", "GUIDE_WIDTH")
 
     @Test
     fun `every settings screen can be found by search`() {

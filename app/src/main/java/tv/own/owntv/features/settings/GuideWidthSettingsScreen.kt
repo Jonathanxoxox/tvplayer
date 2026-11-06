@@ -16,9 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -26,68 +24,41 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
-import org.koin.androidx.compose.koinViewModel
 import tv.own.owntv.R
-import androidx.compose.ui.res.pluralStringResource
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.core.settings.GuideWidthLimits
 import tv.own.owntv.core.settings.GuideWidthShares
-import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.components.trapAllFocusExit
 
-/** Layout setting for the Guide's pinned channel column and scrollable programme timeline. */
+/**
+ * Live-TV & Sport › TV-Guide › Spaltenbreiten im TV-Guide (6 Nov 2026: a row with a panel, no page of
+ * its own): the TV guide's pinned channel column and its programme timeline, edited in the page's panel
+ * with Reset beside them. Outside a settings page it falls back to a Stage popup.
+ */
 @Composable
-fun GuideWidthSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
-    val vm: SettingsViewModel = koinViewModel()
+internal fun GuideWidthPanel(vm: SettingsViewModel, onDismiss: () -> Unit) {
     val enabled by vm.guideWidthEnabled.collectAsStateWithLifecycle()
     val shares by vm.guideWidthShares.collectAsStateWithLifecycle()
     val current = shares ?: GuideWidthLimits.defaults
-    val rowFocus = remember { FocusRequester() }
-    var showDialog by remember { mutableStateOf(false) }
-
-    LaunchedEffect(Unit) { runCatching { rowFocus.requestFocus() } }
-    LaunchedEffect(showDialog) {
-        if (!showDialog) runCatching { rowFocus.requestFocus() }
+    val editor: @Composable () -> Unit = {
+        GuideWidthDialog(savedEnabled = enabled, savedShares = current, onSave = vm::setGuideWidths, onDismiss = onDismiss)
     }
-    // The TV Guide row and Reset; the panel draws the two columns at their widths.
-    val rules = stringResource(R.string.settings_guide_width_help, *NO_ARGS)
-    StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_appearance_home)),
-        title = stringResource(R.string.settings_guide_width),
-        count = pluralStringResource(R.plurals.settings_setting_count, 2, 2),
-        onBack = onBack,
-        modifier = modifier,
-    ) {
-        val title = stringResource(R.string.content_epg_title)
-        val value = SettingValue.Opens(stringResource(if (enabled) R.string.settings_live_latency_custom else R.string.settings_subtitle_default))
-        StageSettingRow(
-            icon = OwnTVIcon.EPG,
-            title = title,
-            desc = stringResource(R.string.settings_guide_width_summary, current.channels, current.epg),
-            value = value,
-            onClick = { showDialog = true },
-            help = SettingHelp(
-                title, rules,
-                hints = settingHints(value, pinnable = false),
-                extra = { androidx.compose.foundation.layout.Box(Modifier.padding(top = 18.mpx)) { GuideWidthDiagram(current) } },
-            ),
-            modifier = Modifier.focusRequester(rowFocus),
-        )
-        val reset = stringResource(R.string.common_reset)
-        StageSettingRow(
-            icon = OwnTVIcon.REFRESH,
-            title = reset,
-            desc = stringResource(R.string.settings_guide_width_summary, GuideWidthLimits.defaults.channels, GuideWidthLimits.defaults.epg),
-            value = null,
-            onClick = { vm.setGuideWidths(false, GuideWidthLimits.defaults) },
-            help = SettingHelp(reset, rules, hints = settingHints(null, pinnable = false)),
-        )
-        // In the page's panel.
-        if (showDialog) panelEditor({ showDialog = false }) {
-            GuideWidthDialog(savedEnabled = enabled, savedShares = current, onSave = vm::setGuideWidths, onDismiss = { showDialog = false })
-        }
-    }
+    if (panelEditor(onDismiss) { editor() }) return
+    // The popup is headed by the row's own name, which Settings search finds as the row.
+    val heading = stringResource(R.string.settings_guide_width)
+    tv.own.owntv.ui.stage.StagePopup(
+        onDismiss = onDismiss,
+        title = heading,
+        body = stringResource(R.string.settings_guide_width_help, *NO_ARGS),
+    ) { editor() }
+}
 
+/** The row's value: "Standard", or the two widths when they are set by hand. */
+@Composable
+internal fun guideWidthValue(enabled: Boolean, shares: GuideWidthShares?): String {
+    if (!enabled) return stringResource(R.string.settings_subtitle_default)
+    val s = shares ?: GuideWidthLimits.defaults
+    return stringResource(R.string.common_percent, s.channels) + " · " + stringResource(R.string.common_percent, s.epg)
 }
 
 @Composable
