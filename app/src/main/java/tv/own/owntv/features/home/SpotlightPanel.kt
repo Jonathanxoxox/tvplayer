@@ -184,15 +184,15 @@ private fun FilmFacts(hl: Highlight, rating: Double?) {
                 OwnTVIcon(OwnTVIcon.STAR, StageColors.RatingStar, Modifier.size(20.mpx), filled = true)
                 Text(
                     tv.own.owntv.features.shell.components.vodRating(rating),
-                    style = stageText(20, 800), color = StageColors.Text, maxLines = 1,
+                    style = stageText(20, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
                 )
             }
         }
+        if (rating != null && rest.isNotEmpty()) {
+            Text("·", style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
         if (rest.isNotEmpty()) {
-            Text(
-                if (rating != null) "·  $rest" else rest,
-                style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
+            Text(rest, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
     }
 }
