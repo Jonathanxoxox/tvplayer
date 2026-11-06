@@ -36,12 +36,12 @@
     <string name="settings_dns_enter_server">Enter a DNS server host or a DoH URL.</string>
     <string name="settings_dns_explanation">Custom DNS can help bypass ISP-level domain blocking or enable geo-unblocking via SmartDNS services. DNS-over-HTTPS (DoH) is recommended — it encrypts your lookups.</string>
     <string name="settings_dns_network_unreachable">Network is unreachable — check the server address.</string>
-    <string name="settings_dns_server_missing">Custom DNS is enabled but no server is configured. Enter a server address and select Save, or turn this off.</string>
+    <string name="settings_dns_server_missing">No server is set yet. Enter a server address, pick a provider, or turn this off.</string>
     <string name="settings_dns_test_failed">DNS test failed — check the server address.</string>
     <string name="settings_download_remote_description">On any device with a browser on the same Wi-Fi — a phone, a computer or another TV — scan the QR (or open the URL), enter this PIN, and download your backup file to keep it safe.</string>
     <string name="settings_epg_sources_name_hint">e.g. UK Guide</string>
     <string name="settings_epg_sources_nav_description">Add XMLTV guide feeds for the TV Guide</string>
-    <string name="settings_epg_sources_use_logos">Use this guide\'s channel logos</string>
+    <string name="settings_epg_sources_use_logos">Use this EPG source\'s logos</string>
     <string name="settings_group_summary_quick">The toggles you reach for most</string>
     <string name="settings_guide_sync_failed">TV guide sync failed</string>
     <string name="settings_guide_synced">TV guide synced</string>
@@ -55,7 +55,7 @@
     <string name="settings_help_channel_numbers">Shows your provider’s channel number beside the name in the Live TV list, the channel-list overlay and the player, and lets you type a number on the remote in full screen to jump to that channel.</string>
     <string name="settings_help_customize">Hide categories and items you never watch, give categories your own names and put them in your order. Hidden things come back here, never lost.</string>
     <string name="settings_help_dns">Looks up your provider’s addresses with a DNS server of your choice instead of your network’s own — useful when your network blocks or redirects them.</string>
-    <string name="settings_help_epg_sources">Add an XMLTV guide feed by its link, refresh it, or remove it. Feeds fill the TV Guide and the program lines in Live TV.</string>
+    <string name="settings_help_epg_sources">Add an EPG source (XMLTV) by its link, re-sync it or remove it. EPG sources fill the TV guide and the programme lines in Live TV.</string>
     <string name="settings_help_focus">The ring drawn around whatever has focus. Pick its color and thickness so it stays easy to follow from the sofa.</string>
     <string name="settings_help_home">Pick which rows Home shows and in what order, and how the Now trending row looks.</string>
     <string name="settings_help_hw">Uses the TV’s hardware decoder: smooth 4K and less heat. Turn it off only if some streams stutter or show blocks; the software decoder then does the work.</string>
@@ -106,7 +106,6 @@
     <string name="settings_subtitle_color_hex_hint">Enter 6 hex digits, e.g. FFEB3B</string>
     <string name="settings_subtitle_customize_description">Turn this on, then change only what you want — anything left on Default keeps the stock look, including the colors and placement broadcasters embed in Live TV subtitles.</string>
     <string name="settings_subtitle_delete_help">Deleting frees the space; you can download it again from the player.</string>
-    <string name="settings_sync_guide_description">Download the program guide (EPG) for “<xliff:g id="source">%1$s</xliff:g>”. You can also do this later in Settings → Sources &amp; guide → EPG Sources.</string>
     <string name="settings_sync_guide_question">Sync the TV guide now?</string>
     <string name="settings_syncing_guide">Syncing TV guide…</string>
     <string name="settings_tier_key">Your TMDB key</string>

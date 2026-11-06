@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Einstellungen aufräumen (6. Nov 2026), Playlists & EPG: ein Wort pro Sache (Playlist, EPG-Quelle, TV-Guide) und die
+     Wiedergabe-Einstellungen pro Playlist an der Playlist selbst. Core-Texte per Name überschrieben, dazu die neuen Schlüssel. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Core-Overrides -->
+    <string name="settings_playlists">Playlists</string>
+    <string name="settings_sources_add">Playlist hinzufügen</string>
+    <string name="settings_sources_empty">Noch keine Playlists. Füg eine per Link, Xtream-Login, Stalker-Portal oder Datei hinzu.</string>
+    <string name="settings_sources_resync">Neu synchronisieren</string>
+    <string name="settings_sources_test_title">Playlist-Info</string>
+    <string name="settings_sources_delete_message">Dadurch werden die Playlist sowie alle zugehörigen Sender, Filme und Serien aus jedem Profil entfernt.</string>
+    <string name="settings_customize">Kategorien anpassen</string>
+    <string name="settings_metadata_remote_advanced">TMDB-Zugang</string>
+    <string name="settings_metadata_provider_only">Nur Playlist</string>
+    <string name="settings_metadata_provider_plus_tmdb">Playlist + TMDB</string>
+    <string name="settings_epg_sources_empty">Noch keine EPG-Quellen. Füg einen XMLTV-Link hinzu.</string>
+    <string name="settings_epg_sources_fill_playlist">Aus Playlist übernehmen</string>
+    <string name="settings_epg_sources_none_playlist">Keine deiner Playlists stellt eine EPG-Adresse bereit.</string>
+    <string name="settings_epg_sources_portal_guide">EPG vom Portal</string>
+    <string name="settings_epg_sources_name_hint">z. B. EPG UK</string>
+    <string name="settings_epg_sources_logos_description">Zeigt die Logos aus dieser EPG-Quelle statt der deiner Playlist. Sender ohne Logo in der Quelle behalten das Logo der Playlist.</string>
+    <string name="settings_help_epg_name">Erscheint in der Liste der EPG-Quellen und unter „EPG manuell wählen“.</string>
+    <string name="settings_line_epg_auto_refresh">Hält die EPG-Daten aktuell</string>
+    <string name="settings_dns_use_custom">Eigenen DNS-Server verwenden</string>
+
+    <!-- Neue Schlüssel -->
+    <string name="settings_src_line_playlists">Deine Playlists hinzufügen und synchronisieren</string>
+    <string name="settings_src_line_epg">Woher der TV-Guide seine Sendungen holt</string>
+    <string name="settings_src_playback">Wiedergabe</string>
+    <string name="settings_src_follow">Wie allgemein</string>
+    <string name="settings_src_pp_live_engine">Player für Live-TV</string>
+    <string name="settings_src_pp_vod_engine">Player für Filme &amp; Serien</string>
+    <string name="settings_src_pp_latency">Live-Latenz</string>
+    <string name="settings_src_pp_preroll">Vorpuffern</string>
+    <string name="settings_src_pp_tune_timeout">Umschalten abbrechen nach</string>
+    <string name="settings_src_pp_catchup">Catch-up-Zeitzone</string>
+    <string name="settings_src_pp_line_live_engine">Welcher Player die Sender dieser Playlist abspielt</string>
+    <string name="settings_src_pp_line_vod_engine">Welcher Player Filme &amp; Serien dieser Playlist abspielt</string>
+    <string name="settings_src_pp_line_latency">Wie viel Puffer Live-TV bei dieser Playlist hält</string>
+    <string name="settings_src_pp_line_preroll">Wie lange ein Sender vor dem Start puffert</string>
+    <string name="settings_src_pp_line_tune_timeout">Wann ein Sender, der nicht startet, aufgegeben wird</string>
+    <string name="settings_src_pp_line_catchup">Nach welcher Uhr das Archiv dieser Playlist läuft</string>
+    <string name="settings_src_pp_help">Gilt nur für diese Playlist. „Wie allgemein“ folgt dem, was du für alle Playlists eingestellt hast.</string>
+    <string name="settings_src_pp_help_page">Leg fest, wie diese Playlist abspielt. Was auf „Wie allgemein“ steht, folgt deinen allgemeinen Einstellungen.</string>
+    <plurals name="settings_src_overrides">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> eigene Einstellung</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> eigene Einstellungen</item>
+    </plurals>
+    <string name="settings_src_sync_guide_description">Den EPG für „<xliff:g id="source">%1$s</xliff:g>“ jetzt herunterladen. Du kannst das auch später unter <xliff:g id="path">%2$s</xliff:g> tun.</string>
+    <string name="settings_src_dns_presets">DNS-Anbieter</string>
+</resources>
