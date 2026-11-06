@@ -1,5 +1,7 @@
 package tv.own.owntv.features.settings
 
+import tv.own.owntv.features.shell.components.SettingsGroup
+import tv.own.owntv.features.shell.components.settingsCrumb
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -104,15 +106,19 @@ internal val LocalVideoRowFilter = androidx.compose.runtime.compositionLocalOf<(
 /** Which group a Video player row lives in, for a Quick pin or search result that jumps to it. */
 internal fun videoGroupOf(section: Int): VideoGroup = VideoGroup.entries.first { g -> g.parts.any { section in it.second } }
 
-/** Where a Video player row lives, as Settings search shows it: "Sound & subtitles › Languages & subtitles". */
+/**
+ * Where a Video player row lives, as Settings search shows it ("Bild & Ton › Ton"), from the Settings group's
+ * own name (rule 17). The remembered values sit on System, the per-playlist values on each playlist.
+ */
 @Composable
 internal fun videoRowPath(key: String): String {
+    if (key in RESET_KEYS) return settingsCrumb(SettingsGroup.APP, stringResource(R.string.settings_cleanup_heading_saved))
+    if (key in PER_PLAYLIST_KEYS) return settingsCrumb(SettingsGroup.SOURCES, stringResource(R.string.settings_playlists))
     val section = VIDEO_QUICK_ROWS.firstOrNull { it.key == key }?.section ?: SECTION_PICTURE
-    val group = videoGroupOf(section)
-    val part = group.parts.first { section in it.second }.first
-    val title = stringResource(group.titleRes)
-    val heading = stringResource(part)
-    return if (heading == title) title else stringResource(R.string.settings_breadcrumb, title, heading)
+    val video = videoGroupOf(section)
+    val group = SettingsGroup.of(video)
+    val heading = stringResource(video.parts.first { section in it.second }.first)
+    return if (heading == stringResource(group.titleRes)) settingsCrumb(group) else settingsCrumb(group, heading)
 }
 
 /** How many rows each section shows right now — rows that appear only with a switch on count only then. */
@@ -659,12 +665,9 @@ internal fun VideoPlayerGroupRows(
         kotlinx.coroutines.delay(60)
         runCatching { rowReturnFocus.requestFocus() }
     }
-    // A Quick shortcut names the row it was pinned from — land the cursor on it, not on the sections.
+    // A search result names the row it found: land the cursor on it, without opening its picker (rule 18).
     LaunchedEffect(focusRowKey) {
         if (focusRowKey == null) return@LaunchedEffect
-        // A pinned row whose value lives in a dialog opens that dialog straight away: the pin should
-        // land the user where pressing the real row would, not one press short of it.
-        dialogForQuickKey(focusRowKey)?.let { dialog = it }
         repeat(10) {
             kotlinx.coroutines.delay(50)
             if (runCatching { rowReturnFocus.requestFocus() }.getOrDefault(false)) return@LaunchedEffect

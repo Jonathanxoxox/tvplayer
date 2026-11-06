@@ -41,14 +41,26 @@ import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageText
 
-/** One category of the Settings root: its position in the page's groups, its name, icon and how many settings it holds. */
-class SettingsCategory(val index: Int, val label: String, val icon: OwnTVIcon, val count: Int?)
+/**
+ * One category of the Settings root: its position in the page's groups, its name, icon and a value (only
+ * Profiles has one, their number: settings groups show no counts). [mine] lists it under "Your things".
+ */
+class SettingsCategory(val index: Int, val label: String, val icon: OwnTVIcon, val count: Int?, val mine: Boolean = false)
 
 /**
  * One of More's places in the same list (Favourites, History, Backup …): [section] 0 = your things (above the
- * settings), 1 = keep it safe, 2 = about the app (both below).
+ * settings), 1 = keep it safe, 2 = about the app (both below). Settings search finds it by [label] and by
+ * [aliases] (what can be done there: "Restore", "Clear history").
  */
-class SidebarExtra(val key: String, val section: Int, val icon: OwnTVIcon, val label: String, val value: String?, val warn: Boolean = false)
+class SidebarExtra(
+    val key: String,
+    val section: Int,
+    val icon: OwnTVIcon,
+    val label: String,
+    val value: String?,
+    val warn: Boolean = false,
+    val aliases: List<String> = emptyList(),
+)
 
 /** Where focus goes into a More page shown beside the list: its own way in, or a fixed target. */
 class MorePageFocus {
@@ -163,22 +175,29 @@ fun SettingsSidebar(
             onClick = onSearch,
             modifier = Modifier.focusRequester(searchItem),
         )
-        val mine = extras.filter { it.section == 0 }
-        if (mine.isNotEmpty()) {
-            SidebarLabel(stringResource(R.string.more_group_your_things))
-            mine.forEachIndexed { i, e -> Extra(e, first = i == 0) }
-        }
-        SidebarLabel(stringResource(R.string.common_nav_settings))
-        categories.forEachIndexed { i, c ->
+        @Composable
+        fun Category(c: SettingsCategory, first: Boolean) {
             val id = "g:${c.index}"
             StageGroupItem(
                 text = c.label, icon = c.icon, value = c.count?.toString(),
                 selected = openId == id,
                 onClick = onEnterRows,
-                modifier = (if (i == 0 && mine.isEmpty()) alignFirst else Modifier)
+                modifier = (if (first) alignFirst else Modifier)
                     .focusRequester(if (openId == id) selectedFocus else requesterOf(id))
                     .onFocusChanged { if (it.isFocused && openId != id) onSelect(c.index) },
             )
+        }
+        // Your things: Profiles (a settings group drawn here), then Favourites and History.
+        val mineGroups = categories.filter { it.mine }
+        val mine = extras.filter { it.section == 0 }
+        if (mineGroups.isNotEmpty() || mine.isNotEmpty()) {
+            SidebarLabel(stringResource(R.string.more_group_your_things))
+            mineGroups.forEachIndexed { i, c -> Category(c, first = i == 0) }
+            mine.forEachIndexed { i, e -> Extra(e, first = i == 0 && mineGroups.isEmpty()) }
+        }
+        SidebarLabel(stringResource(R.string.common_nav_settings))
+        categories.filterNot { it.mine }.forEachIndexed { i, c ->
+            Category(c, first = i == 0 && mineGroups.isEmpty() && mine.isEmpty())
         }
         val safe = extras.filter { it.section == 1 }
         if (safe.isNotEmpty()) {
