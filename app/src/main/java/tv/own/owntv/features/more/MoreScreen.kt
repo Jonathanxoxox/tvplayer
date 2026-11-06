@@ -312,16 +312,22 @@ fun moreSidebarExtras(vm: MoreCountsViewModel = koinViewModel()): List<tv.own.ow
     val lastBackup by vm.lastBackup.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val logCount by produceState(0) { value = withContext(Dispatchers.IO) { PlaybackErrorLog.read(context).size } }
-    return listOf(
+    return listOfNotNull(
         tv.own.owntv.features.settings.SidebarExtra(MoreItem.FAVORITES.name, 0, OwnTVIcon.FAVORITE, stringResource(R.string.content_category_favorites), favorites.total.toString()),
-        tv.own.owntv.features.settings.SidebarExtra(MoreItem.HISTORY.name, 0, OwnTVIcon.HISTORY, stringResource(R.string.content_category_history), history.total.toString()),
+        tv.own.owntv.features.settings.SidebarExtra(
+            MoreItem.HISTORY.name, 0, OwnTVIcon.HISTORY, stringResource(R.string.content_category_history), history.total.toString(),
+            aliases = listOf(stringResource(R.string.settings_clear_history)),
+        ),
         tv.own.owntv.features.settings.SidebarExtra(
             MoreItem.BACKUP.name, 1, OwnTVIcon.DOWNLOADS, stringResource(R.string.tvplayer_more_backup),
             lastBackup?.let { relativeShort(it.at) } ?: stringResource(R.string.common_never), warn = lastBackup == null,
+            aliases = listOf(stringResource(R.string.settings_backup_restore_action)),
         ),
         tv.own.owntv.features.settings.SidebarExtra(MoreItem.LOCAL_SYNC.name, 1, OwnTVIcon.PHONE, stringResource(R.string.local_sync_title), stringResource(if (sync.listening) R.string.common_on else R.string.common_off)),
         tv.own.owntv.features.settings.SidebarExtra(MoreItem.ERROR_LOG.name, 2, OwnTVIcon.WARNING, stringResource(R.string.settings_playback_error_log), logCount.toString()),
         tv.own.owntv.features.settings.SidebarExtra(MoreItem.ABOUT.name, 2, OwnTVIcon.INFO, stringResource(R.string.settings_about), BuildConfig.VERSION_NAME),
+        // Maintainer-only; DEV_TOOLS is a compile-time constant, so R8 removes it from published APKs.
+        if (BuildConfig.DEV_TOOLS) tv.own.owntv.features.settings.SidebarExtra(MoreItem.DEVELOPER.name, 2, OwnTVIcon.GEAR, "Developer", "DEV") else null,
     )
 }
 
@@ -372,6 +378,7 @@ fun MorePlacePage(
             MoreItem.LOCAL_SYNC.name -> LocalSyncScreen(entry = focus.target, modifier = Modifier.fillMaxSize())
             MoreItem.ERROR_LOG.name -> ErrorLogPage(setEntry = setEntry, onCountChanged = {})
             MoreItem.ABOUT.name -> AboutPage(vm = vm, entry = focus.target, onOpenLanguage = onOpenLanguage)
+            MoreItem.DEVELOPER.name -> Box(Modifier.fillMaxSize().focusRequester(focus.target).focusGroup()) { DeveloperScreen(onBack = null) }
         }
     }
 }

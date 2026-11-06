@@ -26,7 +26,7 @@ class SettingsSearchCoverageTest {
     }
 
     /** Just the search-results block, so a tab opened from a normal row does not count as covered. */
-    private val searchBlock: String by lazy {
+    private val mainSearchBlock: String by lazy {
         val from = source.indexOf("val searchResults")
         val to = source.indexOf("val needle = searchQuery", from)
         assertTrue("could not find the search block — has it been renamed?", from in 0 until to)
@@ -34,11 +34,23 @@ class SettingsSearchCoverageTest {
     }
 
     /**
+     * The search block plus the `…SearchEntry`/`…SearchEntries` helpers it spreads in (System's rows, More's
+     * places, the sub-screens, Navigation): SettingsScreen sits at the JVM method limit, so entries live out of line there.
+     */
+    private val searchBlock: String by lazy {
+        val helpers = Regex("""private fun \w+SearchEntr(?:y|ies)\(""").findAll(source).map { m ->
+            val end = Regex("""\n[})]\r?\n""").find(source, m.range.last)?.range?.first ?: source.length
+            source.substring(m.range.first, end)
+        }
+        mainSearchBlock + helpers.joinToString("\n")
+    }
+
+    /**
      * Tabs deliberately absent from search. Backup and Local sync live under ⋯ More, not Settings, and
      * the code says so: a result that lands somewhere the row is not is worse than no result.
      */
     // GUIDE_WIDTH is no page any more: it only forwards to its row (Live-TV & Sport › TV-Guide), which search finds.
-    private val notSearchable = setOf("ROOT", "BACKUP", "LOCAL_SYNC", "GUIDE_WIDTH")
+    private val notSearchable = setOf("ROOT", "BACKUP", "LOCAL_SYNC", "RESETS", "GUIDE_WIDTH")
 
     @Test
     fun `every settings screen can be found by search`() {
@@ -109,7 +121,7 @@ class SettingsSearchCoverageTest {
     @Test
     fun `every settings root row can be found by search`() {
         val rootRows = Regex("""RootRow\((.*?)\n\s*\),""", RegexOption.DOT_MATCHES_ALL)
-            .findAll(source.replace(searchBlock, ""))
+            .findAll(source.replace(mainSearchBlock, ""))
             .mapNotNull { m ->
                 val body = m.groupValues[1]
                 // Quick's own rows are copies of rows that live in a group; the group row is the one to find.

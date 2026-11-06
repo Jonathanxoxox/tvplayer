@@ -13,7 +13,6 @@ import tv.own.owntv.features.settings.StageSearchResultRow
 import tv.own.owntv.features.settings.VideoGroup
 import tv.own.owntv.features.settings.VideoPlayerGroupRows
 import tv.own.owntv.features.settings.settingHelp
-import tv.own.owntv.features.settings.videoGroupCount
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
@@ -73,14 +72,12 @@ import tv.own.owntv.R
 import tv.own.owntv.features.customize.CustomizeScreen
 import tv.own.owntv.core.i18n.SupportedLocales
 import tv.own.owntv.core.player.SurroundMode
-import tv.own.owntv.features.settings.LocalSyncScreen
 import tv.own.owntv.features.settings.HomeSettingsScreen
 import tv.own.owntv.features.settings.NO_ARGS
 import tv.own.owntv.features.settings.LanguageSettingsScreen
 import tv.own.owntv.features.settings.LanguageSettingsViewModel
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.features.update.UpdateDialog
-import tv.own.owntv.features.settings.BackupScreen
 import tv.own.owntv.features.settings.ManageSourcesScreen
 import tv.own.owntv.features.settings.SettingsViewModel
 import tv.own.owntv.core.nav.MainSection
@@ -280,7 +277,6 @@ fun SettingsScreen(
     val autoPlayNext by settingsVm.autoPlayNext.collectAsStateWithLifecycle()
     val updateCheckOnStart by settingsVm.updateCheckOnStart.collectAsStateWithLifecycle()
     val channelNumbers by settingsVm.directTune.collectAsStateWithLifecycle()
-    val quickPinned by settingsVm.quickPinnedKeys.collectAsStateWithLifecycle()
     val playlistSources by settingsVm.sources.collectAsStateWithLifecycle()
     val catchupOverrides = playlistSources.count { it.catchupTimezone != null }
     val accent by settingsVm.accent.collectAsStateWithLifecycle()
@@ -344,33 +340,26 @@ fun SettingsScreen(
     // stale. From the entries there is nothing to keep in step. ROOT gets one it never uses, which
     // is cheaper than a list that can be wrong.
     val rowFocus = remember { SettingsTab.entries.associateWith { FocusRequester() } }
-    // A Quick pin or a search result that jumps to a Video player row: the row to focus on its page,
-    // and — for the way back — the Quick row it came from.
+    // A search result that jumps to a Video player row: the row to focus on its page.
     var videoRowKey by rememberSaveable { mutableStateOf<String?>(null) }
-    var deepReturnKey by rememberSaveable { mutableStateOf<String?>(null) }
-    val deepRowFocus = remember { FocusRequester() }
-    val jumpVideo: (String, Boolean) -> Unit = jump@{ key, fromQuick ->
+    // A search result that jumps to a row of the page itself (rule 18): its key until focus has landed on it.
+    var jumpRowKey by remember { mutableStateOf<String?>(null) }
+    val jumpVideo: (String, Boolean) -> Unit = jump@{ key, _ ->
         // Rows gathered on a page of their own open that page.
-        if (key in tv.own.owntv.features.settings.PER_PLAYLIST_KEYS) { searchQuery = ""; searchMode = false; lastTab = SettingsTab.PER_PLAYLIST; deepReturnKey = null; videoRowKey = null; tab = SettingsTab.PER_PLAYLIST; return@jump }
-        if (key in tv.own.owntv.features.settings.RESET_KEYS) { searchQuery = ""; searchMode = false; lastTab = SettingsTab.RESETS; deepReturnKey = null; videoRowKey = null; tab = SettingsTab.RESETS; return@jump }
+        if (key in tv.own.owntv.features.settings.PER_PLAYLIST_KEYS) { searchQuery = ""; searchMode = false; lastTab = SettingsTab.PER_PLAYLIST; videoRowKey = null; tab = SettingsTab.PER_PLAYLIST; return@jump }
         val ref = tv.own.owntv.features.settings.VIDEO_QUICK_ROWS.first { it.key == key }
-        deepReturnKey = if (fromQuick) key else null
         videoRowKey = key
         // Leave search too: an empty query while still searching draws no page at all.
         searchQuery = ""; searchMode = false
-        selectedGroup = SettingsGroup.of(tv.own.owntv.features.settings.videoGroupOf(ref.section)).ordinal
+        // The remembered values sit on System, not in the group their section belongs to.
+        selectedGroup = if (key in tv.own.owntv.features.settings.RESET_KEYS) SettingsGroup.APP.ordinal
+            else SettingsGroup.of(tv.own.owntv.features.settings.videoGroupOf(ref.section)).ordinal
     }
-    // Back from a page reached through a Quick pin returns to that pin on Quick.
-    BackHandler(enabled = tab == SettingsTab.ROOT && deepReturnKey != null && selectedGroup != 0 && searchQuery.isBlank()) {
-        videoRowKey = null
-        selectedGroup = 0
-    }
+    val jumpRow: (String) -> Unit = { key -> searchQuery = ""; searchMode = false; lastTab = null; videoRowKey = null; jumpRowKey = key }
     // Between the page and a sub-page the focused row goes with the screen: the focus waits out of sight
     // meanwhile instead of lighting up the menu for a frame (see LocalParkFocus).
     val parkFocus = LocalParkFocus.current
-    // Opening a sub-screen the ordinary way cancels any pending Quick-shortcut return, or the Back
-    // from it would aim at the shortcut instead of the row just used.
-    val open: (SettingsTab) -> Unit = { parkFocus(); lastTab = it; deepReturnKey = null; videoRowKey = null; tab = it }
+    val open: (SettingsTab) -> Unit = { parkFocus(); lastTab = it; videoRowKey = null; tab = it }
     val toRoot: () -> Unit = { parkFocus(); tab = SettingsTab.ROOT }
     LaunchedEffect(openEpgAdd) {
         if (openEpgAdd) { consumeEpgAdd = true; open(SettingsTab.EPG); onEpgAddConsumed() }
@@ -380,14 +369,16 @@ fun SettingsScreen(
     val sub = modifier.padding(start = 6.dp, end = 6.dp, bottom = 6.dp, top = StageContentTop)
     // A full page's search hands over to Settings search, keyboard up.
     val openSearch: () -> Unit = { parkFocus(); lastTab = null; searchQuery = ""; searchMode = true; searchFromMore = false; searchAutoEdit = true; tab = SettingsTab.ROOT }
+    // Mayo TV: the categories down the left (SettingsSidebar). Back from the rows goes to them first, then out.
+    val side = remember { SidebarState() }
     if (tab != SettingsTab.ROOT) {
     CompositionLocalProvider(tv.own.owntv.features.settings.LocalSettingsSearch provides openSearch) {
     when (tab) {
         SettingsTab.LANGUAGE -> { LanguageSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
         SettingsTab.SOURCES -> { ManageSourcesScreen(onBack = { toRoot() }, modifier = modifier) }
         SettingsTab.EPG -> { tv.own.owntv.features.settings.EpgSourcesScreen(onBack = { toRoot(); consumeEpgAdd = false }, modifier = modifier, startOnAdd = consumeEpgAdd) }
-        SettingsTab.BACKUP -> { BackupScreen(onBack = { toRoot() }, modifier = sub) }
-        SettingsTab.LOCAL_SYNC -> { LocalSyncScreen(onBack = { toRoot() }, modifier = sub) }
+        // Tabs whose page moved (rule 21: a restored tab lands where its page lives now).
+        SettingsTab.BACKUP, SettingsTab.LOCAL_SYNC, SettingsTab.RESETS -> TabRedirect(tab, side, { selectedGroup = it }) { tab = SettingsTab.ROOT }
         SettingsTab.CUSTOMIZE -> { CustomizeScreen(onBack = { toRoot() }, modifier = modifier) }
         SettingsTab.HOME -> { HomeSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
         SettingsTab.NETWORK -> { tv.own.owntv.features.settings.NetworkSettingsScreen(onBack = { toRoot() }, modifier = modifier) }
@@ -411,10 +402,6 @@ fun SettingsScreen(
                 VideoGroup.PER_PLAYLIST, tv.own.owntv.features.settings.PER_PLAYLIST_KEYS, stringResource(R.string.settings_mayo_group_sources),
                 onBack = { toRoot() }, modifier = modifier,
             ) { CatchupPerPlaylistRow(settingsVm) }
-            SettingsTab.RESETS -> tv.own.owntv.features.settings.VideoGatherPage(
-                VideoGroup.RESETS, tv.own.owntv.features.settings.RESET_KEYS, stringResource(R.string.settings_group_app),
-                onBack = { toRoot() }, modifier = modifier,
-            )
             SettingsTab.ROOT -> Unit
     }
     }
@@ -423,11 +410,9 @@ fun SettingsScreen(
 
     // Only at the root: every sub-screen registers its own handler, which is nested deeper and
     // therefore wins while one is open.
-    // It is composed after the search-clearing and Quick-pin handlers above, and the last enabled one wins,
-    // so it stands aside while either of those has something to undo first.
-    // Mayo TV: the categories down the left (SettingsSidebar). Back from the rows goes to them first, then out.
-    val side = remember { SidebarState() }
-    if (onBack != null) BackHandler(enabled = searchQuery.isBlank() && !(deepReturnKey != null && selectedGroup != 0)) { side.back(onBack) }
+    // It is composed after the search-clearing handler above, and the last enabled one wins,
+    // so it stands aside while that one has something to undo first.
+    if (onBack != null) BackHandler(enabled = searchQuery.isBlank()) { side.back(onBack) }
 
 
     // The root rows, as data (see [RootItem]). Building 40 small objects is a fraction of the cost of
@@ -612,129 +597,22 @@ fun SettingsScreen(
         // No "Data" group: Backup and Local sync are places, not preferences,
         // and are More rows now; Clear history moved onto the History screen it acts on; the download
         // folder moved to the Downloads screen. With all four gone the group had nothing left in it.
-        RootGroup("group_app", stringResource(R.string.settings_app_group), OwnTVIcon.INFO, stringResource(R.string.settings_group_summary_app)),
-        RootRow(
-            "check_updates", TileTone.PRIMARY, OwnTVIcon.REFRESH,
-            heading = stringResource(R.string.settings_mayo_heading_updates),
-            title = stringResource(R.string.settings_check_updates), desc = stringResource(R.string.settings_check_updates_description),
-            chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}",
-            focus = updateRowFocus,
-            onClick = { saveScroll(); dialogReturn = updateRowFocus; showUpdate = true },
-        ),
-        RootRow(
-            "update_startup", TileTone.SECONDARY, OwnTVIcon.REFRESH,
-            title = stringResource(R.string.settings_update_startup), desc = stringResource(R.string.settings_update_startup_description),
-            chip = if (updateCheckOnStart) stringResource(R.string.common_on) else stringResource(R.string.common_off),
-            chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY,
-            onClick = { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
-        ),
-        RootRow(
-            tabRowKey(SettingsTab.NETWORK), TileTone.SECONDARY, OwnTVIcon.NETWORK,
-            heading = stringResource(R.string.settings_group_network),
-            title = stringResource(R.string.common_proxy), desc = stringResource(R.string.settings_proxy_description),
-            focus = rowFocus.getValue(SettingsTab.NETWORK),
-            onClick = { open(SettingsTab.NETWORK) },
-        ),
-        RootRow(
-            tabRowKey(SettingsTab.DNS), TileTone.SECONDARY, OwnTVIcon.DNS,
-            title = stringResource(R.string.settings_dns),
-            desc = stringResource(R.string.settings_dns_description),
-            focus = rowFocus.getValue(SettingsTab.DNS),
-            onClick = { open(SettingsTab.DNS) },
-        ),
-        // Mayo TV: the five "reset what was remembered" rows (player choice, zoom, volume, audio sync) on one page.
-        RootRow(
-            tabRowKey(SettingsTab.RESETS), TileTone.SECONDARY, OwnTVIcon.REFRESH,
-            heading = stringResource(R.string.settings_mayo_heading_saved),
-            title = stringResource(R.string.settings_mayo_resets), desc = stringResource(R.string.settings_mayo_resets_line),
-            focus = rowFocus.getValue(SettingsTab.RESETS),
-            onClick = { open(SettingsTab.RESETS) },
-        ),
+        RootGroup("group_app", stringResource(R.string.settings_cleanup_group_system), OwnTVIcon.GEAR, ""),
+        // System: Updates and Network here; the remembered values and Diagnostics are drawn after them.
+        *systemRootRows(settingsVm, updateCheckOnStart, updateRowFocus, rowFocus, open) { saveScroll(); dialogReturn = updateRowFocus; showUpdate = true }.toTypedArray(),
     )
 
-    // --- Two-pane root: the flat list above is still the single source of truth for order, tone,
-    // icon, chip and click of every row. Here it is only *sliced* into (heading, its rows) so the
-    // left column can list the headings and the right column only the selected group's rows. Adding
-    // a row anywhere above needs no change here.
-    // Quick is the one group whose contents are not positional: it is whatever the user pinned, in the
-    // order they pinned it. Its rows are still defined above like every other row, so a pinned row and
-    // its home-group twin are the same object and stay in step automatically.
-    // Rows of the player groups (Player, Picture, Sound & subtitles, Live TV, Watching & recording, and
-    // App's Diagnostics) can be pinned too, and they are not root rows, so there is no twin to borrow
-    // from. Quick materialises those from the catalogue next to the real rows, and each one reopens its
-    // group on the row it came from.
-    val videoDeepRows: Map<String, RootRow> = tv.own.owntv.features.settings.VIDEO_QUICK_ROWS
-        .filter { it.key in quickPinned }
-        .associate { ref ->
-        // The pin is a copy of the row, not just a link to it: it shows the same value, and a row that
-        // is a plain toggle flips here without leaving Quick. The rest still open the screen on the row.
-        val binding = androidx.compose.runtime.key(ref.key) {
-            tv.own.owntv.features.settings.videoQuickBinding(ref.key, settingsVm)
-        }
-        val jump = { lastTab = null; jumpVideo(ref.key, true) }
-        ref.key to RootRow(
-            key = ref.key,
-            tone = TileTone.TERTIARY,
-            icon = ref.icon,
-            title = stringResource(ref.titleRes),
-            // Where it lives, so a pin never loses its home ("Pinned from Player").
-            desc = stringResource(R.string.settings_pinned_from, stringResource(SettingsGroup.of(tv.own.owntv.features.settings.videoGroupOf(ref.section)).titleRes)),
-            chip = binding?.chip,
-            chipTone = if (binding?.primaryChip == true) TileTone.PRIMARY else TileTone.SECONDARY,
-            chevron = binding?.onToggle == null,
-            focus = if (ref.key == deepReturnKey) deepRowFocus else null,
-            onClick = binding?.onToggle ?: jump,
-        )
-    }
-    val categories: List<Pair<RootGroup, List<RootRow>>> = remember(rootItems, quickPinned, deepReturnKey, videoDeepRows) {
-        val sliced: List<Pair<RootGroup, List<RootRow>>> = buildList {
-            rootItems.forEach { item ->
-                when (item) {
-                    is RootGroup -> add(item to mutableListOf<RootRow>())
-                    is RootRow -> (lastOrNull()?.second as? MutableList<RootRow>)?.add(item)
-                }
-            }
-        }
-        val byKey = sliced.flatMap { it.second }.associateBy { it.key }
-        sliced.map { (group, rows) ->
-            if (group.key == "group_quick") {
-                group to quickPinned.mapNotNull { byKey[it] ?: videoDeepRows[it] }
-            } else {
-                group to rows
-            }
-        }
-    }
-    // A pin that matches no Settings row at all (a row removed in an earlier release) is dropped, so
-    // Quick's count says what it lists. Rows that are only hidden for now keep their pins.
-    LaunchedEffect(quickPinned, rootItems.size) {
-        val known = rootItems.map { it.key }.toSet() + tv.own.owntv.features.settings.VIDEO_QUICK_ROWS.map { it.key } +
-            setOf("ambient_glow", "catchup_sources", "vp_tunneled", "vp_preview_audio", "vp_timeshift_window", "vp_timeshift_resume", "vp_multiview_tiles")
-        val kept = quickPinned.filter { it in known }
-        if (kept.size < quickPinned.size) settingsVm.setQuickPinnedKeys(kept)
-    }
-    /** Which category each row key lives in, so a Back from a sub-screen can reselect its group. */
+    // --- Two-pane root: the flat list above is the single source of truth for icon, chip and click of every
+    // row. Here it is only gathered by group marker into (group, its rows); the order of the groups is
+    // SettingsGroup's, not the markers' (see [categoriesOf]).
+    val categories: List<Pair<RootGroup, List<RootRow>>> = remember(rootItems) { categoriesOf(rootItems) }
+    /** Which category each row key lives in, so a Back from a sub-screen or a search jump can reselect its group. */
     val groupOfKey: Map<String, Int> = remember(categories) {
-        buildMap { categories.forEachIndexed { g, (_, rows) -> rows.forEach { if (g != 0) put(it.key, g) } } }
+        buildMap { categories.forEachIndexed { g, (_, rows) -> rows.forEach { put(it.key, g) } } }
     }
     val selectedRows = categories.getOrNull(selectedGroup)?.second.orEmpty()
-    // The row whose hold-OK menu is open, or null.
-    var menuRow by remember { mutableStateOf<RootRow?>(null) }
-    // Closing the menu leaves focus nowhere, so the row it belonged to asks for it back.
-    var menuReturnKey by remember { mutableStateOf<String?>(null) }
-    /** Where focus goes instead when the menu just removed its own row from Quick. */
-    var unpinReturnKey by remember { mutableStateOf<String?>(null) }
-    val menuReturnFocus = remember { FocusRequester() }
-    LaunchedEffect(menuReturnKey) {
-        val key = menuReturnKey ?: return@LaunchedEffect
-        kotlinx.coroutines.delay(60)
-        // A search result's row may need a frame or two once its group is drawn ([jumpRow]). If it never
-        // turns up, the page's first row takes focus rather than nothing at all.
-        if (!focusWithin(menuReturnFocus)) runCatching { rowsFocus.requestFocus() }
-        // Cleared once used, so the same row can be asked for again.
-        if (menuReturnKey == key) menuReturnKey = null
-    }
-    // A search result for a row on a group page: that group, focus on the row (6 Nov 2026, house rule 18).
-    val jumpRow: (String) -> Unit = { key -> searchQuery = ""; searchMode = false; groupOfKey[key]?.let { selectedGroup = it }; menuReturnKey = key }
+    val jumpRowFocus = remember { FocusRequester() }
+    RowJumpEffect(jumpRowKey, jumpRowKey?.let(groupOfKey::get), jumpRowFocus, onGroup = { side.more = null; selectedGroup = it }) { jumpRowKey = null }
     val selectGroup: (SettingsGroup) -> Unit = { g -> searchQuery = ""; searchMode = false; selectedGroup = g.ordinal }
     // A genuinely new group starts at its top. Recreating the page after a sub-screen does not:
     // its group and scroll were kept above the sub-screen dispatch, so leave them untouched.
@@ -743,7 +621,7 @@ fun SettingsScreen(
             runCatching { pageScroll.scrollTo(0) }
             displayedGroup = selectedGroup
             // A category picked by moving through the list keeps focus in the list.
-            if (videoRowKey == null && !side.fromSidebar) for (attempt in 0 until 10) { withFrameNanos { }; if (runCatching { rowsFocus.requestFocus() }.getOrDefault(false)) break }
+            if (videoRowKey == null && jumpRowKey == null && !side.fromSidebar) for (attempt in 0 until 10) { withFrameNanos { }; if (runCatching { rowsFocus.requestFocus() }.getOrDefault(false)) break }
         }
         side.fromSidebar = false
     }
@@ -751,8 +629,7 @@ fun SettingsScreen(
     // Restore focus to the row a sub-screen was opened from when the user navigates back. This block
     // only exists while the page is showing, so coming back from a sub-screen is exactly when it runs.
     val returningRowFocus = when {
-        searchQuery.isNotBlank() && (deepReturnKey != null || lastTab != null) -> searchFieldFocus
-        deepReturnKey != null && selectedGroup == 0 -> deepRowFocus
+        searchQuery.isNotBlank() && lastTab != null -> searchFieldFocus
         else -> lastTab?.let { rowFocus[it] }
     }
     LaunchedEffect(Unit) {
@@ -776,7 +653,6 @@ fun SettingsScreen(
                 settledFrames++
                 if (settledFrames >= 3) {
                     lastTab = null
-                    if (selectedGroup == 0) deepReturnKey = null
                     return@LaunchedEffect
                 }
             } else {
@@ -809,7 +685,7 @@ fun SettingsScreen(
         val entries = listOfNotNull(
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_language), stringResource(R.string.settings_language), stringResource(R.string.settings_search_keywords_language), OwnTVIcon.LANGUAGE, TileTone.PRIMARY,
                 chip = languageChip, chipTone = TileTone.PRIMARY) { open(SettingsTab.LANGUAGE) },
-            SettingsSearchEntry(stringResource(R.string.settings_group_profile), stringResource(R.string.profiles_title), stringResource(R.string.settings_search_keywords_profiles), OwnTVIcon.PERSON, TileTone.SECONDARY) { searchQuery = ""; searchMode = false; selectedGroup = SettingsGroup.PROFILE.ordinal },
+            SettingsSearchEntry(stringResource(R.string.more_group_your_things), stringResource(R.string.profiles_title), stringResource(R.string.settings_search_keywords_profiles), OwnTVIcon.PERSON, TileTone.SECONDARY) { searchQuery = ""; searchMode = false; side.more = null; selectedGroup = SettingsGroup.PROFILE.ordinal },
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_playlists), stringResource(R.string.settings_search_keywords_playlists), OwnTVIcon.PLAYLIST, TileTone.PRIMARY) { open(SettingsTab.SOURCES) },
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_epg_sources), stringResource(R.string.settings_search_keywords_epg), OwnTVIcon.EPG, TileTone.PRIMARY) { open(SettingsTab.EPG) },
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_search_guide_logos), stringResource(R.string.settings_search_keywords_logos), OwnTVIcon.EPG, TileTone.SECONDARY) { open(SettingsTab.EPG) },
@@ -847,18 +723,14 @@ fun SettingsScreen(
             SettingsSearchEntry(tv.own.owntv.features.settings.videoRowPath("vp_logging"), stringResource(R.string.settings_detailed_playback_logging), stringResource(R.string.settings_search_keywords_detailed_logging), OwnTVIcon.INFO, TileTone.SECONDARY) { jumpVideo("vp_logging", false) },
             // Mayo TV's gathering pages.
             if (playlistSources.isNotEmpty()) SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_mayo_per_playlist), stringResource(R.string.settings_mayo_per_playlist_line), OwnTVIcon.PLAYLIST, TileTone.SECONDARY) { open(SettingsTab.PER_PLAYLIST) } else null,
-            SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_mayo_resets), stringResource(R.string.settings_mayo_resets_line), OwnTVIcon.REFRESH, TileTone.SECONDARY) { open(SettingsTab.RESETS) },
-            SettingsSearchEntry(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.common_proxy), stringResource(R.string.settings_search_keywords_proxy), OwnTVIcon.NETWORK, TileTone.SECONDARY) { open(SettingsTab.NETWORK) },
-            SettingsSearchEntry(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.settings_dns), stringResource(R.string.settings_search_keywords_dns), OwnTVIcon.DNS, TileTone.SECONDARY) { open(SettingsTab.DNS) },
+            // System's own rows and More's places (kept out of line: this function is at the JVM size limit).
+            *systemSearchEntries(jumpRow).toTypedArray(),
+            *placeSearchEntries(more?.extras.orEmpty()) { key -> searchQuery = ""; searchMode = false; side.more = key; side.pendingPlace = true }.toTypedArray(),
             SettingsSearchEntry(stringResource(SettingsGroup.LIVE.titleRes), stringResource(R.string.sports_title), stringResource(R.string.sports_leagues), OwnTVIcon.SPORTS, TileTone.PRIMARY) { open(SettingsTab.SPORTS) },
             // The Sport page's own rows, by their names; each opens that page.
             *sportsSearchEntries { open(SettingsTab.SPORTS) }.toTypedArray(),
             // Settings inside a sub-screen, by their own names (kept out of line: this function is at the JVM size limit).
             *subScreenSearchEntries { t -> open(t) }.toTypedArray(),
-            SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_check_updates), stringResource(R.string.settings_search_keywords_updates), OwnTVIcon.REFRESH, TileTone.PRIMARY,
-                chip = "v${tv.own.owntv.BuildConfig.VERSION_NAME}") { saveScroll(); dialogReturn = searchFieldFocus; showUpdate = true },
-            SettingsSearchEntry(stringResource(R.string.settings_group_app), stringResource(R.string.settings_update_startup), stringResource(R.string.settings_search_keywords_update_auto), OwnTVIcon.REFRESH, TileTone.SECONDARY,
-                chip = if (updateCheckOnStart) stringResource(R.string.common_on) else stringResource(R.string.common_off), chipTone = if (updateCheckOnStart) TileTone.PRIMARY else TileTone.SECONDARY, showChevron = false) { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
         )
         // Rows that already have a bespoke entry above. Those are richer than a generic one — they flip
         // in place, or carry a confirmation the search field has to own — so the catalogue skips them
@@ -909,9 +781,9 @@ fun SettingsScreen(
                 tv.own.owntv.features.settings.RECORDING_SEARCH_ROWS, R.string.settings_search_keywords_recording, OwnTVIcon.LIVE_TV) { searchQuery = ""; searchMode = false; selectedGroup = SettingsGroup.PLAYBACK.ordinal } +
             rowsOf(stringResource(R.string.settings_breadcrumb, tv.own.owntv.features.settings.videoRowPath("vp_sub_style"), stringResource(R.string.settings_subtitle_appearance)),
                 tv.own.owntv.features.settings.SUBTITLE_APPEARANCE_SEARCH_ROWS, R.string.settings_search_keywords_subtitle_appearance, OwnTVIcon.SUBTITLE, jumpTo(subStyleRef)) +
-            rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.common_proxy)),
+            rowsOf(settingsCrumb(SettingsGroup.APP, stringResource(R.string.settings_group_network), stringResource(R.string.common_proxy)),
                 tv.own.owntv.features.settings.PROXY_SEARCH_ROWS, R.string.settings_search_keywords_proxy, OwnTVIcon.NETWORK) { open(SettingsTab.NETWORK) } +
-            rowsOf(stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_group_app), stringResource(R.string.settings_group_network)), stringResource(R.string.settings_dns)),
+            rowsOf(settingsCrumb(SettingsGroup.APP, stringResource(R.string.settings_group_network), stringResource(R.string.settings_dns)),
                 tv.own.owntv.features.settings.DNS_SEARCH_ROWS, R.string.settings_search_keywords_dns, OwnTVIcon.DNS) { open(SettingsTab.DNS) }
         // A setting is found by its own name only: "play" lists every setting with "play" in its name.
         val needle = searchQuery.trim().lowercase()
@@ -926,21 +798,14 @@ fun SettingsScreen(
         if (searchFromMore) { searchFromMore = false; onBack?.invoke() }
     }
     val group = SettingsGroup.entries[selectedGroup.coerceIn(0, SettingsGroup.entries.size - 1)]
-    // Mayo TV (1 Nov 2026): no Quick group any more — its rows all live in their own groups too.
-    val inQuick = false
+    // No row counts on settings groups (rule 19): only search's matches and the number of profiles.
     val pageCount = when {
         searching && searchQuery.isBlank() -> ""
         searching -> pluralStringResource(R.plurals.settings_match_count, searchResults.size, searchResults.size)
-        group == SettingsGroup.HOMESCREEN -> pluralStringResource(
-            R.plurals.settings_setting_count, tv.own.owntv.features.settings.LAUNCHER_SETTING_COUNT, tv.own.owntv.features.settings.LAUNCHER_SETTING_COUNT,
-        )
         group == SettingsGroup.PROFILE -> tv.own.owntv.features.settings.profileCount().let { n ->
             pluralStringResource(R.plurals.settings_profile_count, n, n)
         }
-        // A group's own rows, its Video player rows, and Playback's four recording rows.
-        else -> (selectedRows.size + (group.video?.let { videoGroupCount(it, settingsVm) } ?: 0) + if (group == SettingsGroup.PLAYBACK) 4 else 0).let { n ->
-            pluralStringResource(R.plurals.settings_setting_count, n, n)
-        }
+        else -> ""
     }
     val extras = stageRowExtras(
         settingsVm, themeMode, uiZoomPercent, onSetZoom,
@@ -983,12 +848,8 @@ fun SettingsScreen(
             val rootRow: @Composable (RootRow) -> Unit = { row ->
                 RootRowStage(
                     row,
-                    // Inside Quick every row is pinned by definition — the dot would say nothing.
-                    pinned = !inQuick && row.key in quickPinned,
-                    inQuick = inQuick,
                     extra = extras[row.key],
-                    onLongClick = null,
-                    focus = if (row.key == menuReturnKey) menuReturnFocus else null,
+                    focus = if (row.key == jumpRowKey) jumpRowFocus else null,
                 )
             }
             when {
@@ -1004,8 +865,6 @@ fun SettingsScreen(
                     afterBoot = { selectedRows.firstOrNull { it.key == "app_startup" }?.let { rootRow(it) } },
                     androidTvHome = { tv.own.owntv.features.settings.AndroidTvHomeRows() },
                 )
-                // Only Quick can be empty, and only because the user emptied it.
-                selectedRows.isEmpty() && group.video == null -> StageSettingsNote(stringResource(R.string.settings_quick_empty_title), stringResource(R.string.settings_quick_empty_hint))
                 else -> {
                     // Mayo TV (1 Nov 2026): a group holds its own rows and its Video player rows, in either order.
                     val videoFirst = group.video != null && !group.rootFirst
@@ -1020,7 +879,9 @@ fun SettingsScreen(
                         }
                         rootRow(row)
                     }
-                    if (!videoFirst && group.video != null) VideoPlayerGroupRows(group.video, pageScroll, focusRowKey = videoRowKey, firstHeading = selectedRows.isEmpty())
+                    // System: the remembered values between Network and Diagnostics.
+                    if (group == SettingsGroup.APP) SystemSavedRows(pageScroll, videoRowKey)
+                    if (!videoFirst && group.video != null) VideoPlayerGroupRows(group.video, pageScroll, focusRowKey = videoRowKey?.takeUnless { it in tv.own.owntv.features.settings.RESET_KEYS }, firstHeading = selectedRows.isEmpty() && group != SettingsGroup.APP)
                 }
             }
         }
@@ -1028,43 +889,6 @@ fun SettingsScreen(
 
     // Every dialog below shares the page's panel: the simple ones open there instead of as a popup.
     CompositionLocalProvider(tv.own.owntv.features.settings.LocalSettingsPanel provides panel) {
-    menuRow?.let { row ->
-        val at = quickPinned.indexOf(row.key)
-        // Order is a property of the Quick list, so it is only offered where that list is on screen.
-        // In a row's home group the only thing the menu can usefully say is whether it is pinned.
-        SettingsRowMenu(
-            title = row.title,
-            pinned = at >= 0,
-            canMoveUp = inQuick && at > 0,
-            canMoveDown = inQuick && at >= 0 && at < quickPinned.size - 1,
-            onPinToggle = {
-                // Unpinning from inside Quick takes the row out from under the cursor, so hand focus
-                // to the row that slides into its place — the one below, or the one above when it was
-                // last. Without this the sheet has nothing focused and the highlight drops to the spine.
-                if (at >= 0 && inQuick) {
-                    unpinReturnKey = quickPinned.getOrNull(at + 1) ?: quickPinned.getOrNull(at - 1)
-                }
-                settingsVm.setQuickPinnedKeys(
-                    if (at >= 0) quickPinned - row.key else quickPinned + row.key,
-                )
-            },
-            onMoveUp = {
-                settingsVm.setQuickPinnedKeys(
-                    quickPinned.toMutableList().apply { add(at - 1, removeAt(at)) },
-                )
-            },
-            onMoveDown = {
-                settingsVm.setQuickPinnedKeys(
-                    quickPinned.toMutableList().apply { add(at + 1, removeAt(at)) },
-                )
-            },
-            onDismiss = {
-                menuReturnKey = unpinReturnKey ?: row.key
-                unpinReturnKey = null
-                menuRow = null
-            },
-        )
-    }
 
     if (showUpdate) {
         UpdateDialog(onDismiss = { showUpdate = false }, checkOnOpen = true)
@@ -1865,56 +1689,6 @@ internal fun LivePreviewPanelHiddenDialog(onDismiss: () -> Unit) {
     )
 }
 
-/** Stable, non-display choices for the history picker. */
-private enum class HistoryScope(val type: tv.own.owntv.core.model.MediaType?, val labelRes: Int) {
-    LIVE(tv.own.owntv.core.model.MediaType.LIVE, R.string.settings_history_live),
-    MOVIES(tv.own.owntv.core.model.MediaType.MOVIE, R.string.settings_history_movies),
-    SERIES(tv.own.owntv.core.model.MediaType.SERIES, R.string.settings_history_series),
-    ALL(null, R.string.settings_history_all),
-}
-
-/**
- * Pick what watch history to clear: everything, or just Live TV / Movies / Series. Over a dimmed scrim;
- * Cancel is focused first so a stray OK doesn't wipe anything. [onClear] gets null for "all".
- */
-@Composable
-internal fun ClearHistoryDialog(
-    onClear: (tv.own.owntv.core.model.MediaType?) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var pending by remember { mutableStateOf<HistoryScope?>(null) }
-    val firstFocus = remember { FocusRequester() }
-    LaunchedEffect(pending) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
-    val p = pending
-    // One popup, two steps: what to clear, then "can't be undone" (focus on No). Back steps back first.
-    tv.own.owntv.ui.stage.StagePopup(
-        onDismiss = { if (pending != null) pending = null else onDismiss() },
-        title = if (p == null) stringResource(R.string.settings_clear_history) else stringResource(R.string.settings_clear_history_confirm, stringResource(p.labelRes)),
-        body = if (p == null) stringResource(R.string.settings_choose_history) else stringResource(R.string.settings_cannot_undo),
-        width = 760.mpx,
-        buttons = {
-            if (p == null) {
-                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.common_cancel), onClick = onDismiss, height = 56.mpx, textSize = 19)
-            } else {
-                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_no), onClick = { pending = null }, height = 56.mpx, textSize = 19, modifier = Modifier.focusRequester(firstFocus))
-                tv.own.owntv.ui.stage.StageButton(stringResource(R.string.settings_yes_clear), onClick = { onClear(p.type) }, height = 56.mpx, textSize = 19, tinted = true)
-            }
-        },
-    ) {
-        if (p == null) {
-            listOf(HistoryScope.LIVE to OwnTVIcon.LIVE_TV, HistoryScope.MOVIES to OwnTVIcon.MOVIES, HistoryScope.SERIES to OwnTVIcon.SERIES, HistoryScope.ALL to OwnTVIcon.TRASH).forEachIndexed { i, (scope, icon) ->
-                val all = scope == HistoryScope.ALL
-                tv.own.owntv.ui.stage.StagePopupOption(
-                    title = stringResource(if (all) R.string.settings_all_history else scope.labelRes),
-                    onClick = { pending = scope }, danger = all,
-                    modifier = if (i == 0) Modifier.focusRequester(firstFocus) else Modifier,
-                    leading = { tv.own.owntv.ui.stage.StagePopupIcon(icon, if (all) tv.own.owntv.ui.theme.StageColors.Danger else tv.own.owntv.ui.theme.StageColors.Text) },
-                )
-            }
-        }
-    }
-}
-
 @Composable
 internal fun fontFamilyLabel(family: AppFontFamily): String = stringResource(
     when (family) {
@@ -2227,28 +2001,23 @@ private fun tabRowKey(tab: SettingsTab) = "tab_${tab.name}"
 @Composable
 private fun RootRowStage(
     item: RootRow,
-    pinned: Boolean,
-    /** Null: a held OK does nothing (no pinning since Quick is gone). */
-    onLongClick: (() -> Unit)?,
-    /** Takes precedence over the row's own requester: used to give focus back after its menu closes. */
+    /** Always false since Quick is gone (6 Nov 2026); kept so older calls still compile. */
+    pinned: Boolean = false,
+    /** Null: a held OK does nothing (no hold-OK on settings rows, rule 11). */
+    onLongClick: (() -> Unit)? = null,
+    /** Takes precedence over the row's own requester: a search jump focuses the row through it. */
     focus: FocusRequester? = null,
-    /** On Quick: the panel still explains the focused row; its hold-OK hint says Unpin. */
-    inQuick: Boolean = false,
     extra: RowExtra? = null,
 ) {
     val on = stringResource(R.string.common_on)
     val off = stringResource(R.string.common_off)
-    val pin = stringResource(R.string.settings_row_menu_pin)
-    val unpin = stringResource(R.string.settings_key_unpin)
     val value = extra?.value ?: item.value ?: when {
         item.showChevron || item.key == "catchup_sources" -> SettingValue.Opens(item.chip)
         item.chip == on || item.chip == off -> SettingValue.Switch(item.chip == on)
         item.chip != null -> SettingValue.Choice(item.chip)
         else -> null
     }
-    val words = tv.own.owntv.features.settings.settingWords(item.key, item.title, item.desc).let {
-        if (inQuick && item.key.startsWith("vp_")) tv.own.owntv.features.settings.SettingWords(it.title, item.desc) else it
-    }
+    val words = tv.own.owntv.features.settings.settingWords(item.key, item.title, item.desc)
     StageSettingRow(
         icon = item.icon,
         title = words.title,
@@ -2259,8 +2028,7 @@ private fun RootRowStage(
         onStep = extra?.onStep ?: item.onStep,
         pinned = pinned,
         help = settingHelp(item.key, words.title, item.desc, value, extra?.choices ?: item.choices, chosen = extra?.chosen ?: -1, recommended = extra?.recommended ?: item.recommended, pinnable = false).let { h ->
-            val hints = (extra?.hints ?: h.hints).map { if (inQuick && it.second == pin) it.first to unpin else it }
-            h.copy(text = extra?.help ?: h.text, hints = hints, extra = extra?.extra)
+            h.copy(text = extra?.help ?: h.text, hints = extra?.hints ?: h.hints, extra = extra?.extra)
         },
         modifier = (focus ?: item.focus)?.let { Modifier.focusRequester(it) } ?: Modifier,
     )
@@ -2542,6 +2310,8 @@ private class SidebarState {
     var pendingSearch by mutableStateOf(false)
     /** One of More's places is open beside the list instead of a settings group (its key), and how to enter it. */
     var more by mutableStateOf<String?>(null)
+    /** A search result opened a place: focus goes into its page once it is on screen. */
+    var pendingPlace by mutableStateOf(false)
     val moreFocus = tv.own.owntv.features.settings.MorePageFocus()
 
     /** Back: from the rows to the open category; from the list, out of Settings. */
@@ -2551,8 +2321,8 @@ private class SidebarState {
 }
 
 /**
- * The categories of [categories] for [tv.own.owntv.features.settings.SettingsSidebar], with their counts. Kept out of
- * [SettingsScreen], whose body is at the JVM method limit.
+ * The categories of [categories] for [tv.own.owntv.features.settings.SettingsSidebar]: no counts on settings groups
+ * (rule 19), only the number of profiles. Kept out of [SettingsScreen], whose body is at the JVM method limit.
  */
 @Composable
 private fun SettingsSidebarHost(
@@ -2578,16 +2348,22 @@ private fun SettingsSidebarHost(
         }
         side.pendingSearch = false
     }
+    // A place opened from search: into its page (or onto its entry, when the page has no way in yet).
+    LaunchedEffect(side.pendingPlace, side.more) {
+        if (!side.pendingPlace || side.more == null) return@LaunchedEffect
+        repeat(20) {
+            withFrameNanos { }
+            if (side.moreFocus.enter()) { side.pendingPlace = false; return@LaunchedEffect }
+        }
+        runCatching { side.focus.requestFocus() }
+        side.pendingPlace = false
+    }
     val profiles = tv.own.owntv.features.settings.profileCount()
     val items = SettingsGroup.entries.mapNotNull { g ->
-        val (root, rows) = categories.getOrNull(g.ordinal) ?: return@mapNotNull null
-        val count = when {
-            g == SettingsGroup.PROFILE -> profiles
-            g == SettingsGroup.HOMESCREEN -> tv.own.owntv.features.settings.LAUNCHER_SETTING_COUNT
-            else -> rows.size + (g.video?.let { tv.own.owntv.features.settings.videoGroupCount(it, settingsVm) } ?: 0) +
-                if (g == SettingsGroup.PLAYBACK) 4 else 0
-        }
-        tv.own.owntv.features.settings.SettingsCategory(g.ordinal, root.label, root.icon, count)
+        val (root, _) = categories.getOrNull(g.ordinal) ?: return@mapNotNull null
+        tv.own.owntv.features.settings.SettingsCategory(
+            g.ordinal, stringResource(g.titleRes), root.icon, if (g == SettingsGroup.PROFILE) profiles else null, mine = g.mine,
+        )
     }
     // The menu's first section and the list's first entry on Live TV's line, as on every page with a list beside
     // the menu (Jonathan, 1 Nov 2026).
@@ -2611,6 +2387,148 @@ private fun SettingsSidebarHost(
         onFocusChanged = { side.hasFocus = it },
         modifier = modifier,
     )
+}
+
+/**
+ * The root rows gathered under their group, in [SettingsGroup]'s order: each RootGroup marker starts its
+ * group's rows (by [SettingsGroup.key]), wherever it sits in the list. A group without a marker is empty.
+ */
+private fun categoriesOf(rootItems: List<RootItem>): List<Pair<RootGroup, List<RootRow>>> {
+    val markers = HashMap<String, RootGroup>()
+    val rows = HashMap<String, MutableList<RootRow>>()
+    var current: MutableList<RootRow>? = null
+    rootItems.forEach { item ->
+        when (item) {
+            is RootGroup -> { markers[item.key] = item; current = rows.getOrPut(item.key) { mutableListOf() } }
+            is RootRow -> current?.add(item)
+        }
+    }
+    return SettingsGroup.entries.map { g ->
+        (markers[g.key] ?: RootGroup(g.key, "", OwnTVIcon.SETTINGS, "")) to rows[g.key].orEmpty()
+    }
+}
+
+/**
+ * A search result that jumps to a row of a group page (rule 18): selects the row's [group], then puts the
+ * cursor on it through [focus] and holds it there a few frames, then calls [onDone].
+ */
+@Composable
+private fun RowJumpEffect(key: String?, group: Int?, focus: FocusRequester, onGroup: (Int) -> Unit, onDone: () -> Unit) {
+    LaunchedEffect(key) {
+        if (key == null) return@LaunchedEffect
+        group?.let(onGroup)
+        var settled = 0
+        repeat(20) {
+            withFrameNanos { }
+            if (runCatching { focus.requestFocus() }.getOrDefault(false)) {
+                if (++settled >= 3) { onDone(); return@LaunchedEffect }
+            } else {
+                settled = 0
+            }
+        }
+        onDone()
+    }
+}
+
+/** Settings search's entries for System's own rows: each jumps to its row (rule 18). */
+@Composable
+private fun systemSearchEntries(jumpRow: (String) -> Unit): List<SettingsSearchEntry> {
+    val updates = settingsCrumb(SettingsGroup.APP, stringResource(R.string.settings_mayo_heading_updates))
+    val network = settingsCrumb(SettingsGroup.APP, stringResource(R.string.settings_group_network))
+    return listOf(
+        SettingsSearchEntry(updates, stringResource(R.string.settings_check_updates), stringResource(R.string.settings_search_keywords_updates), OwnTVIcon.REFRESH, TileTone.PRIMARY) { jumpRow("check_updates") },
+        SettingsSearchEntry(updates, stringResource(R.string.settings_update_startup), stringResource(R.string.settings_search_keywords_update_auto), OwnTVIcon.REFRESH, TileTone.SECONDARY) { jumpRow("update_startup") },
+        SettingsSearchEntry(network, stringResource(R.string.common_proxy), stringResource(R.string.settings_search_keywords_proxy), OwnTVIcon.NETWORK, TileTone.SECONDARY) { jumpRow(tabRowKey(SettingsTab.NETWORK)) },
+        SettingsSearchEntry(network, stringResource(R.string.settings_dns), stringResource(R.string.settings_search_keywords_dns), OwnTVIcon.DNS, TileTone.SECONDARY) { jumpRow(tabRowKey(SettingsTab.DNS)) },
+    )
+}
+
+/**
+ * Settings search's entries for More's places (Favourites, Backup, About …), found by their name and by
+ * what can be done there; the result opens the place beside the list, as its sidebar entry does.
+ */
+@Composable
+private fun placeSearchEntries(
+    extras: List<tv.own.owntv.features.settings.SidebarExtra>,
+    onOpen: (String) -> Unit,
+): List<SettingsSearchEntry> {
+    val sections = listOf(
+        stringResource(R.string.more_group_your_things),
+        stringResource(R.string.more_group_keep_safe),
+        stringResource(R.string.settings_mayo_heading_info),
+    )
+    return extras.flatMap { e ->
+        (listOf(e.label) + e.aliases).map { title ->
+            SettingsSearchEntry(sections.getOrElse(e.section) { "" }, title, "", e.icon, TileTone.SECONDARY, chip = e.value) { onOpen(e.key) }
+        }
+    }
+}
+
+/**
+ * A [SettingsTab] whose page moved (rule 21: rememberSaveable can still bring it back): Backup and Local sync
+ * are places beside the list now, the remembered values sit on System.
+ */
+@Composable
+private fun TabRedirect(tab: SettingsTab, side: SidebarState, onGroup: (Int) -> Unit, toRoot: () -> Unit) {
+    LaunchedEffect(tab) {
+        when (tab) {
+            SettingsTab.BACKUP -> side.more = "BACKUP"
+            SettingsTab.LOCAL_SYNC -> side.more = "LOCAL_SYNC"
+            else -> onGroup(SettingsGroup.APP.ordinal)
+        }
+        toRoot()
+    }
+}
+
+/** System's own rows: Updates (check now, check at start) and Network (Proxy, DNS; their state comes from stageRowExtras). */
+@Composable
+private fun systemRootRows(
+    settingsVm: SettingsViewModel,
+    updateCheckOnStart: Boolean,
+    updateRowFocus: FocusRequester,
+    rowFocus: Map<SettingsTab, FocusRequester>,
+    open: (SettingsTab) -> Unit,
+    onCheckUpdates: () -> Unit,
+): List<RootRow> = listOf(
+    RootRow(
+        "check_updates", TileTone.PRIMARY, OwnTVIcon.REFRESH,
+        heading = stringResource(R.string.settings_mayo_heading_updates),
+        title = stringResource(R.string.settings_check_updates), desc = stringResource(R.string.settings_check_updates_description),
+        focus = updateRowFocus,
+        onClick = onCheckUpdates,
+    ),
+    RootRow(
+        "update_startup", TileTone.SECONDARY, OwnTVIcon.REFRESH,
+        title = stringResource(R.string.settings_update_startup), desc = stringResource(R.string.settings_update_startup_description),
+        value = SettingValue.Switch(updateCheckOnStart),
+        onClick = { settingsVm.setUpdateCheckOnStart(!updateCheckOnStart) },
+    ),
+    RootRow(
+        tabRowKey(SettingsTab.NETWORK), TileTone.SECONDARY, OwnTVIcon.NETWORK,
+        heading = stringResource(R.string.settings_group_network),
+        title = stringResource(R.string.common_proxy), desc = stringResource(R.string.settings_proxy_description),
+        focus = rowFocus.getValue(SettingsTab.NETWORK),
+        onClick = { open(SettingsTab.NETWORK) },
+    ),
+    RootRow(
+        tabRowKey(SettingsTab.DNS), TileTone.SECONDARY, OwnTVIcon.DNS,
+        title = stringResource(R.string.settings_dns), desc = stringResource(R.string.settings_dns_description),
+        focus = rowFocus.getValue(SettingsTab.DNS),
+        onClick = { open(SettingsTab.DNS) },
+    ),
+)
+
+/**
+ * System › Remembered values: the five "reset what the player remembered" rows, right on the page (no page of
+ * their own any more). [focusRowKey]: a search result for one of them puts the cursor on it.
+ */
+@Composable
+private fun SystemSavedRows(scroll: androidx.compose.foundation.ScrollState, focusRowKey: String?) {
+    val keys = tv.own.owntv.features.settings.RESET_KEYS
+    StageSettingsHeading(stringResource(R.string.settings_cleanup_heading_saved), keys.size)
+    CompositionLocalProvider(tv.own.owntv.features.settings.LocalVideoRowFilter provides { it in keys }) {
+        VideoPlayerGroupRows(VideoGroup.RESETS, scroll, focusRowKey = focusRowKey?.takeIf { it in keys })
+    }
 }
 
 /**

@@ -23,18 +23,20 @@ import tv.own.owntv.R
 import tv.own.owntv.ui.components.OwnTVIcon
 
 /**
- * Maintainer-only tools, opened from More › Developer (as on the phone). Reached only when
+ * Maintainer-only tools, opened from Settings › Info › Developer (as on the phone). Reached only when
  * BuildConfig.DEV_TOOLS is set, so R8 removes this screen from every published APK; English by the
  * same rule.
  */
 @Composable
-fun DeveloperScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
+fun DeveloperScreen(onBack: (() -> Unit)?, modifier: Modifier = Modifier) {
     val vm: HomeSettingsViewModel = koinViewModel()
     val devRebuild by vm.devRebuild.collectAsStateWithLifecycle()
 
     val firstFocus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
-    BackHandler { onBack() }
+    // Beside Settings' list the page shows as the list moves: focus stays in the list until ▶ enters it.
+    if (onBack != null) LaunchedEffect(Unit) { kotlinx.coroutines.delay(60); runCatching { firstFocus.requestFocus() } }
+    // Null beside Settings' list: Back there goes to the list, as on every other place.
+    BackHandler(enabled = onBack != null) { onBack?.invoke() }
     // Drawn as the other More pages: the 42 px title, then Stage rows.
     androidx.compose.foundation.layout.Column(
         modifier.fillMaxSize().focusGroup(),
