@@ -229,11 +229,14 @@ class LiveViewModel(
      * The active profile, kept current in memory: a zap checks it here instead of two database reads whose
      * answers had to wait for the main thread to come back, which on a busy frame (the channel card
      * appearing) cost ~120 ms of a ~1.1 s switch (box, 6 Nov 2026). Null while unknown or after the
-     * profile was removed: [playChannel] then takes the full check as before.
+     * profile was removed: [playChannel] then takes the full check as before. Created by the first tune,
+     * not with the view model at the app's start, where its query cost the first frame.
      */
-    private val activeProfile: StateFlow<tv.own.owntv.core.database.entity.ProfileEntity?> = settings.activeProfileId
-        .flatMapLatest { id -> if (id >= 0) profileDao.observeById(id) else flowOf(null) }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    private val activeProfile: StateFlow<tv.own.owntv.core.database.entity.ProfileEntity?> by lazy {
+        settings.activeProfileId
+            .flatMapLatest { id -> if (id >= 0) profileDao.observeById(id) else flowOf(null) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }
 
     /** List ordering for this section (Playlist order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortLive
