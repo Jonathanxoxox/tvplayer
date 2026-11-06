@@ -262,6 +262,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	#$it
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	LiveEngine
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	OwnTVHome
+3	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	OwnTVPerf
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	catch-up '${ch.name}' prog='${programme.title}' -> ${tv.own.owntv.core.network.HttpClient.redactUrl(url)}
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	catch-up external '${ch.name}' prog='${programme.title}'
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	ensurePlaying history profile=$pid channelId=${channel.id}
@@ -269,6 +270,9 @@
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	stalker resolve failed channelId=${channel.id}
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	tune-start
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	tuneByNumber($number) failed
+1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	zap-app checks-done
+1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	zap-app press
+1	technical	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	zap-app start-tune
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveViewModel.kt	zap: tune wait ${delayMs}ms — ${zapWaitReason(lastZapPressMs, now, singleConnection)}
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveZapList.kt	LiveZapList
 1	log	app/src/main/java/tv/own/owntv/features/live/LiveZapList.kt	direct tune: zap rebuild failed

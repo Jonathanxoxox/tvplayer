@@ -1257,6 +1257,7 @@ class LiveViewModel(
         lastZapPressMs = now
         // Diagnostics only: the tune this press causes claims it and times its first frame from here.
         tv.own.owntv.player.ZapTiming.shared.markPress(now)
+        android.util.Log.i("OwnTVPerf", "zap-app press")
         pendingZapTuneJob?.cancel()
         if (delayMs <= 0L) {
             pendingZapTuneJob = null
@@ -1474,6 +1475,7 @@ class LiveViewModel(
     /** [ensurePlaying] without forgetting the zap press: the tune a CH+/- step opens, timed from that press. */
     private fun startTune(channel: ChannelEntity) {
         tv.own.owntv.perf.StartLog.stampOnce("tune-start")
+        android.util.Log.i("OwnTVPerf", "zap-app start-tune")
         zapList.cancelPendingRebuild()
         // A deliberate pick supersedes a CH+/- step still waiting out its delay — otherwise the deferred
         // tune would land half a second later and drag the user off the channel they just chose.
@@ -1509,6 +1511,7 @@ class LiveViewModel(
         _catchupActive.value = false // tuning live ends any archive playback the HUD was showing
         // Core routes it (DRM, the pin, a learned panel refusal, the playlist, the setting), arms the
         // ladder and starts the engine — the same code the phone runs.
+        android.util.Log.i("OwnTVPerf", "zap-app checks-done")
         live.start(channel, getSource(channel.sourceId))
         recordLiveHistory(channel)
     }
