@@ -209,7 +209,7 @@ fun CustomizeScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // The band, the tool row above the list, categories as rows and the panel with
     // the focused category's actions and the span help.
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_content_metadata)),
+        parents = listOf(stringResource(tv.own.owntv.features.shell.components.SettingsGroup.SOURCES.titleRes)),
         title = stringResource(R.string.settings_customize_title),
         count = "",
         onBack = onBack,

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings clean-up (6 Nov 2026), Appearance & Home, Controls, Power-on & Home button: new names and app-side overrides. -->
+<resources>
+    <!-- Overrides of core strings (same name). -->
+    <string name="settings_home_hide_row">Hide this row</string>
+    <string name="settings_home_show_row">Show this row</string>
+    <string name="settings_home_move_row">Move</string>
+    <string name="settings_startup_favorites">Favourites in Live TV</string>
+    <string name="settings_line_home">Pick the rows Home shows and their order</string>
+    <plurals name="settings_home_row_count">
+        <item quantity="one">%1$d row</item>
+        <item quantity="other">%1$d rows</item>
+    </plurals>
+    <string name="settings_line_popup_size">Make popups and menus larger or smaller</string>
+
+    <!-- Appearance & Home -->
+    <string name="settings_ca_row_titles">Row titles</string>
+    <string name="settings_ca_line_row_titles">Show the titles above Home\'s rows</string>
+    <string name="settings_ca_line_home_layout">How Home arranges its picture and rows</string>
+    <string name="settings_ca_home_rows">Home rows</string>
+    <string name="settings_ca_help_home_rows">Pick which rows Home shows and in what order. ▶ on a row shows its own options: what Keep watching includes, which category the channel row shows.</string>
+    <string name="settings_ca_rows_heading">Rows</string>
+    <string name="settings_ca_spotlight_sources">Spotlight sources</string>
+    <string name="settings_ca_line_spotlight_sources">Choose where the Spotlight\'s tips come from</string>
+    <string name="settings_ca_help_spotlight_sources">The Spotlight layout shows one highlight at a time. Switch each source on or off; hold OK on one to change the order.</string>
+    <string name="settings_ca_bg_glass">Background &amp; glass</string>
+    <string name="settings_ca_line_bg_glass">Background picture, colours and glass</string>
+    <string name="settings_ca_line_theme">Dark, light or like the TV</string>
+    <string name="settings_ca_line_focus">Colour and thickness of the focus ring</string>
+    <string name="settings_ca_line_animations">Off feels snappier on slower TV boxes</string>
+    <string name="settings_ca_line_ambient_glow">Adds a soft glow to the plain interface</string>
+    <string name="settings_ca_text_size">Text size</string>
+    <string name="settings_ca_line_text_size">Make the app\'s text larger or smaller</string>
+    <string name="settings_ca_help_text_size">The size of the text across Mayo TV, not popups. Subtitles keep their own size.</string>
+    <string name="settings_ca_font">Font</string>
+    <string name="settings_ca_line_font">One font for the interface and popups</string>
+    <string name="settings_ca_popup_text_size">Popup text size</string>
+    <string name="settings_ca_line_popup_text_size">Make text in popups and menus larger or smaller</string>
+    <string name="settings_ca_help_popup_text_size">Changes only the text in popups and menus, not their size.</string>
+    <string name="settings_ca_line_zoom">Scale the whole interface</string>
+    <string name="settings_ca_column_widths">Column widths in Movies &amp; Series</string>
+    <string name="settings_ca_line_column_widths">Widen or narrow categories, list and preview</string>
+    <string name="settings_ca_help_column_widths">How wide the category column, the list and the preview are in Movies and in Series.</string>
+    <string name="settings_ca_custom">Custom</string>
+    <string name="settings_ca_line_clock_weather">Clock colours and the weather at the top</string>
+    <string name="settings_ca_preview">Preview</string>
+
+    <!-- Controls -->
+    <string name="settings_ca_heading_menu">Menu on the left</string>
+    <string name="settings_ca_menu_items">Menu items</string>
+    <string name="settings_ca_line_menu_items">Choose what the menu on the left shows</string>
+    <string name="settings_ca_help_menu_items">Automatic shows the sections that have something in them. With Own choice you tick the sections yourself. Apps adds the grid of all apps.</string>
+    <string name="settings_ca_menu_auto">Automatic</string>
+    <string name="settings_ca_menu_own">Own choice</string>
+    <string name="settings_ca_menu_apps">Apps</string>
+    <string name="settings_ca_keys">Keys &amp; shortcuts</string>
+    <string name="settings_ca_line_keys">Choose what the remote\'s keys do</string>
+    <plurals name="settings_ca_key_count">
+        <item quantity="one">%d assigned</item>
+        <item quantity="other">%d assigned</item>
+    </plurals>
+    <string name="settings_ca_keys_restore_confirm">Set every full-screen key back to its default? Your own assignments for these keys are lost.</string>
+    <string name="settings_ca_keys_restore_action">Restore</string>
+    <string name="settings_ca_heading_lists">Lists &amp; menus</string>
+    <string name="settings_ca_remember_live_category">Remember last Live TV category</string>
+    <string name="settings_ca_line_remember_live_category">Live TV opens in the category you had open</string>
+    <string name="settings_ca_remember_channel">Remember last channel</string>
+    <string name="settings_ca_line_remember_channel">Live TV goes back to the channel you chose last</string>
+    <string name="settings_ca_remember_movie">Remember last movie</string>
+    <string name="settings_ca_line_remember_movie">Movies goes back to the movie you chose last</string>
+    <string name="settings_ca_remember_series">Remember last series</string>
+    <string name="settings_ca_line_remember_series">Series goes back to the series you chose last</string>
+    <string name="settings_ca_help_remember">Off: the list starts at the top each time you open it.</string>
+    <string name="settings_ca_long_press_menus">Long-press OK menus</string>
+    <string name="settings_ca_line_long_press_menus">Reorder the actions for movies, series and episodes</string>
+    <string name="settings_ca_help_long_press_menus">Holding OK on a movie, series or episode opens a menu of actions. Put the ones you use most on top.</string>
+    <string name="settings_ca_default">Default</string>
+
+    <!-- Power-on & Home button -->
+    <string name="settings_ca_heading_power_on">At power-on</string>
+    <string name="settings_ca_heading_android_tv">Android TV</string>
+    <string name="settings_ca_opens_with">Mayo TV opens with</string>
+    <string name="settings_ca_line_opens_with">What Mayo TV shows first when it starts</string>
+    <string name="settings_ca_tv_cards">Mayo cards on the TV home screen</string>
+    <string name="settings_ca_line_tv_cards">Keep watching and recent channels on Android TV\'s own home screen</string>
+    <string name="settings_ca_line_refresh">Build the cards on the TV home screen again</string>
+
+    <!-- Home rows page: a row's own options in the panel. -->
+    <string name="settings_ca_action_value">%1$s · %2$s</string>
+    <string name="settings_ca_keep_live">Live channels</string>
+    <string name="settings_ca_keep_movies">Movies</string>
+    <string name="settings_ca_keep_series">Series</string>
+    <string name="settings_ca_keep_video">Video preview</string>
+</resources>

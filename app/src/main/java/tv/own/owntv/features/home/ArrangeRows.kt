@@ -40,6 +40,8 @@ fun ArrangeRowsWindow(
     startAt: HomeSlot,
     onSaveRows: (List<HomeRow>) -> Unit,
     onClose: () -> Unit,
+    /** Opened by a held OK (Settings › Reihen der Startseite): its release must not put the row down. */
+    openedByHold: Boolean = false,
 ) {
     val context = LocalContext.current
     val config = rememberLauncherConfig()
@@ -87,5 +89,6 @@ fun ArrangeRowsWindow(
             onClose()
         },
         onCancel = onClose,
+        openedByHold = openedByHold,
     )
 }

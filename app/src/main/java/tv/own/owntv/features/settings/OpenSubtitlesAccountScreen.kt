@@ -25,7 +25,6 @@ import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageText
-import tv.own.owntv.ui.format.localizedInteger
 
 /**
  * Languages the OpenSubtitles search can be restricted to (ISO 639-1, the codes their API expects).
@@ -87,7 +86,6 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
     var signInUser by remember { mutableStateOf("") }
     var signInPass by remember { mutableStateOf("") }
     var signInStay by remember { mutableStateOf(true) }
-    var showDeleteSubs by remember { mutableStateOf(false) }
     var showLangPicker by remember { mutableStateOf(false) }
     var showApiAccess by remember { mutableStateOf(false) }
     var apiWasOpen by remember { mutableStateOf(false) }
@@ -136,47 +134,24 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
     }
     var langPickerWasOpen by remember { mutableStateOf(false) }
     val langRowFocus = remember { FocusRequester() }
-    // Returning from the Delete-subtitles screen should land back on the row that opened it,
-    // not the first row (Sign out / Sign in).
-    var returnedFromDelete by remember { mutableStateOf(false) }
-    if (showDeleteSubs) {
-        DeleteSubtitlesScreen(
-            onBack = { showDeleteSubs = false; returnedFromDelete = true },
-            modifier = modifier,
-        )
-        return
-    }
     val firstFocus = remember { FocusRequester() }
-    val deleteFocus = remember { FocusRequester() }
     // Entry focus once, on first composition (keying on `state` stole focus on every refresh).
     LaunchedEffect(Unit) {
         kotlinx.coroutines.delay(60)
         runCatching { firstFocus.requestFocus() }
     }
-    // Returning from Delete subtitles lands back on the row that opened it.
-    LaunchedEffect(showDeleteSubs) {
-        if (!showDeleteSubs && returnedFromDelete) {
-            returnedFromDelete = false
-            kotlinx.coroutines.delay(60)
-            runCatching { deleteFocus.requestFocus() }
-        }
-    }
-    val deleteVm: DeleteSubtitlesViewModel = koinViewModel()
-    val movieSubs by deleteVm.movieCount.collectAsStateWithLifecycle()
-    val seriesSubs by deleteVm.seriesCount.collectAsStateWithLifecycle()
-    val downloaded = movieSubs + seriesSubs
-
-    // ACCOUNT, SEARCH and ON THIS TV as rows; the account's details in the panel.
+    // ACCOUNT and SEARCH as rows; the account's details in the panel. The downloaded subtitles have a
+    // row of their own on Sprache & Untertitel (one page deep, not two).
     val ok = stringResource(R.string.common_ok)
     val back = stringResource(R.string.common_back)
-    val content = stringResource(R.string.settings_group_content_metadata)
+    val content = stringResource(tv.own.owntv.features.shell.components.SettingsGroup.LANGUAGE.titleRes)
     val signedIn = state as? OpenSubtitlesViewModel.UiState.SignedIn
     val connection = when {
         storedServerUrl.isNotBlank() -> stringResource(R.string.settings_tier_self_host)
         storedApiKey.isNotBlank() -> stringResource(R.string.settings_tier_key)
         else -> stringResource(R.string.settings_shared)
     }
-    val rowCount = (if (signedIn != null) 3 else 1) + (if (filterEnabled) 2 else 1) + 1
+    val rowCount = (if (signedIn != null) 3 else 1) + (if (filterEnabled) 2 else 1)
     StageFullPage(
         parents = listOf(content),
         title = stringResource(R.string.settings_open_subtitles),
@@ -289,18 +264,6 @@ fun OpenSubtitlesAccountScreen(onBack: () -> Unit, modifier: Modifier = Modifier
                 help = SettingHelp(langTitle, stringResource(R.string.player_subtitles_search_language_description), hints = listOf(ok to stringResource(R.string.settings_key_change), back to content)),
             )
         }
-
-        StageSettingsHeading(stringResource(R.string.content_downloads_group_on_tv), null)
-        val deleteTitle = stringResource(R.string.settings_delete_subtitles)
-        StageSettingRow(
-            icon = OwnTVIcon.TRASH,
-            title = deleteTitle,
-            desc = pluralStringResource(R.plurals.settings_subtitles_downloaded_count, downloaded, downloaded),
-            value = SettingValue.Opens(localizedInteger(downloaded, grouping = false)),
-            onClick = { showDeleteSubs = true },
-            modifier = Modifier.focusRequester(deleteFocus),
-            help = SettingHelp(deleteTitle, stringResource(R.string.player_subtitles_delete_description), hints = listOf(ok to stringResource(R.string.settings_key_open), back to content)),
-        )
 
         // OpenSubtitles attribution — logo + line, mirroring the TMDB credit in Metadata.
         Column(Modifier.padding(start = 22.mpx, top = 28.mpx)) {

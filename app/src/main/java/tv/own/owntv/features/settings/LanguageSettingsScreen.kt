@@ -163,12 +163,12 @@ fun LanguageSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     }
     val hints = listOf(
         stringResource(R.string.common_ok) to stringResource(R.string.settings_key_use),
-        stringResource(R.string.common_back) to stringResource(R.string.settings_group_app),
+        stringResource(R.string.common_back) to stringResource(tv.own.owntv.features.shell.components.SettingsGroup.LANGUAGE.titleRes),
     )
     val translate: @Composable () -> Unit = { TranslateBlock() }
     StageFullPage(
-        parents = listOf(stringResource(R.string.settings_group_app)),
-        title = stringResource(R.string.settings_language),
+        parents = listOf(stringResource(tv.own.owntv.features.shell.components.SettingsGroup.LANGUAGE.titleRes)),
+        title = stringResource(R.string.settings_pb_app_language),
         count = pluralStringResource(R.plurals.more_about_languages, rows.size, rows.size),
         onBack = onBack,
         modifier = modifier,

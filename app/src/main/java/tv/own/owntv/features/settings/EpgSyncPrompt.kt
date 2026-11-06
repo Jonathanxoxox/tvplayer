@@ -68,7 +68,16 @@ fun EpgSyncDialog(
             EpgSyncUi.Hidden -> null
         },
         body = when (state) {
-            is EpgSyncUi.Ask -> stringResource(R.string.settings_sync_guide_description, state.sourceName)
+            // The way back to it later, built from the group's own name so it follows any rename.
+            is EpgSyncUi.Ask -> stringResource(
+                R.string.settings_src_sync_guide_description,
+                state.sourceName,
+                stringResource(
+                    R.string.settings_breadcrumb,
+                    stringResource(R.string.settings_breadcrumb, stringResource(R.string.common_nav_settings), stringResource(tv.own.owntv.features.shell.components.SettingsGroup.SOURCES.titleRes)),
+                    stringResource(R.string.settings_epg_sources_title),
+                ),
+            )
             is EpgSyncUi.Failed -> state.failure.displayText()
             else -> null
         },
