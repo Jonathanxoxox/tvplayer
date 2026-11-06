@@ -74,7 +74,7 @@ fun ChNavSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     val about = stringResource(R.string.settings_remote_shortcuts_description)
     StageFullPage(
         parents = listOf(layout),
-        title = stringResource(R.string.settings_remote_shortcuts),
+        title = stringResource(R.string.settings_ca_keys),
         count = "",
         onBack = onBack,
         modifier = modifier,

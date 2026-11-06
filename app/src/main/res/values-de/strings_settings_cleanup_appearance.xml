@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Einstellungen aufgeräumt (6. Nov 2026): Aussehen & Startseite, Bedienung, Einschalten & Home-Taste. -->
+<resources>
+    <!-- Overrides von Core-Texten (gleicher Name). -->
+    <string name="settings_home_hide_row">Diese Reihe ausblenden</string>
+    <string name="settings_home_show_row">Diese Reihe einblenden</string>
+    <string name="settings_home_move_row">Verschieben</string>
+    <string name="settings_startup_favorites">Favoriten im Live-TV</string>
+    <string name="settings_line_home">Wähle die Reihen der Startseite und ihre Reihenfolge</string>
+    <string name="settings_line_popup_size">Mach Popups und Menüs größer oder kleiner</string>
+
+    <!-- Aussehen & Startseite -->
+    <string name="settings_ca_row_titles">Reihentitel</string>
+    <string name="settings_ca_line_row_titles">Zeig die Titel über den Reihen der Startseite</string>
+    <string name="settings_ca_line_home_layout">Wie die Startseite Bild und Reihen anordnet</string>
+    <string name="settings_ca_home_rows">Reihen der Startseite</string>
+    <string name="settings_ca_help_home_rows">Wähle, welche Reihen die Startseite zeigt und in welcher Reihenfolge. ▶ auf einer Reihe zeigt ihre eigenen Optionen, etwa was „Weiterschauen“ enthält oder welche Kategorie die Senderreihe zeigt.</string>
+    <string name="settings_ca_rows_heading">Reihen</string>
+    <string name="settings_ca_spotlight_sources">Spotlight-Quellen</string>
+    <string name="settings_ca_line_spotlight_sources">Wähle, woher die Tipps im Spotlight kommen</string>
+    <string name="settings_ca_help_spotlight_sources">Das Spotlight-Layout zeigt immer einen Tipp. Schalte jede Quelle an oder aus; OK gedrückt halten ändert die Reihenfolge.</string>
+    <string name="settings_ca_bg_glass">Hintergrund &amp; Glas</string>
+    <string name="settings_ca_line_bg_glass">Hintergrundbild, Farben und Glaseffekt</string>
+    <string name="settings_ca_line_theme">Dunkel, hell oder wie der Fernseher</string>
+    <string name="settings_ca_line_focus">Farbe und Stärke des Fokusrahmens</string>
+    <string name="settings_ca_line_animations">Aus wirkt auf schwächeren TV-Boxen flotter</string>
+    <string name="settings_ca_line_ambient_glow">Gibt der einfarbigen Oberfläche einen sanften Schein</string>
+    <string name="settings_ca_text_size">Textgröße</string>
+    <string name="settings_ca_line_text_size">Mach den Text der App größer oder kleiner</string>
+    <string name="settings_ca_help_text_size">Die Größe des Texts in ganz Mayo TV, nicht in Popups. Untertitel behalten ihre eigene Größe.</string>
+    <string name="settings_ca_font">Schriftart</string>
+    <string name="settings_ca_line_font">Eine Schrift für Oberfläche und Popups</string>
+    <string name="settings_ca_popup_text_size">Popup-Textgröße</string>
+    <string name="settings_ca_line_popup_text_size">Mach den Text in Popups und Menüs größer oder kleiner</string>
+    <string name="settings_ca_help_popup_text_size">Ändert nur den Text in Popups und Menüs, nicht ihre Größe.</string>
+    <string name="settings_ca_line_zoom">Skaliere die ganze Oberfläche</string>
+    <string name="settings_ca_column_widths">Spaltenbreiten Filme &amp; Serien</string>
+    <string name="settings_ca_line_column_widths">Mach Kategorien, Liste und Vorschau breiter oder schmaler</string>
+    <string name="settings_ca_help_column_widths">Wie breit die Kategorie-Spalte, die Liste und die Vorschau in Filme und in Serien sind.</string>
+    <string name="settings_ca_custom">Eigene</string>
+    <string name="settings_ca_line_clock_weather">Farben der Uhr und das Wetter oben rechts</string>
+    <string name="settings_ca_preview">Vorschau</string>
+
+    <!-- Bedienung -->
+    <string name="settings_ca_heading_menu">Menü links</string>
+    <string name="settings_ca_menu_items">Menüeinträge</string>
+    <string name="settings_ca_line_menu_items">Wähle, was das Menü links zeigt</string>
+    <string name="settings_ca_help_menu_items">Automatisch zeigt die Bereiche, in denen es etwas gibt. Bei „Eigene Auswahl“ hakst du die Bereiche selbst ab. Apps fügt das Raster aller Apps hinzu.</string>
+    <string name="settings_ca_menu_auto">Automatisch</string>
+    <string name="settings_ca_menu_own">Eigene Auswahl</string>
+    <string name="settings_ca_menu_apps">Apps</string>
+    <string name="settings_ca_keys">Tasten &amp; Kurzbefehle</string>
+    <string name="settings_ca_line_keys">Leg fest, was die Tasten der Fernbedienung tun</string>
+    <plurals name="settings_ca_key_count">
+        <item quantity="one">%d belegt</item>
+        <item quantity="other">%d belegt</item>
+    </plurals>
+    <string name="settings_ca_keys_restore_confirm">Alle Tasten im Vollbild wieder so belegen, wie sie ab Werk waren? Deine eigene Belegung dieser Tasten geht verloren.</string>
+    <string name="settings_ca_keys_restore_action">Wiederherstellen</string>
+    <string name="settings_ca_heading_lists">Listen &amp; Menüs</string>
+    <string name="settings_ca_remember_live_category">Letzte Live-TV-Kategorie merken</string>
+    <string name="settings_ca_line_remember_live_category">Live-TV öffnet in der Kategorie, die du offen hattest</string>
+    <string name="settings_ca_remember_channel">Letzten Sender merken</string>
+    <string name="settings_ca_line_remember_channel">Live-TV springt zum zuletzt gewählten Sender</string>
+    <string name="settings_ca_remember_movie">Letzten Film merken</string>
+    <string name="settings_ca_line_remember_movie">Filme springt zum zuletzt gewählten Film</string>
+    <string name="settings_ca_remember_series">Letzte Serie merken</string>
+    <string name="settings_ca_line_remember_series">Serien springt zur zuletzt gewählten Serie</string>
+    <string name="settings_ca_help_remember">Aus: Die Liste beginnt jedes Mal oben.</string>
+    <string name="settings_ca_long_press_menus">Menüs bei langem OK</string>
+    <string name="settings_ca_line_long_press_menus">Ordne die Aktionen für Filme, Serien und Folgen</string>
+    <string name="settings_ca_help_long_press_menus">OK gedrückt halten auf einem Film, einer Serie oder Folge öffnet ein Menü mit Aktionen. Stell die, die du oft brauchst, nach oben.</string>
+    <string name="settings_ca_default">Standard</string>
+
+    <!-- Einschalten & Home-Taste -->
+    <string name="settings_ca_heading_power_on">Beim Einschalten</string>
+    <string name="settings_ca_heading_android_tv">Android TV</string>
+    <string name="settings_ca_opens_with">Mayo TV öffnet mit</string>
+    <string name="settings_ca_line_opens_with">Was Mayo TV beim Start zuerst zeigt</string>
+    <string name="settings_ca_tv_cards">Mayo-Karten auf dem TV-Startbildschirm</string>
+    <string name="settings_ca_line_tv_cards">Weiterschauen und zuletzt gesehene Sender auf dem Startbildschirm von Android TV</string>
+    <string name="settings_ca_line_refresh">Bau die Karten auf dem TV-Startbildschirm neu</string>
+
+    <!-- Seite „Reihen der Startseite“: die eigenen Optionen einer Reihe im Panel. -->
+    <string name="settings_ca_action_value">%1$s · %2$s</string>
+    <string name="settings_ca_keep_live">Live-Sender</string>
+    <string name="settings_ca_keep_movies">Filme</string>
+    <string name="settings_ca_keep_series">Serien</string>
+    <string name="settings_ca_keep_video">Videovorschau</string>
+</resources>
