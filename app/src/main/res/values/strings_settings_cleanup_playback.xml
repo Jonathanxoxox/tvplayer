@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Settings clean-up (6 Nov 2026), Playback / Picture & sound / Language & subtitles: new keys and
+     overrides of core strings (same name). To be moved into the core fork (mayo) later. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Sub-headings -->
+    <string name="settings_pb_heading_movies_series">Movies &amp; Series</string>
+    <string name="settings_pb_heading_advanced">Advanced</string>
+    <string name="settings_pb_heading_language">Language</string>
+    <string name="settings_pb_heading_subtitles">Subtitles</string>
+
+    <!-- Rows that used to be root rows or sat one page deeper -->
+    <string name="settings_pb_app_language">App language</string>
+    <string name="settings_pb_line_app_language">The language of Mayo TV\'s menus and texts</string>
+    <string name="settings_pb_downloaded_subtitles">Downloaded subtitles</string>
+    <string name="settings_pb_os_signed_in">Signed in</string>
+    <string name="settings_pb_os_signed_out">Not signed in</string>
+
+    <!-- Overrides: one word per thing (picture format, A/V sync, remembered) -->
+    <string name="settings_default_zoom">Picture format</string>
+    <string name="settings_line_saved_zoom">Picture format you changed in the player</string>
+    <string name="settings_default_volume">Volume at start</string>
+    <string name="settings_audio_sync">A/V sync</string>
+    <string name="settings_output_audio_delay_description">Added on top of “A/V sync” and kept separately for each output — HDMI, a soundbar on HDMI ARC, Bluetooth, the built-in speakers, headphones. Set it while listening on the output it is for.</string>
+    <string name="settings_preferred_audio_language">Audio language</string>
+    <string name="settings_preferred_subtitle_language">Subtitle language</string>
+    <string name="settings_recording_reserve">Keep one connection free</string>
+    <string name="settings_line_rec_watching">Adds a record button to the player</string>
+    <string name="settings_vod_network_auto">Automatic</string>
+    <string name="settings_afr_pause">Pause while switching</string>
+
+    <string name="settings_title_saved_live_choices">Player choice per channel</string>
+    <string name="settings_title_saved_choices">Player choice per film/episode</string>
+    <string name="settings_title_saved_zoom">Remembered picture format</string>
+    <string name="settings_title_saved_volume">Remembered volume</string>
+    <string name="settings_title_saved_audio_sync">Remembered A/V sync</string>
+    <string name="settings_reset_player_choices_none">None remembered</string>
+    <plurals name="settings_reset_player_choices_count">
+        <item quantity="one"><xliff:g id="count">%1$d</xliff:g> remembered</item>
+        <item quantity="other"><xliff:g id="count">%1$d</xliff:g> remembered</item>
+    </plurals>
+    <string name="settings_reset_live_player_choices_confirm">Reset the remembered player choice per channel?</string>
+    <string name="settings_reset_player_choices_confirm">Reset the remembered player choice per film/episode?</string>
+    <string name="settings_reset_saved_zoom_confirm">Reset the remembered picture format?</string>
+    <string name="settings_reset_saved_volume_confirm">Reset the remembered volume?</string>
+    <string name="settings_reset_saved_audio_delay_confirm">Reset the remembered A/V sync?</string>
+</resources>
