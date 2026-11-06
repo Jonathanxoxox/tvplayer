@@ -63,11 +63,16 @@ internal fun HighlightInfo(
     rating: Double? = null,
     /** The film is also in the playlist's library: a second button plays it from the start, now. */
     onOnDemand: (() -> Unit)? = null,
+    /** The top tier, when this highlight is in it: a gold badge before its label. */
+    tier: HighlightTier? = null,
 ) {
     val accent = stageAccent.accent
     val onDemandButton = remember { FocusRequester() }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(14.mpx)) {
-        Text(reasonLabel(hl, now), style = stageText(17, 800), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.mpx)) {
+            if (tier != null) TierBadge(tier)
+            Text(reasonLabel(hl, now, badged = tier != null), style = stageText(17, 800), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        }
         Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         FilmFacts(hl, rating)
         lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
@@ -177,9 +182,40 @@ internal fun HighlightPicture(hl: Highlight) {
     }
 }
 
+/**
+ * The top tier's badge: ★ TV-PREMIERE, ★ HIGHLIGHT, ★ TOP-BEWERTET, ★ DEIN SPORT, filled in the gold of the
+ * rating star (unchanged in light, like the rating chips), dark ink on it, so it reads from the sofa.
+ */
 @Composable
-private fun reasonLabel(hl: Highlight, now: Long): String {
+private fun TierBadge(tier: HighlightTier) {
+    val label = stringResource(
+        when (tier) {
+            HighlightTier.PREMIERE -> R.string.home_hl_badge_premiere
+            HighlightTier.HIGHLIGHT -> R.string.home_hl_badge_highlight
+            HighlightTier.TOP_RATED -> R.string.home_hl_badge_top_rated
+            HighlightTier.SPORT -> R.string.home_hl_badge_sport
+        },
+    )
+    Row(
+        Modifier.clip(RoundedCornerShape(8.mpx)).background(StageColors.RatingStar).padding(horizontal = 12.mpx, vertical = 5.mpx),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(7.mpx),
+    ) {
+        OwnTVIcon(OwnTVIcon.STAR, BadgeInk, Modifier.size(17.mpx), filled = true)
+        Text(label, style = stageText(16, 900), color = BadgeInk, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** The ink on the gold badge: near-black, warm, in every Theme. */
+private val BadgeInk = androidx.compose.ui.graphics.Color(0xFF1F1500)
+
+@Composable
+private fun reasonLabel(hl: Highlight, now: Long, badged: Boolean = false): String {
     val pick = (hl as? Highlight.Pick)?.pick
+    // The badge already says premiere or highlight: on now, the label only says where.
+    if (badged && pick != null && pick.startMs <= now && (hl.reason == HighlightReason.PREMIERE || hl.reason == HighlightReason.HIGHLIGHT)) {
+        return stringResource(R.string.home_hl_now, pick.channel.name)
+    }
     // Later today: when and where, whatever kind of pick it is.
     if (pick != null && pick.startMs > now) {
         return stringResource(R.string.home_hl_later, clock(pick.startMs), pick.channel.name)

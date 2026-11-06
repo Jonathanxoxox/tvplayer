@@ -109,6 +109,8 @@ internal fun HomeStage(
     onDemand: Map<String, Long> = emptyMap(),
     /** Plays the playlist's movie from the start. */
     onPlayOnDemand: (Long) -> Unit = {},
+    /** The top tier's gold badge over the title ([HighlightTier]; Settings › Spotlight). */
+    badges: Boolean = true,
     /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
     spotlightFocusRequest: Long = 0L,
 ) {
@@ -322,6 +324,7 @@ internal fun HomeStage(
                     onStep = { d -> stepHighlight(d) },
                     rating = (hl as? Highlight.Pick)?.let { ratings[it.key] },
                     onOnDemand = (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onPlayOnDemand(id) } },
+                    tier = if (badges) HighlightTier.of(hl, (hl as? Highlight.Pick)?.let { ratings[it.key] }) else null,
                     onOpen = {
                         when (hl) {
                             is Highlight.Live -> onPlayFullscreen(hl.channel, channels)

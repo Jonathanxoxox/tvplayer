@@ -53,7 +53,7 @@ private fun SpotlightDisplayRows() {
     val back = stringResource(R.string.common_back) to stringResource(R.string.settings_group_appearance_home)
     val stepHints = listOf("◀ ▶" to change, back)
     val okHints = listOf(stringResource(R.string.common_ok) to stringResource(R.string.settings_key_switch), back)
-    StageSettingsHeading(stringResource(R.string.home_spotlight_display), 4, first = true)
+    StageSettingsHeading(stringResource(R.string.home_spotlight_display), 5, first = true)
 
     // How many highlights: 4 … 12, ◀ ▶ in place, OK goes round.
     val maxSteps = LauncherConfig.SPOTLIGHT_MAX_STEPS
@@ -99,6 +99,17 @@ private fun SpotlightDisplayRows() {
         value = SettingValue.Switch(config.spotlightRatings),
         onClick = { LauncherPrefs.update(context) { it.copy(spotlightRatings = !it.spotlightRatings) } },
         help = SettingHelp(ratingsTitle, ratingsDesc, hints = okHints),
+    )
+
+    val badgesTitle = stringResource(R.string.home_spotlight_badges)
+    val badgesDesc = stringResource(R.string.home_spotlight_badges_desc)
+    StageSettingRow(
+        icon = OwnTVIcon.SPARKLE,
+        title = badgesTitle,
+        desc = badgesDesc,
+        value = SettingValue.Switch(config.spotlightBadges),
+        onClick = { LauncherPrefs.update(context) { it.copy(spotlightBadges = !it.spotlightBadges) } },
+        help = SettingHelp(badgesTitle, badgesDesc, hints = okHints),
     )
 
     val seriesTitle = stringResource(R.string.home_spotlight_hide_series)

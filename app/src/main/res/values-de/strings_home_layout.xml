@@ -63,4 +63,10 @@
     <string name="home_spotlight_hide_series">Serien ausblenden</string>
     <string name="home_spotlight_hide_series_desc">Serienfolgen erscheinen nicht bei Tipps, Filmen und „Jetzt im TV“</string>
     <string name="home_hl_on_demand">On Demand</string>
+    <string name="home_hl_badge_premiere">TV-PREMIERE</string>
+    <string name="home_hl_badge_highlight">HIGHLIGHT</string>
+    <string name="home_hl_badge_top_rated">TOP-BEWERTET</string>
+    <string name="home_hl_badge_sport">DEIN SPORT</string>
+    <string name="home_spotlight_badges">Highlights hervorheben</string>
+    <string name="home_spotlight_badges_desc">Premieren, MagentaTV-Highlights, Filme ab Bewertung 8 und deine Spiele bekommen ein goldenes Abzeichen</string>
 </resources>

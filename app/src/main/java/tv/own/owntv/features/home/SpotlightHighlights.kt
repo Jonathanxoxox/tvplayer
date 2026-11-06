@@ -10,6 +10,34 @@ import java.util.TimeZone
 import kotlin.math.abs
 import kotlin.math.min
 
+/**
+ * The Spotlight's top tier (Jonathan, 6 Nov 2026: "premieres and special highlights should stand out"): what
+ * gets the gold badge over its title. Everything else (tips, documentaries, on now) keeps its plain label.
+ */
+enum class HighlightTier { PREMIERE, HIGHLIGHT, TOP_RATED, SPORT;
+
+    companion object {
+        /** A film from this TMDB rating up is top-rated. */
+        const val TOP_RATING = 8.0
+
+        /**
+         * [hl]'s tier, or null for an ordinary one: a (free-)TV premiere, MagentaTV's own highlight, a film rated
+         * [TOP_RATING] or better ([rating], when known), a match of the user's sport. In that order: a premiere
+         * that is also MagentaTV's highlight says premiere.
+         */
+        fun of(hl: Highlight, rating: Double?): HighlightTier? = when (hl) {
+            is Highlight.Pick -> when {
+                hl.pick.premiere -> PREMIERE
+                hl.pick.highlight -> HIGHLIGHT
+                hl.pick.film && rating != null && rating >= TOP_RATING -> TOP_RATED
+                else -> null
+            }
+            is Highlight.Sport -> SPORT
+            is Highlight.Live, is Highlight.Resume -> null
+        }
+    }
+}
+
 /** Why something is in the Spotlight; its label says so on screen. */
 enum class HighlightReason { SPORT_LIVE, SPORT_SOON, SPORT_LATER, FILM, PREMIERE, HIGHLIGHT, TIP, DOC, HABIT, RESUME, NOW }
 

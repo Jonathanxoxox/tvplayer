@@ -1643,6 +1643,7 @@
 2	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	row_titles
 1	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	spotlight
 2	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	spotlight_auto_secs
+2	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	spotlight_badges
 2	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	spotlight_hide_series
 2	preference-key	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	spotlight_max
 2	technical	app/src/main/java/tv/own/owntv/launcher/apps/LauncherPrefs.kt	spotlight_off

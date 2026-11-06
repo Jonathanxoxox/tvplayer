@@ -680,6 +680,7 @@ fun HomeScreen(
                             ratings = if (launcherConfig.spotlightRatings) filmRatings else emptyMap(),
                             autoAdvanceSecs = launcherConfig.spotlightAutoSecs,
                             onDemand = onDemand,
+                            badges = launcherConfig.spotlightBadges,
                             onPlayOnDemand = { movieId -> onPlayMovie(movieId, 0L) },
                             spotlightFocusRequest = spotlightFocusRequest,
                             onOpenMatch = onOpenMatch,

@@ -210,4 +210,18 @@ class SpotlightHighlightsTest {
         assertEquals(null, descriptionOf(Highlight.Live(channel(2), p.copy(description = "Spielfilm"), HighlightReason.NOW)))
         assertEquals(null, descriptionOf(Highlight.Live(channel(2), null, HighlightReason.HABIT)))
     }
+
+    @Test
+    fun `the top tier - premiere before highlight, top-rated films, matches, nothing else`() {
+        val now = at(18, 0)
+        fun tier(p: GuidePick, rating: Double? = null) = HighlightTier.of(Highlight.Pick(p, HighlightReason.FILM), rating)
+        assertEquals(HighlightTier.PREMIERE, tier(film(1, at(20, 15), at(22, 0), premiere = true, highlight = true)))
+        assertEquals(HighlightTier.HIGHLIGHT, tier(pick(2, at(20, 15), at(21, 0), highlight = true)))
+        assertEquals(HighlightTier.TOP_RATED, tier(film(3, at(20, 15), at(22, 0)), rating = 8.1))
+        assertEquals(null, tier(film(3, at(20, 15), at(22, 0)), rating = 7.9))
+        // A rating says nothing about a tip that is not a film.
+        assertEquals(null, tier(pick(4, at(20, 15), at(21, 0), tip = true), rating = 9.0))
+        assertEquals(HighlightTier.SPORT, HighlightTier.of(Highlight.Sport(match("1", true, now), HighlightReason.SPORT_LIVE), null))
+        assertEquals(null, HighlightTier.of(Highlight.Live(channel(5), null, HighlightReason.NOW), null))
+    }
 }

@@ -64,4 +64,10 @@
     <string name="home_spotlight_hide_series">Leave out series</string>
     <string name="home_spotlight_hide_series_desc">Episodes of series stay out of the tips, films and “On TV now”</string>
     <string name="home_hl_on_demand">On demand</string>
+    <string name="home_hl_badge_premiere">TV PREMIERE</string>
+    <string name="home_hl_badge_highlight">HIGHLIGHT</string>
+    <string name="home_hl_badge_top_rated">TOP RATED</string>
+    <string name="home_hl_badge_sport">YOUR SPORT</string>
+    <string name="home_spotlight_badges">Highlight the best</string>
+    <string name="home_spotlight_badges_desc">Premieres, MagentaTV\'s highlights, films rated 8 or more and your matches wear a gold badge</string>
 </resources>
