@@ -144,6 +144,22 @@ open class MainActivity : ComponentActivity() {
         Log.d(TAG, "onNewIntent deepLinkHost=${intent.data?.host} deepLinkType=${pendingDeepLink?.javaClass?.simpleName ?: "none"}")
     }
 
+    /**
+     * The box went to standby (screen off) since Mayo was last in front. Waking it then lands on Home
+     * instead of carrying on with the last channel, series or film (Jonathan, 6 Nov 2026).
+     */
+    private var slept = false
+    private val screenOff = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: android.content.Context, intent: Intent) {
+            if (intent.action == Intent.ACTION_SCREEN_OFF) slept = true
+        }
+    }
+
+    override fun onDestroy() {
+        runCatching { unregisterReceiver(screenOff) }
+        super.onDestroy()
+    }
+
     override fun onStop() {
         super.onStop()
         // Backgrounded (Home / another app), exited, or logged out: stop playback and free the demuxer
@@ -162,6 +178,14 @@ open class MainActivity : ComponentActivity() {
         // Paired with onStop: bring back what was freed while backgrounded (notably the TV screensaver, which
         // kicks in during a long pause) — a VOD restored paused at its position, and a live channel re-tuned
         // to the live edge — so Play resumes instead of sitting on a dead/empty stream. No-op on fresh launch.
+        if (slept) {
+            // Woken from standby: nothing comes back on its own; Home, as after the Home button.
+            slept = false
+            Log.d(TAG, "woke from standby: home")
+            player.discardBackgroundRestore()
+            previewEngine.discardBackgroundRestore()
+            tv.own.owntv.launcher.apps.LauncherSystem.goHome()
+        }
         engines.onAppForegrounded()
         // Staleness-based auto refresh on resume (interval modes only — STARTUP is cold-start only). The
         // ViewModel throttles this internally so a quick toggle doesn't re-run the check.
@@ -191,6 +215,9 @@ open class MainActivity : ComponentActivity() {
         val splash = installSplashScreen()
         super.onCreate(savedInstanceState)
         StartupGate.activityStarted()
+        androidx.core.content.ContextCompat.registerReceiver(
+            this, screenOff, android.content.IntentFilter(Intent.ACTION_SCREEN_OFF), androidx.core.content.ContextCompat.RECEIVER_NOT_EXPORTED,
+        )
         val splashDeadline = SystemClock.uptimeMillis() + SPLASH_TIMEOUT_MS
         splash.setKeepOnScreenCondition { !contentReady && SystemClock.uptimeMillis() < splashDeadline }
         tv.own.owntv.launcher.apps.LauncherSystem.onIntent(intent)

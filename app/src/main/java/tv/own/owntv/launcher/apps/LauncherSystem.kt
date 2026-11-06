@@ -54,6 +54,11 @@ object LauncherSystem {
         }
     }
 
+    /** Home without a key press: the shell leaves the player and goes to Home (e.g. waking from standby). */
+    fun goHome() {
+        homePresses.value = SystemClock.elapsedRealtime()
+    }
+
     fun openHome(context: Context, live: Boolean = false) {
         val intent = context.packageManager.getLeanbackLaunchIntentForPackage(context.packageName)
             ?: context.packageManager.getLaunchIntentForPackage(context.packageName) ?: return

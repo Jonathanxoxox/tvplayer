@@ -129,6 +129,7 @@ private val CompactHeroHeight = 228.mpx - RowGap
 
 /** Where the rows start when there is no hero: just below the top-right cluster. */
 private val NoHeroTop = 110.mpx
+private val RoomBelowFocus = 36.mpx
 
 /** Where the app buttons of the Classic and Stage layouts sit: level with the clock. */
 private val AppPillsTop = 30.mpx
@@ -421,7 +422,9 @@ fun HomeScreen(
                 // The top-right cluster (clock, date) sits over the list's top: a row scrolled back up stops below
                 // it instead of sliding under the clock (Jonathan, 1 Nov 2026).
                 val top = with(density) { NoHeroTop.toPx() }
-                val trailing = offset + size - containerSize
+                // A row scrolled up into view keeps some room under it: the focused card grows (stageLift) past
+                // its own bounds, and its subtitle was cut by the screen's edge (Jonathan, 6 Nov 2026).
+                val trailing = offset + size - containerSize + with(density) { RoomBelowFocus.toPx() }
                 return when {
                     offset >= top && trailing <= 0f -> 0f
                     offset < top || size > containerSize - top -> offset - top
