@@ -2,7 +2,6 @@ package tv.own.owntv.features.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.withFrameNanos
@@ -24,13 +23,12 @@ import tv.own.owntv.features.profiles.ProfileGateSessionViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.stage.StageTag
-import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageAccent
 
 private const val ADD_ROW = -1L
 
-/** How many profiles Settings › Profile lists, for the page's count. */
+/** How many profiles Settings › Profiles lists, for the page's count and its entry in the list on the left. */
 @Composable
 internal fun profileCount(): Int {
     val vm: ProfilesViewModel = koinViewModel()
@@ -70,8 +68,10 @@ internal fun ProfileSettingsRows() {
     val help = SettingHelp(
         title = stringResource(R.string.profiles_title),
         text = stringResource(R.string.settings_help_profiles),
-        hints = listOf(
+        // Hold OK deletes a profile while more than one exists (rule 11: a list item, so it is in the hints).
+        hints = listOfNotNull(
             stringResource(R.string.common_ok) to stringResource(R.string.common_edit),
+            if (profiles.size > 1) stringResource(R.string.content_key_hold_ok) to stringResource(R.string.common_delete) else null,
             stringResource(R.string.common_back) to stringResource(R.string.common_nav_settings),
         ),
     )
@@ -96,7 +96,6 @@ internal fun ProfileSettingsRows() {
                     if (inUse) StageTag(inUseTag, tint = accent)
                     if (p.isKids) StageTag(kidsTag)
                     if (p.pinHash != null) StageTag(pinTag)
-                    if (!inUse) OwnTVIcon(OwnTVIcon.CHEVRON, StageColors.Muted, Modifier.size(20.mpx))
                 }
             },
             onClick = { returnTo = p.id; editing = p },
@@ -106,7 +105,7 @@ internal fun ProfileSettingsRows() {
         )
     }
     StageSettingRow(
-        icon = OwnTVIcon.SPARKLE,
+        icon = OwnTVIcon.ADD,
         title = stringResource(R.string.settings_profile_add),
         desc = stringResource(R.string.settings_profile_add_line),
         value = null,

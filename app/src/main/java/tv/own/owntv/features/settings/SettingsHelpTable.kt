@@ -11,12 +11,6 @@ import tv.own.owntv.R
 
 /** The short line under the title. */
 internal val SETTING_LINE: Map<String, Int> = mapOf(
-    "quick_live_preview" to R.string.settings_line_quick_live_preview,
-    "quick_preview_sound" to R.string.settings_line_preview_sound,
-    "quick_channel_numbers" to R.string.settings_line_quick_channel_numbers,
-    "quick_hdr" to R.string.settings_line_prefer_sdr,
-    "quick_autoplay" to R.string.settings_line_quick_autoplay,
-    "quick_check_update" to R.string.settings_line_when_app_opens,
     "epg_offset" to R.string.settings_line_epg_offset,
     "reminders" to R.string.settings_line_reminders,
     "reminder_lead" to R.string.settings_line_reminder_lead,
@@ -94,7 +88,6 @@ internal val SETTING_LINE: Map<String, Int> = mapOf(
     "vp_autoplay" to R.string.settings_line_autoplay,
     "vp_multiview" to R.string.settings_vp_cat_multiview_summary_mobile,
     "vp_multiview_tiles" to R.string.settings_line_tiles,
-    "vp_mini" to R.string.settings_line_mini,
     "vp_measured_stats" to R.string.settings_line_measured_stats,
     "vp_logging" to R.string.settings_line_logging,
     "rec_reserve" to R.string.settings_line_rec_reserve,
@@ -117,10 +110,6 @@ internal val SETTING_TITLE: Map<String, Int> = mapOf(
 
 /** The context panel's explanation, where the row's own description is not already one. */
 internal val SETTING_HELP: Map<String, Int> = mapOf(
-    "quick_live_preview" to R.string.settings_help_live_preview,
-    "quick_preview_sound" to R.string.settings_help_preview_audio,
-    "quick_channel_numbers" to R.string.settings_help_channel_numbers,
-    "quick_check_update" to R.string.settings_help_update_startup,
     "tab_SOURCES" to R.string.settings_help_playlists,
     "tab_EPG" to R.string.settings_help_epg_sources,
     "epg_offset" to R.string.settings_epg_offset_root_description,
@@ -166,7 +155,6 @@ internal val SETTING_HELP: Map<String, Int> = mapOf(
     "vp_timeshift_window" to R.string.settings_help_timeshift_window,
     "vp_seek_step" to R.string.settings_help_seek_step,
     "vp_resume" to R.string.settings_help_resume,
-    "vp_mini" to R.string.settings_help_mini,
 )
 
 /** For a switch row, whether On is the recommended value (the panel tags it). Absent = no tag. */
