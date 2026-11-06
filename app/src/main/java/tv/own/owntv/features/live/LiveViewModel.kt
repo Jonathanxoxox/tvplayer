@@ -225,6 +225,19 @@ class LiveViewModel(
     val livePreviewEnabled: StateFlow<Boolean> = settings.livePreviewEnabled
         .stateIn(viewModelScope, SharingStarted.Eagerly, true)
 
+    /**
+     * The active profile, kept current in memory: a zap checks it here instead of two database reads whose
+     * answers had to wait for the main thread to come back, which on a busy frame (the channel card
+     * appearing) cost ~120 ms of a ~1.1 s switch (box, 6 Nov 2026). Null while unknown or after the
+     * profile was removed: [playChannel] then takes the full check as before. Created by the first tune,
+     * not with the view model at the app's start, where its query cost the first frame.
+     */
+    private val activeProfile: StateFlow<tv.own.owntv.core.database.entity.ProfileEntity?> by lazy {
+        settings.activeProfileId
+            .flatMapLatest { id -> if (id >= 0) profileDao.observeById(id) else flowOf(null) }
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    }
+
     /** List ordering for this section (Playlist order vs A–Z), persisted in DataStore. */
     val sortMode: StateFlow<SettingsRepository.SortMode> = settings.sortLive
         .stateIn(viewModelScope, SharingStarted.Eagerly, SettingsRepository.SortMode.PLAYLIST)
@@ -1257,6 +1270,7 @@ class LiveViewModel(
         lastZapPressMs = now
         // Diagnostics only: the tune this press causes claims it and times its first frame from here.
         tv.own.owntv.player.ZapTiming.shared.markPress(now)
+        android.util.Log.i("OwnTVPerf", "zap-app press")
         pendingZapTuneJob?.cancel()
         if (delayMs <= 0L) {
             pendingZapTuneJob = null
@@ -1474,6 +1488,7 @@ class LiveViewModel(
     /** [ensurePlaying] without forgetting the zap press: the tune a CH+/- step opens, timed from that press. */
     private fun startTune(channel: ChannelEntity) {
         tv.own.owntv.perf.StartLog.stampOnce("tune-start")
+        android.util.Log.i("OwnTVPerf", "zap-app start-tune")
         zapList.cancelPendingRebuild()
         // A deliberate pick supersedes a CH+/- step still waiting out its delay — otherwise the deferred
         // tune would land half a second later and drag the user off the channel they just chose.
@@ -1494,8 +1509,15 @@ class LiveViewModel(
      *  channel. Direct-tune's background rebuild path calls this without cancelling the rebuild
      *  so the in-flight rebuild it owns isn't killed by its own play. */
     private suspend fun playChannel(channel: ChannelEntity) {
-        val pid = currentProfileId() ?: return
-        if (!tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, channel.categoryId, profileDao, categoryDao)) return
+        // A grown-up profile known in memory may watch any channel: no database round trip on the zap. A kids
+        // profile (or one not known yet) gets the full check, category name and all, exactly as before.
+        // Checked against the active id itself, so a profile switch the flow has not caught up with yet still
+        // gets the full check.
+        val known = activeProfile.value?.takeIf { it.id == settings.activeProfileIdNow() }
+        if (known == null || known.isKids) {
+            val pid = currentProfileId() ?: return
+            if (!tv.own.owntv.core.content.AdultCategoryClassifier.allows(pid, channel.categoryId, profileDao, categoryDao)) return
+        }
         // Live TV set to play externally: hand the channel over instead of tuning an in-app engine.
         // History is still recorded, so the channel shows up in History/Recently watched either way.
         // A protected channel stays in-app whatever this setting says: no standard intent extra
@@ -1509,6 +1531,7 @@ class LiveViewModel(
         _catchupActive.value = false // tuning live ends any archive playback the HUD was showing
         // Core routes it (DRM, the pin, a learned panel refusal, the playlist, the setting), arms the
         // ladder and starts the engine — the same code the phone runs.
+        android.util.Log.i("OwnTVPerf", "zap-app checks-done")
         live.start(channel, getSource(channel.sourceId))
         recordLiveHistory(channel)
     }
