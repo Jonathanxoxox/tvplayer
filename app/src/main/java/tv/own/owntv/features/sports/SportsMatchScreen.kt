@@ -263,8 +263,8 @@ fun SportsMatchScreen(
                             (it != MatchTab.TABLE || state.standings?.groups?.any { g -> g.rows.isNotEmpty() } == true) &&
                                 (it != MatchTab.STATS || !state.summary?.stats.isNullOrEmpty()) &&
                                 (it != MatchTab.LINEUPS || !state.summary?.lineups.isNullOrEmpty()) && (it != MatchTab.FORM || !state.summary?.form.isNullOrEmpty()) &&
-                                // The user's own channels are in Watch live beside; this tab only adds ESPN's list.
-                                (it != MatchTab.BROADCASTS || m.broadcasts.isNotEmpty())
+                                // No Broadcasts tab (Jonathan, 7 Nov 2026): ESPN lists only US channels there; Watch live shows yours.
+                                it != MatchTab.BROADCASTS
                         }
                         tabs.forEach { t ->
                             StageTab(

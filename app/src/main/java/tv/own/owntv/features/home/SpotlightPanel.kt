@@ -63,8 +63,12 @@ internal fun HighlightInfo(
     now: Long,
     modifier: Modifier = Modifier,
     rating: Double? = null,
-    /** The film is also in the playlist's library: a second button opens its page in Movies. */
+    /**
+     * A second button: a film also in the playlist's library opens its page in Movies; a match opens its page
+     * in Sports ([secondIcon] says which).
+     */
     onOnDemand: (() -> Unit)? = null,
+    secondIcon: OwnTVIcon = OwnTVIcon.MOVIES,
     /** The top tier, when this highlight is in it: a gold badge before its label. */
     tier: HighlightTier? = null,
     /** A match's text, which [descriptionOf] cannot know: matchday, venue, table ([sportText]). */
@@ -139,7 +143,7 @@ internal fun HighlightInfo(
                         }
                     },
             ) { focused ->
-                OwnTVIcon(OwnTVIcon.MOVIES, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(24.mpx))
+                OwnTVIcon(secondIcon, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(24.mpx))
             }
             if (count > 1) Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically) {
                 repeat(count) { i ->

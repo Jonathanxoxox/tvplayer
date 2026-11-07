@@ -409,8 +409,25 @@ class SportsViewModel(
         return WatchList.of(options, WatchFilter.from(c, Locale.getDefault().language, liveSources.value)).shown
     }
 
+    /**
+     * The first channel [match] is on, as Watch live lists it by default (the profile's filter): what the
+     * Spotlight's play button starts in its picture (Jonathan, 7 Nov 2026). Searches when Find channels has not
+     * run for it yet; the guides are given [GUIDE_WAIT_MS] when core finds nothing. Null when none shows it.
+     */
+    suspend fun firstChannel(match: Match): tv.own.owntv.core.database.entity.ChannelEntity? = kotlinx.coroutines.withContext(Dispatchers.Default) {
+        val c = config.first()
+        val core = watchReader.found(match) { SportsMemory.rememberedFor(c, it) }
+            ?: watchReader.watchFor(listOf(match)) { SportsMemory.rememberedFor(c, it) }[match.key].orEmpty()
+        val guide = if (core.isNotEmpty()) GuideBroadcasts.cached(match) else kotlinx.coroutines.withTimeoutOrNull(GUIDE_WAIT_MS) {
+            GuideBroadcasts.find(match).first { it.done || it.options.isNotEmpty() }.options
+        }.orEmpty()
+        val options = GuideBroadcasts.merge(core, guide, GuideBroadcasts.watchedOrder())
+        WatchList.of(options, WatchFilter.from(c, Locale.getDefault().language, liveSources.value)).shown.firstOrNull()?.channel
+    }
+
     companion object {
         private const val HOME_ROW_DELAY_MS = 3_000L
+        private const val GUIDE_WAIT_MS = 8_000L
 
         fun reminderKey(startMs: Long, title: String) = "$startMs|$title"
     }

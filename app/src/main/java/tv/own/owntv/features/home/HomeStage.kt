@@ -56,6 +56,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import tv.own.owntv.ui.components.OwnTVIcon
 import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
@@ -118,7 +120,12 @@ internal fun HomeStage(
     badges: Boolean = true,
     /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
     spotlightFocusRequest: Long = 0L,
+    /** A match's first channel as Watch live lists it, searching if needed: the match highlight's play button. */
+    findMatchChannel: suspend (tv.own.owntv.core.sports.model.Match) -> ChannelEntity? = { null },
 ) {
+    val stageScope = androidx.compose.runtime.rememberCoroutineScope()
+    // A match's channel being looked up for its play button: a second press meanwhile does nothing.
+    var matchSearching by remember { mutableStateOf(false) }
     val channels = row.channels
     if (channels.isEmpty()) return
     // Keyed on the category, not the row object: Home builds the row anew (coming back from full screen) and
@@ -223,7 +230,10 @@ internal fun HomeStage(
     DisposableEffect(Unit) { onDispose { GuidePreviewSpot.rect = null } }
     // A highlight other than a live channel shows no picture; the strip's channel shows the one picked.
     val video = picked?.takeIf {
-        previewOn && (hl == null || (hl is Highlight.Live && hl.channel.id == it.id) || (hl is Highlight.Pick && hl.pick.channel.id == it.id))
+        previewOn && (
+            hl == null || (hl is Highlight.Live && hl.channel.id == it.id) || (hl is Highlight.Pick && hl.pick.channel.id == it.id) ||
+                (hl is Highlight.Sport && pickedFromHighlight)
+            )
     }
     val programme = onNow[shown.id]
     // The picture until the channel plays: the programme's own, from TMDB (ProgrammeArt), else the logo.
@@ -381,7 +391,10 @@ internal fun HomeStage(
                     index = hlIndex,
                     onStep = { d -> stepHighlight(d) },
                     rating = (hl as? Highlight.Pick)?.let { ratings[it.key] },
-                    onOnDemand = (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onOpenOnDemand(id) } },
+                    // A match's second button: its page in Sports (Jonathan, 7 Nov 2026); the first plays it here.
+                    onOnDemand = if (hl is Highlight.Sport) ({ onOpenMatch(hl.match) })
+                        else (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onOpenOnDemand(id) } },
+                    secondIcon = if (hl is Highlight.Sport) OwnTVIcon.SPORTS else OwnTVIcon.MOVIES,
                     tier = if (badges) HighlightTier.of(hl, (hl as? Highlight.Pick)?.let { ratings[it.key] }) else null,
                     sportText = sportMatch?.let { sportText(it, sportNotes, sportTable) },
                     onOpen = {
@@ -397,7 +410,24 @@ internal fun HomeStage(
                         when (hl) {
                             is Highlight.Live -> open(hl.channel)
                             is Highlight.Pick -> open(hl.pick.channel)
-                            is Highlight.Sport -> onOpenMatch(hl.match)
+                            // A match: its first channel (as Watch live lists them) plays here; OK again full screen.
+                            // No channel shows it, or no preview: its page in Sports, as before.
+                            is Highlight.Sport -> {
+                                val playing = picked?.takeIf { pickedFromHighlight }
+                                when {
+                                    playing != null -> onPlayFullscreen(playing, channels)
+                                    !previewOn -> onOpenMatch(hl.match)
+                                    !matchSearching -> stageScope.launch {
+                                        matchSearching = true
+                                        val ch = try { findMatchChannel(hl.match) } finally { matchSearching = false }
+                                        if (ch != null) {
+                                            pickedAudible = true
+                                            pickedFromHighlight = true
+                                            picked = ch
+                                        } else onOpenMatch(hl.match)
+                                    }
+                                }
+                            }
                             is Highlight.Resume -> onResume(hl.item)
                         }
                     },

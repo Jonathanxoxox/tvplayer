@@ -689,6 +689,7 @@ fun HomeScreen(
                             onOpenOnDemand = { movieId -> onDemandScope.launch { filmLibrary.movie(movieId)?.let(onOpenMovie) } },
                             spotlightFocusRequest = spotlightFocusRequest,
                             onOpenMatch = onOpenMatch,
+                            findMatchChannel = { m -> sportsVm.firstChannel(m) },
                             onResume = { item ->
                                 when (item) {
                                     is HeroItem.MovieHero -> onPlayMovie(item.movie.id, item.positionMs)
