@@ -115,6 +115,8 @@ class MagentaGuide(private val http: OkHttpClient) {
     suspend fun matchPicture(key: String, home: List<String>, away: List<String>, kickoffMs: Long): String? =
         withContext(Dispatchers.IO) {
             matchPictures[key]?.let { return@withContext it.ifEmpty { null } }
+            // The shared board first: one read for every match around now (the sports page's posters use it too).
+            boardPicture(home, away, kickoffMs)?.let { matchPictures[key] = it; return@withContext it }
             runCatching {
                 lock.withLock {
                     channelId("") // fills the channel list
@@ -143,6 +145,61 @@ class MagentaGuide(private val http: OkHttpClient) {
                 }
             }.getOrNull()
         }
+
+    /** The sports and free-TV channels' programmes from a few hours back to a day and a half ahead, read once. */
+    @Volatile private var board: JSONArray? = null
+    @Volatile private var boardFrom = 0L
+    @Volatile private var boardTo = 0L
+    @Volatile private var boardAt = 0L
+
+    /**
+     * A match's picture from the shared board (see [board]): one guide read per channel for all of the sports
+     * page's posters instead of one per match (Jonathan, 7 Nov 2026). Null when the match lies outside the
+     * board's window, nothing on it names both teams, or the guide cannot be asked.
+     */
+    suspend fun boardPicture(home: List<String>, away: List<String>, kickoffMs: Long): String? = withContext(Dispatchers.IO) {
+        runCatching {
+            val b = sportsBoard() ?: return@runCatching null
+            if (kickoffMs < boardFrom || kickoffMs > boardTo) return@runCatching null
+            MagentaNames.matchPicture(b, home, away, kickoffMs)
+        }.getOrNull()
+    }
+
+    private suspend fun sportsBoard(): JSONArray? {
+        val fresh = { b: JSONArray? -> b?.takeIf { System.currentTimeMillis() - boardAt < BOARD_TTL_MS } }
+        fresh(board)?.let { return it }
+        return lock.withLock {
+            fresh(board)?.let { return@withLock it }
+            channelId("") // fills the channel list
+            val known = channels
+            if (known.isEmpty()) return@withLock null
+            val now = System.currentTimeMillis()
+            val from = now - BOARD_BACK_MS
+            val to = now + BOARD_AHEAD_MS
+            val all = JSONArray()
+            var answered = 0
+            for (id in MagentaNames.boardChannels(known)) {
+                val body = JSONObject()
+                    .put("count", -1)
+                    .put("isFillProgram", 0)
+                    .put("offset", 0)
+                    .put("properties", JSONArray().put(JSONObject().put("include", "starttime,name,pictures").put("name", "playbill")))
+                    .put("type", 2)
+                    .put("begintime", utc(from))
+                    .put("channelid", id)
+                    .put("endtime", utc(to))
+                val list = post("PlayBillList", body)?.optJSONArray("playbilllist") ?: continue
+                answered++
+                for (i in 0 until list.length()) all.put(list.get(i))
+            }
+            if (answered == 0) return@withLock null
+            board = all
+            boardFrom = from
+            boardTo = to
+            boardAt = now
+            all
+        }
+    }
 
     private fun channelId(name: String): String? {
         val now = System.currentTimeMillis()
@@ -234,6 +291,10 @@ class MagentaGuide(private val http: OkHttpClient) {
         val JSON = "application/json".toMediaType()
         const val SESSION_TTL_MS = 30 * 60_000L
         const val CHANNELS_TTL_MS = 24 * 60 * 60_000L
+        /** The shared sports board: read again after half an hour, from 3 h back to 36 h ahead. */
+        const val BOARD_TTL_MS = 30 * 60_000L
+        const val BOARD_BACK_MS = 3 * 60 * 60_000L
+        const val BOARD_AHEAD_MS = 36 * 60 * 60_000L
         /** The guide's start times differ from the provider's by a few minutes now and then. */
         const val WINDOW_MS = 20 * 60_000L
         const val PICK_FIELDS = "name,starttime,endtime,tipType,tipCategory,genres,pictures,introduce"
@@ -250,6 +311,12 @@ internal object MatchPictures {
 
 /** Matching the playlist's channel names to the guide's, and picking a programme's picture. */
 internal object MagentaNames {
+    /** The sports channels and the free channels national teams play on: what the shared board reads. */
+    fun boardChannels(index: Map<String, String>): List<String> {
+        val free = listOf("das erste", "zdf", "rtl", "prosieben", "sat 1", "vox", "nitro", "rtl nitro")
+        return sportChannels(index) + free.mapNotNull { index[it] }.filter { it !in sportChannels(index) }
+    }
+
     /** The guide's sports channels, the ones most likely to carry a football match first. */
     fun sportChannels(index: Map<String, String>): List<String> {
         val hints = listOf("sky sport", "dazn", "magentasport", "magenta sport", "sport1", "sport 1", "eurosport", "sky showcase")
@@ -267,10 +334,18 @@ internal object MagentaNames {
     }
 
     /** Lower case, umlauts folded, so "Mönchengladbach" and "M'gladbach" meet on "gladbach". */
-    private fun fold(s: String): String = s.lowercase(Locale.ROOT)
-        .replace("ä", "a").replace("ö", "o").replace("ü", "u").replace("ß", "ss")
+    fun fold(s: String): String = java.text.Normalizer.normalize(
+        s.lowercase(Locale.ROOT).replace("ß", "ss"),
+        java.text.Normalizer.Form.NFD,
+    ).filter { Character.getType(it) != Character.NON_SPACING_MARK.toInt() }
 
     /** A team's long name parts (4+ letters) to find inside a title, and its short codes as whole words. */
+    /** Whether [title] names the team called [names]: an event list's own team name, for example. */
+    fun namesTeam(names: List<String>, title: String): Boolean {
+        val t = fold(title)
+        return teamMatches(names, t, t.split(Regex("[^a-z0-9]+")).filter { it.isNotEmpty() }.toSet())
+    }
+
     private fun teamMatches(names: List<String>, title: String, words: Set<String>): Boolean {
         val parts = names.flatMap { fold(it).split(' ', '-', '.', '\'', '/').filter { p -> p.length >= 4 } }
         val codes = names.map { fold(it).trim() }.filter { it.length in 2..4 && ' ' !in it }
@@ -292,12 +367,17 @@ internal object MagentaNames {
             if (!teamMatches(home, title, words) || !teamMatches(away, title, words)) continue
             val start = runCatching { utcFormat.get()!!.parse(p.optString("starttime").take(19))?.time }.getOrNull() ?: continue
             if (start < kickoffMs - MatchPictures.BEFORE_MS || start > kickoffMs + MatchPictures.AFTER_MS) continue
-            val aside = listOf("countdown", "fantasy", "konferenz", "highlights", "vorbericht", "analyse").any { it in title }
-            val score = kotlin.math.abs(start - kickoffMs) + if (aside) 6 * 60 * 60_000L else 0L
+            // Not the match itself: a conference's picture is its own show's ("Live PL: Goal Rush, CRY - LIV,
+            // Premier League Konferenz" gave Crystal Palace v Liverpool Goal Rush's, 7 Nov 2026).
+            if (ASIDE.any { it in title }) continue
+            val score = kotlin.math.abs(start - kickoffMs)
             if (score < bestScore) { best = p; bestScore = score }
         }
         return best?.let(::pictureOf)
     }
+
+    /** Programmes about a match that are not its broadcast. */
+    private val ASIDE = listOf("countdown", "fantasy", "konferenz", "goal rush", "highlights", "vorbericht", "analyse", "multi")
 
     /** Words that say nothing about which channel it is: country tags, quality, codec. */
     private val noise = setOf("de", "ger", "germany", "hd", "fhd", "uhd", "sd", "4k", "hevc", "h265", "raw", "50fps", "tv")
@@ -382,6 +462,11 @@ internal object MagentaNames {
             val isDoc = p.optString("tipCategory") == "documentary" ||
                 (docs && stop - start >= DOC_MIN_MS && DOC_WORDS.any { it in genres })
             if (!highlight && !tip && !isDoc && !(films && isFilm)) continue
+            // A long tip the guide does not file as anything ("Meg" on ProSieben, 7 Nov 2026): maybe a film. TMDB
+            // decides (ProgrammeArt.film) whether it is one; a series, documentary, sport or show never is.
+            val candidate = !isFilm && !isDoc && !series && stop - start >= CANDIDATE_MIN_MS &&
+                p.optString("tipCategory").let { it.isBlank() || it == "null" } &&
+                NOT_FILM_WORDS.none { it in genres }
             val text = (title + " " + description.orEmpty()).lowercase()
             out += GuidePick(
                 channel = channel,
@@ -394,6 +479,7 @@ internal object MagentaNames {
                 picture = pictureOf(p),
                 description = description,
                 film = isFilm,
+                filmCandidate = candidate,
                 series = series,
                 premiere = isFilm && (PREMIERE_WORDS.any { it in text } || "premiere" in key(channel.name)),
                 year = p.optString("producedate").take(4).toIntOrNull()?.takeIf { it in 1900..2100 },
@@ -434,6 +520,10 @@ internal object MagentaNames {
 
     /** A film is at least this long; shorter ones on a film channel are trailers and magazines. */
     private const val FILM_MIN_MS = 70 * 60_000L
+    /** A tip this long that says nothing of what it is may be a film; TMDB decides. */
+    private const val CANDIDATE_MIN_MS = 80 * 60_000L
+    /** Genres that are never a film: shows, sport, news, magazines, music, reality. */
+    private val NOT_FILM_WORDS = listOf("show", "sport", "nachricht", "magazin", "musik", "reality", "talk", "quiz", "doku", "reportage")
     private const val DOC_MIN_MS = 30 * 60_000L
     /** How the guide names documentary genres ("Dokumentation", "Doku-Reihe", "Reportage"). */
     private val DOC_WORDS = listOf("doku", "reportage")

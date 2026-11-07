@@ -5,6 +5,7 @@ import tv.own.owntv.core.catalog.ProviderCatalogMetadataParser
 import tv.own.owntv.core.database.dao.MovieDao
 import tv.own.owntv.core.database.dao.SourceDao
 import tv.own.owntv.core.database.dao.TrendingCatalogRow
+import tv.own.owntv.core.database.entity.MovieEntity
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.repository.activeProfileSources
 import tv.own.owntv.core.settings.SettingsRepository
@@ -12,8 +13,8 @@ import kotlin.math.abs
 
 /**
  * Tonight's TV films that the playlist also has on demand (Jonathan, 6 Nov 2026: "the On demand button should
- * show on films that are in the library too"). The Spotlight then offers to watch the film from the start,
- * whenever, instead of waiting for 20:15 on Sky Cinema.
+ * show on films that are in the library too"). The Spotlight then offers the film's page in Movies, to watch it from
+ * the start whenever or keep it for later (a favourite), instead of waiting for 20:15 on Sky Cinema.
  *
  * Matched the way Trending finds its titles in the playlist: by the title's signature (its letters and digits,
  * the provider's tags and qualities stripped, [ProviderCatalogMetadataParser]), the year within one when both
@@ -37,6 +38,9 @@ class FilmLibrary(
             bySignature[signature]?.let { best(it, film.year) }?.let { film.key to it.id }
         }.toMap()
     }
+
+    /** The library's movie, to open its page. */
+    suspend fun movie(id: Long): MovieEntity? = movieDao.getById(id)
 
     internal companion object {
         /** The copy to play: the same year (within one) when both say, then the best quality, then the provider's order. */

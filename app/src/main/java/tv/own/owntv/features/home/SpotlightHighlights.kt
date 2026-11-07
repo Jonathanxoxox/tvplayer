@@ -101,6 +101,8 @@ data class GuidePick(
     val description: String?,
     /** A feature film: by the guide's genre, or a long programme on a film channel. */
     val film: Boolean = false,
+    /** Not filed as a film, but a long tip that may be one: TMDB decides ([withFilms]). */
+    val filmCandidate: Boolean = false,
     /** An episode of a series (season or episode number, or a series genre). */
     val series: Boolean = false,
     /** A (free-)TV premiere, or on Sky Cinema Premiere. */
@@ -109,6 +111,8 @@ data class GuidePick(
     val year: Int? = null,
     /** The guide's first genre ("Thriller"). */
     val genre: String? = null,
+    /** A film's leading actors, from TMDB ([withFilms]). */
+    val cast: List<String> = emptyList(),
 ) {
     val key: String get() = "pick:${channel.id}@$startMs"
 }
@@ -252,6 +256,15 @@ object SpotlightHighlights {
             .sortedWith(compareByDescending<GuidePick> { score(it) }.thenBy { it.startMs })
             .filter { p -> perChannel.merge(p.channel.id, 1) { a, b -> a + b }!! <= FILMS_PER_CHANNEL }
             .take(FILMS_MAX)
+    }
+
+    /**
+     * [picks] with what TMDB knows of their films ([films], by [GuidePick.key]): a candidate TMDB has as a film
+     * becomes one, and every film takes the year, genre and cast the guide left out.
+     */
+    fun withFilms(picks: List<GuidePick>, films: Map<String, FilmInfo>): List<GuidePick> = picks.map { p ->
+        val info = films[p.key]?.takeIf { p.film || p.filmCandidate } ?: return@map p
+        p.copy(film = true, filmCandidate = false, year = p.year ?: info.year, genre = p.genre ?: info.genre, cast = p.cast.ifEmpty { info.cast })
     }
 
     /** A programme from the provider's guide that is an episode of a series, by its numbering or its genre. */

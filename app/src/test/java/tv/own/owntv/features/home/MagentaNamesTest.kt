@@ -99,6 +99,22 @@ class MagentaNamesTest {
         assertEquals(emptyList<String>(), MagentaNames.picks(cinemaDay, ch, docs = false).map { it.title })
     }
 
+    private val privateDay = JSONArray(
+        """[
+          {"name":"Meg","starttime":"2026-11-06 19:14:00 UTC+00:00","endtime":"2026-11-06 21:20:00 UTC+00:00","tipType":"tip"},
+          {"name":"Schlag den Star","starttime":"2026-11-06 19:15:00 UTC+00:00","endtime":"2026-11-06 23:00:00 UTC+00:00","tipType":"tip","genres":"Show"},
+          {"name":"Kurzer Tipp","starttime":"2026-11-06 19:00:00 UTC+00:00","endtime":"2026-11-06 19:45:00 UTC+00:00","tipType":"tip"}
+        ]""",
+    )
+
+    @Test
+    fun `a long tip with no genre may be a film, a show or a short one not`() {
+        val picks = MagentaNames.picks(privateDay, ch, docs = false)
+        assertEquals(listOf("Meg", "Schlag den Star", "Kurzer Tipp"), picks.map { it.title })
+        assertEquals(listOf(true, false, false), picks.map { it.filmCandidate })
+        assertTrue(picks.none { it.film })
+    }
+
     @Test
     fun `film channels by name`() {
         assertTrue(MagentaNames.isFilmChannel("DE: Sky Cinema Premiere HD"))
@@ -125,6 +141,18 @@ class MagentaNamesTest {
         val away = listOf("Borussia Mönchengladbach", "Gladbach", "BMG")
         assertEquals("https://ngiss.t-online.de/match_h10.jpg", MagentaNames.matchPicture(list, home, away, kickoff))
         assertNull(MagentaNames.matchPicture(list, listOf("Bayern München", "Bayern", "FCB"), away, kickoff))
+    }
+
+    @Test
+    fun `a conference naming the match is not its picture`() {
+        val list = JSONArray(
+            """[
+              {"starttime":"2026-11-08 13:50:00 UTC+00:00","name":"Live PL: Goal Rush, CRY - LIV, Premier League Konferenz, 10. Spieltag","pictures":[
+                {"imageType":"17","href":"http://ngiss.t-online.de/goalrush_h10.jpg"}]}
+            ]""".trimIndent(),
+        )
+        val kickoff = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { clear(); set(2026, 10, 8, 14, 0) }.timeInMillis
+        assertNull(MagentaNames.matchPicture(list, listOf("Crystal Palace", "Palace", "CRY"), listOf("Liverpool", "Liverpool", "LIV"), kickoff))
     }
 
     @Test

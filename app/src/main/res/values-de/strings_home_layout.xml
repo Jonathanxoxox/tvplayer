@@ -55,7 +55,7 @@
     <string name="home_spotlight_count_desc">Wie viele Tipps das Spotlight höchstens zeigt</string>
     <string name="home_spotlight_count_value">%1$d</string>
     <string name="home_spotlight_auto">Automatisch weiter</string>
-    <string name="home_spotlight_auto_desc">Zeigt nach einer Weile den nächsten Tipp und beginnt nach dem letzten wieder von vorn. Aus: nur mit ◀ ▶ (die ebenfalls im Kreis gehen).</string>
+    <string name="home_spotlight_auto_desc">Zeigt nach einer Weile den nächsten Tipp und beginnt nach dem letzten wieder von vorn. Aus: nur mit ▶ (das ebenfalls im Kreis geht) und ◀.</string>
     <string name="home_spotlight_auto_off">Aus</string>
     <string name="home_spotlight_auto_value">alle %1$d s</string>
     <string name="home_spotlight_ratings">Bewertungen</string>
@@ -69,4 +69,6 @@
     <string name="home_hl_badge_sport">DEIN SPORT</string>
     <string name="home_spotlight_badges">Highlights hervorheben</string>
     <string name="home_spotlight_badges_desc">Premieren, MagentaTV-Highlights, Filme ab Bewertung 8 und deine Spiele bekommen ein goldenes Abzeichen</string>
+    <string name="home_hl_cast">Mit %1$s</string>
+    <string name="home_hl_cast_separator">", "</string>
 </resources>

@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -42,8 +43,8 @@ import tv.own.owntv.ui.theme.stageText
 
 /**
  * The Spotlight's text side for a [Highlight]: why it is there, what it is, and its one button — Watch, To
- * the match, Watch on. ◀ ▶ on the button go through the highlights, round from the last to the first; the
- * dots say how many there are. A film shows its [rating] (TMDB), year and kind.
+ * the match, Watch on. ▶ on the button goes through the highlights, round from the last to the first; ◀ goes
+ * back, and on the first one on to the menu at the left. The dots say how many there are. A film shows its [rating] (TMDB), year and kind.
  */
 @Composable
 internal fun HighlightInfo(
@@ -61,7 +62,7 @@ internal fun HighlightInfo(
     now: Long,
     modifier: Modifier = Modifier,
     rating: Double? = null,
-    /** The film is also in the playlist's library: a second button plays it from the start, now. */
+    /** The film is also in the playlist's library: a second button opens its page in Movies. */
     onOnDemand: (() -> Unit)? = null,
     /** The top tier, when this highlight is in it: a gold badge before its label. */
     tier: HighlightTier? = null,
@@ -75,6 +76,7 @@ internal fun HighlightInfo(
         }
         Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         FilmFacts(hl, rating)
+        FilmCast(hl)
         lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
         // that has one, not only the guide's picks).
@@ -98,7 +100,10 @@ internal fun HighlightInfo(
                             // ▶ goes to On demand when the film has it; from there ▶ goes on to the next highlight.
                             e.key == Key.DirectionRight && onOnDemand != null -> { runCatching { onDemandButton.requestFocus() }; true }
                             e.key == Key.DirectionRight && count > 1 -> { onStep(1); true }
-                            e.key == Key.DirectionLeft && count > 1 -> { onStep(-1); true }
+                            // ◀ goes back through the highlights, but on the first it leaves for the menu on
+                            // the left as from every other row, rather than round to the last (Jonathan, 7 Nov
+                            // 2026: "I'm caught in a loop and have to go down to the channels to get left").
+                            e.key == Key.DirectionLeft && index > 0 -> { onStep(-1); true }
                             else -> false
                         }
                     },
@@ -108,7 +113,8 @@ internal fun HighlightInfo(
                     Text(buttonLabel(hl, now), style = stageText(20, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            // The same film in the playlist's library: watch it now, from the start (Jonathan, 6 Nov 2026).
+            // The same film in the playlist's library: its page in Movies, to watch it from the start or keep it for
+            // later (Jonathan, 6 and 7 Nov 2026).
             if (onOnDemand != null) StageSurface(
                 onClick = onOnDemand,
                 radius = 30.mpx,
@@ -150,6 +156,88 @@ internal fun HighlightInfo(
 }
 
 /** The picture side for a highlight that has no live picture: the teams' crests, or the film's still. */
+/**
+ * A match without a programme picture (Jonathan, 6 Nov 2026, variant A "Vereinsfarben"): the screen split on a
+ * slant between the two clubs' colours, a white seam between them, each crest large on its own colour; the score
+ * under them once the match is on. The Spotlight's washes keep the text on the left readable.
+ */
+@Composable
+internal fun SportColorsBackdrop(
+    match: tv.own.owntv.core.sports.model.Match,
+    /** The crests' size: the Spotlight's 240; a tile on the sports page passes its own. */
+    crestSize: androidx.compose.ui.unit.Dp = 240.mpx,
+    /** The score under the crests once the match is on; a tile shows it in its own line instead. */
+    showScore: Boolean = true,
+    /** Where the crests' middles sit, across and down, as fractions of the box. */
+    crestX: Pair<Float, Float> = 0.50f to 0.80f,
+    crestY: Float = 0.42f,
+) {
+    val (homeColor, awayColor) = remember(match.key) { ClubColors.pair(match.home?.team, match.away?.team) }
+    Box(Modifier.fillMaxSize()) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            // The seam leans like the board: further right at the top than at the bottom.
+            val top = w * 0.66f
+            val bottom = w * 0.56f
+            val home = androidx.compose.ui.graphics.Path().apply {
+                moveTo(0f, 0f); lineTo(top, 0f); lineTo(bottom, h); lineTo(0f, h); close()
+            }
+            val away = androidx.compose.ui.graphics.Path().apply {
+                moveTo(top, 0f); lineTo(w, 0f); lineTo(w, h); lineTo(bottom, h); close()
+            }
+            drawPath(home, androidx.compose.ui.graphics.Brush.linearGradient(listOf(homeColor, homeColor.darken(0.35f)), end = androidx.compose.ui.geometry.Offset(top, h)))
+            drawPath(away, androidx.compose.ui.graphics.Brush.linearGradient(listOf(awayColor.darken(0.2f), awayColor), start = androidx.compose.ui.geometry.Offset(bottom, 0f), end = androidx.compose.ui.geometry.Offset(w, h)))
+            drawLine(Color.White.copy(alpha = 0.85f), androidx.compose.ui.geometry.Offset(top, 0f), androidx.compose.ui.geometry.Offset(bottom, h), strokeWidth = 6.mpx.toPx())
+        }
+        val live = showScore && match.state != tv.own.owntv.core.sports.model.MatchState.PRE
+        listOf(match.home to crestX.first, match.away to crestX.second).forEach { (c, x) ->
+            val team = c?.team ?: return@forEach
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+                Column(
+                    Modifier.padding(start = (maxWidth * x - crestSize / 2 - 10.mpx).coerceAtLeast(0.mpx), top = (maxHeight * crestY - crestSize / 2 - 30.mpx).coerceAtLeast(0.mpx)).width(crestSize + 20.mpx),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.mpx),
+                ) {
+                    AsyncImage(model = team.logoUrl, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(crestSize))
+                    if (live) Text(c.score?.text.orEmpty(), style = stageText(54, 800), color = StageColors.Text, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
+/** The two clubs' colours for [SportColorsBackdrop]: usable on screen, and told apart from each other. */
+internal object ClubColors {
+    private val homeFallback = Color(0xFF1D4F91)
+    private val awayFallback = Color(0xFF2B2B2B)
+
+    fun pair(home: tv.own.owntv.core.sports.model.Team?, away: tv.own.owntv.core.sports.model.Team?): Pair<Color, Color> {
+        val h = pick(home) ?: homeFallback
+        var a = pick(away) ?: awayFallback
+        // Two red clubs: the away side takes its second colour, else a dark neutral.
+        if (distance(h, a) < 0.18f) a = away?.alternateColor?.let(::parse)?.takeIf { usable(it) && distance(h, it) >= 0.18f } ?: awayFallback
+        return h to a
+    }
+
+    /** The club's colour, or its second one when the first is near white (a white half would swallow the crest). */
+    private fun pick(team: tv.own.owntv.core.sports.model.Team?): Color? =
+        listOfNotNull(team?.color, team?.alternateColor).mapNotNull(::parse).firstOrNull(::usable)
+
+    private fun usable(c: Color): Boolean = luminance(c) < 0.75f
+
+    fun parse(hex: String): Color? = hex.removePrefix("#").takeIf { it.length == 6 }?.toLongOrNull(16)?.let { Color(0xFF000000 or it) }
+
+    private fun luminance(c: Color) = 0.2126f * c.red + 0.7152f * c.green + 0.0722f * c.blue
+
+    private fun distance(a: Color, b: Color): Float {
+        val dr = a.red - b.red; val dg = a.green - b.green; val db = a.blue - b.blue
+        return kotlin.math.sqrt((dr * dr + dg * dg + db * db) / 3f)
+    }
+}
+
+private fun Color.darken(by: Float) = Color(red * (1 - by), green * (1 - by), blue * (1 - by), alpha)
+
 @Composable
 internal fun HighlightPicture(hl: Highlight) {
     when (hl) {
@@ -298,6 +386,16 @@ private const val MIN_DESCRIPTION = 12
 @Composable
 internal fun SpotlightDescription(text: String, modifier: Modifier = Modifier) {
     Text(text, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = modifier)
+}
+
+/** A film's leads under its facts: "Mit Jason Statham, Li Bingbing, Ruby Rose" (TMDB's billing order). */
+@Composable
+private fun FilmCast(hl: Highlight) {
+    val cast = (hl as? Highlight.Pick)?.pick?.takeIf { it.film }?.cast?.takeIf { it.isNotEmpty() } ?: return
+    Text(
+        stringResource(R.string.home_hl_cast, cast.joinToString(stringResource(R.string.home_hl_cast_separator))),
+        style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
+    )
 }
 
 /** A time of day as the box shows it (20:15). */
