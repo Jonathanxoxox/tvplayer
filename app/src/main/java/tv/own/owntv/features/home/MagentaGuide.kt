@@ -337,7 +337,7 @@ internal object MagentaNames {
     fun fold(s: String): String = java.text.Normalizer.normalize(
         s.lowercase(Locale.ROOT).replace("ß", "ss"),
         java.text.Normalizer.Form.NFD,
-    ).replace(Regex("\\p{M}+"), "")
+    ).filter { Character.getType(it) != Character.NON_SPACING_MARK.toInt() }
 
     /** A team's long name parts (4+ letters) to find inside a title, and its short codes as whole words. */
     /** Whether [title] names the team called [names]: an event list's own team name, for example. */
