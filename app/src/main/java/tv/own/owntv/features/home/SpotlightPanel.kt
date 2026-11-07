@@ -87,7 +87,8 @@ internal fun HighlightInfo(
         lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
         // that has one, not only the guide's picks).
-        (descriptionOf(hl) ?: sportText)?.let { SpotlightDescription(it) }
+        // The room left, at most eight lines: a long title, cast and director never push the buttons out.
+        (descriptionOf(hl) ?: sportText)?.let { SpotlightDescription(it, Modifier.weight(1f, fill = false)) }
         Row(Modifier.padding(top = 10.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
             // Round buttons with their icon alone (Jonathan, 7 Nov 2026: "cleaner").
             StageSurface(
