@@ -44,13 +44,8 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
@@ -210,8 +205,6 @@ fun SportsHubScreen(
             item(key = "head") {
                 Column(Modifier.padding(start = contentStart, end = 360.mpx)) {
                     Text(stringResource(R.string.sports_title), style = stageText(48, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    Spacer(Modifier.height(9.mpx))
-                    HubSubtitle(today.filter { it.passes() })
                     if (state.board.paused) {
                         Spacer(Modifier.height(6.mpx))
                         Text(stringResource(R.string.sports_paused), style = stageText(18, 600), color = StageColors.Warn, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -362,28 +355,6 @@ fun SportsHubScreen(
             onDismiss = { menuFor = null },
         )
     }
-}
-
-/** "**Today** · 6 live · 41 matches · Scores: ESPN" (no channel count — channels are found per match). */
-@Composable
-private fun HubSubtitle(today: List<Match>) {
-    val accent = stageAccent.accent
-    val sep = stringResource(R.string.content_epg_bits_separator)
-    val liveCount = today.count { it.isLive }
-    val todayLabel = stringResource(R.string.content_epg_today)
-    val liveText = pluralStringResource(R.plurals.sports_hub_live, liveCount, liveCount)
-    val matchesText = pluralStringResource(R.plurals.sports_hub_matches, today.size, today.size)
-    val credit = stringResource(R.string.sports_scores_espn)
-    val dim = StageColors.Dim
-    Text(
-        buildAnnotatedString {
-            withStyle(SpanStyle(color = accent, fontWeight = FontWeight.SemiBold)) { append(todayLabel) }
-            append(sep); append(liveText); append(sep); append(matchesText)
-            append(sep)
-            withStyle(SpanStyle(color = dim)) { append(credit) }
-        },
-        style = stageText(21, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
-    )
 }
 
 /** The hub with nothing followed (new users follow nothing): what to do, where, and why to choose with care. */

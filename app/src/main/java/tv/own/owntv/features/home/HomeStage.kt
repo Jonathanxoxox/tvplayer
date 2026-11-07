@@ -32,6 +32,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
 import tv.own.owntv.ui.theme.gradientWash
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.input.key.Key
@@ -288,7 +290,10 @@ internal fun HomeStage(
     // Spotlight (Jonathan, 5 Nov 2026, after Netflix): the picture fills the whole width and the text lies over
     // it, the page's wash fading in from the left for the text and from below for the channel strip; above the
     // stage it runs on to the top of the screen under a wash that leaves only a hint of it.
-    if (spotlight) Box(Modifier.matchParentSize().reachUp(reach)) {
+    // Its lower part fades to nothing, picture and washes alike, so the page's own background runs on under the
+    // channel strip without a seam: a wash ending in a colour showed a step where the page's darker one began
+    // (Jonathan, 7 Nov 2026: "komplett fließend").
+    if (spotlight) Box(Modifier.matchParentSize().reachUp(reach).fadeOutBelow(SPOTLIGHT_FADE_FROM)) {
         when (hl) {
             // A match with a picture shows it full width like any highlight; without one, its crests (below).
             is Highlight.Sport -> sportArt?.let { url ->
@@ -312,14 +317,16 @@ internal fun HomeStage(
             )
         }
         val wash = StageColors.Wash
-        // The stage's own washes, on the stage alone (not stretched over the part above it).
+        // The wash from the left, for the text, runs up to the top too: ending at the stage's top it drew a line
+        // across the picture under the app buttons.
+        Box(
+            Modifier.fillMaxSize().gradientWash(
+                false,
+                0f to wash.copy(alpha = 0.94f), 0.32f to wash.copy(alpha = 0.78f), 0.6f to wash.copy(alpha = 0.12f), 1f to wash.copy(alpha = 0f),
+            ),
+        )
+        // The wash from below, for the channel strip, on the stage alone (not stretched over the part above it).
         Box(Modifier.fillMaxSize().belowReach(reach)) {
-            Box(
-                Modifier.fillMaxSize().gradientWash(
-                    false,
-                    0f to wash.copy(alpha = 0.94f), 0.32f to wash.copy(alpha = 0.78f), 0.6f to wash.copy(alpha = 0.12f), 1f to wash.copy(alpha = 0f),
-                ),
-            )
             Box(
                 Modifier.fillMaxSize().gradientWash(
                     true,
@@ -503,6 +510,17 @@ private fun Modifier.reachUp(reach: () -> Int): Modifier = layout { measurable, 
     layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, -up) }
 }
 
+/** Everything drawn in it fades out from [from] (a fraction of its height) to nothing at its bottom edge. */
+private fun Modifier.fadeOutBelow(from: Float): Modifier = this
+    .graphicsLayer { compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen }
+    .drawWithContent {
+        drawContent()
+        drawRect(
+            androidx.compose.ui.graphics.Brush.verticalGradient(0f to Color.Black, from to Color.Black, 1f to Color.Transparent),
+            blendMode = androidx.compose.ui.graphics.BlendMode.DstIn,
+        )
+    }
+
 /** Inside a [reachUp] box: only its lower part, the stage's own slot. */
 private fun Modifier.belowReach(reach: () -> Int): Modifier = layout { measurable, constraints ->
     val up = reach().coerceAtMost(constraints.maxHeight)
@@ -519,6 +537,9 @@ private fun Modifier.topReach(reach: () -> Int, past: Int): Modifier = layout { 
 
 /** How far into the stage the wash from the top still reaches. */
 private val TOP_FADE_PAST = 140.mpx
+
+/** Where the Spotlight starts fading into the page, as a fraction of its height counted from the screen's top. */
+private const val SPOTLIGHT_FADE_FROM = 0.78f
 
 /** Home settles first; then the row's programme pictures are fetched ahead. */
 private const val ART_PREFETCH_DELAY_MS = 4000L
