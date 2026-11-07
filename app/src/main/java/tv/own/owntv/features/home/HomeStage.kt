@@ -57,6 +57,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import tv.own.owntv.ui.components.OwnTVIcon
 import androidx.tv.material3.Text
 import tv.own.owntv.R
@@ -259,7 +261,11 @@ internal fun HomeStage(
     }
     // The table, for the match's text: the board's, as the sports page has it.
     val sportsRepo = org.koin.compose.koinInject<tv.own.owntv.core.sports.SportsRepository>()
-    val sportTable = sportMatch?.let { sportsRepo.board.value.standings[it.feed] }
+    // Only that league's table, so live scores elsewhere on the board do not redraw the stage.
+    val sportTable by remember(sportMatch?.feed) {
+        val feed = sportMatch?.feed
+        sportsRepo.board.map { b -> feed?.let { b.standings[it] } }.distinctUntilChanged()
+    }.collectAsState(null)
     val picProgramme = if (hl is Highlight.Live) hl.programme else if (hl == null) programme else null
     // The row's pictures ahead, once Home has settled: browsing then shows them at once. Only their
     // addresses and the files on disk; decoded, thirty 1080p pictures would take some 240 MB.
