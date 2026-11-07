@@ -192,7 +192,10 @@ internal class VodCategories(
                 )
                 val multiSourceNames = c.sourceNames.takeIf { it.size > 1 }.orEmpty()
                 val categoriesById = cats.associateBy { it.id }
-                catalogList.map { LiveRailItem(it.key, title = it.title) } + DEFAULT_RAIL + folders.map { e ->
+                // Favourites first, above the catalogs: under them, at the head of the playlist's own entries,
+                // nobody found it (Jonathan, 7 Nov 2026). History and All stay with the playlist.
+                val (favorites, ownRest) = DEFAULT_RAIL.partition { it.key == LiveKey.Favorites }
+                favorites + catalogList.map { LiveRailItem(it.key, title = it.title) } + ownRest + folders.map { e ->
                     LiveRailItem(
                         key = e.categoryId?.let { LiveKey.Folder(it) } ?: LiveKey.Custom(e.customId!!),
                         title = e.displayName,

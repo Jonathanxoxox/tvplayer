@@ -790,6 +790,11 @@ fun HomeScreen(
                 appsAfter[HomeSlots.TOP]?.let { keys -> item(key = "apps_top") { appRows(keys) } }
                 renderRows.forEachIndexed { i, row ->
                 item(key = row.name) { rowContent(row) }
+                // Spotlight: the first screen ends with the channel strip, a little room under it; the next row
+                // comes into view only on the way down (Jonathan, 7 Nov 2026: "a clean start page").
+                if (i == 0 && spotlightLayout && row == HomeRow.RECENT_CHANNELS) item(key = "spotlight_fold") {
+                    androidx.compose.foundation.layout.Spacer(Modifier.height(SpotlightFold))
+                }
                 if (i == 0) {
                 // Mayo TV as start screen: the Apps row right under the big picture (Jonathan, 1 Nov 2026).
                 if (showAppsRow) item(key = "launcher_apps") {

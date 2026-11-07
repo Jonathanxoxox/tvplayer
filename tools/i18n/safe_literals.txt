@@ -129,6 +129,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	live:${channel.id}
 1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	movie
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	movie:${movie.id}
+1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	spotlight_fold
 1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	tv
 2	url	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	w1280
 2	url	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	w500
@@ -415,7 +416,7 @@
 1	json	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	questions
 1	log	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	request failed: ${it.message}
 1	json	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	state
-3	empty	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	\0
+4	empty	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	#
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	#people
 2	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	$Q_FIT$i
@@ -459,7 +460,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	Western
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	Writing
 1	regex	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	[^\\p{L}\\p{N}]+
+1	regex	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	\\s+
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	backdrop_path
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	by
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	cast
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	crew
 2	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	describes
@@ -475,7 +478,7 @@
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	genres
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	gibt geben auf für von aus bei nach über heute abend wir uns want watch something with the and about some see
 1	url	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	https://api.themoviedb.org
-1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	ich möchte moechte will würde gerne gern einen eine einem einer den dem der die das des
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	ich möchte moechte will würde gerne gern ein einen eine einem einer den dem der die das des
 3	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	id
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	job
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	keyword
@@ -485,6 +488,7 @@
 2	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	kind
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	known_for_department
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	like
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	mit
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	mit und oder ohne schauen sehen gucken anschauen ansehen zeig zeige mir bitte irgendwas etwas was wie
 3	protocol	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	movie
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	movie_credits
@@ -503,13 +507,16 @@
 2	protocol	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	series
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	show
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	shows
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	starring
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	streifen
 2	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	title
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	titles
 1	protocol	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	tv
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	tv_credits
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	von
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	vote_average
 2	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	wish
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	with
 1	url	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	with_genres
 1	url	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	with_keywords
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	year
@@ -1359,24 +1366,43 @@
 1	file-path	app/src/main/java/tv/own/owntv/features/voice/OfflineSpeech.kt	voice/${spec.name}
 1	file-path	app/src/main/java/tv/own/owntv/features/voice/OfflineSpeech.kt	vosk-model-small-de-0.15
 1	file-path	app/src/main/java/tv/own/owntv/features/voice/OfflineSpeech.kt	vosk-model-small-en-us-0.15
-1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	HTTP ${r.code}: ${body.take(300)}
-1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	Scribe
-1	mime	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	application/octet-stream
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	file
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	file_format
-1	url	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	https://api.elevenlabs.io/v1/speech-to-text
-2	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	keyterms
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	language_code
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	model_id
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	none
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	pcm_s16le_16
-1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	request failed: ${it.message}
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	scribe_v2
-1	file-path	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	search.pcm
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	tag_audio_events
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	text
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	timestamps_granularity
-1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	xi-api-key
+3	empty	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	\0
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	$type ${o.optString(F_ERROR).take(200)}
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	1.0
+1	compiler	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	MissingPermission
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	ScribeRealtime
+1	compiler	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	UNREACHABLE_CODE
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	audio_base_64
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	audio_format
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	closed $code $reason
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	commit
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	commit_strategy
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	committed_transcript
+2	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	error
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	exceeded
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	https://api.elevenlabs.io/v1/speech-to-text/realtime
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	input_audio_chunk
+2	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	keyterms
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	language_code
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	message_type
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone could not be opened
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone is busy
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone read failed: $n
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone ready after ${now - opened} ms (${record.routedDevice?.type})
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	model_id
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	partial_transcript
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	pcm_16000
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	realtime: ${e.why}
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	said "$text" ${SystemClock.elapsedRealtime() - opened} ms after the mic opened
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	sample_rate
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	scribe_v2_realtime
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	session after ${SystemClock.elapsedRealtime() - opened} ms, ${waiting.size} chunks waiting
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	session_started
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	socket ${response?.code ?: -1} ${t.message}
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	text
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	vad
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	vad_silence_threshold_secs
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	xi-api-key
 1	technical	app/src/main/java/tv/own/owntv/launcher/FootballGroup.kt	,
 1	preference-key	app/src/main/java/tv/own/owntv/launcher/FootballGroup.kt	football_group_id_$profileId
 1	preference-key	app/src/main/java/tv/own/owntv/launcher/FootballGroup.kt	football_group_members_$profileId

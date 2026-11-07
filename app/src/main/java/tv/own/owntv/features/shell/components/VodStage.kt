@@ -600,6 +600,8 @@ internal fun vodCategoryEntries(
         // Catalogs under ENTDECKEN, GENRES, SAMMLUNGEN and AUCH IM ABO BEI; the playlist's own entries under DEINE PLAYLIST.
         val heading = when {
             !hasCatalogs -> null
+            // Favourites lead the list on their own, above the catalogs' headings.
+            item.key == LiveKey.Favorites -> null
             group != null -> groupHeadings.getValue(group).takeIf { group != lastGroup }.also { lastGroup = group }
             !playlistStarted -> playlistHeading.also { playlistStarted = true }
             else -> null

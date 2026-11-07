@@ -24,15 +24,16 @@ import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.compose.koinInject
 import tv.own.owntv.R
 import tv.own.owntv.features.voice.OfflineSpeech
-import tv.own.owntv.features.voice.ScribeClient
+import tv.own.owntv.features.voice.ScribeRealtime
 import java.io.IOException
 
 /**
  * The microphone button beside a search field. Like TizenTube, the app records the microphone itself
  * and never hands over to the box's voice search (Jonathan has Google's switched off, which is why the
- * old hand-over did nothing). [OfflineSpeech] on the box hears when the sentence ends; with an
- * ElevenLabs key [ScribeClient] then writes it down (far better), else the box's own guess is used. The microphone
- * permission is asked for on the first press, the language model downloaded on the first press too.
+ * old hand-over did nothing). With an ElevenLabs key the sound streams to [ScribeRealtime] while the person
+ * speaks: the words show as they come and go into the field as said. Without one, [OfflineSpeech] on the box
+ * stands in (its language model downloaded on the first press). The microphone permission is asked for on
+ * the first press.
  *
  * While it works, the field shows [heard] (the words so far) or [note] ("Speak now…", the download's
  * [noteArg] percent, or why nothing happened); both null = the field's own text.
@@ -68,7 +69,7 @@ fun rememberVoiceSearch(
     val result by rememberUpdatedState(onResult)
     val resolver by rememberUpdatedState(resolve)
     val voice = remember { VoiceSearch() }
-    val scribe: ScribeClient = koinInject()
+    val realtime: ScribeRealtime = koinInject()
     val scope = rememberCoroutineScope()
     val job = remember { mutableStateOf<Job?>(null) }
     val stop = remember { mutableStateOf(false) }
@@ -83,23 +84,34 @@ fun rememberVoiceSearch(
             voice.busy = true
             voice.heard = null
             try {
+                if (realtime.available) {
+                    // Listening from the press on; "Speak now" once the remote's microphone really delivers.
+                    voice.note = R.string.voice_search_connecting
+                    voice.listening = true
+                    val outcome = realtime.listen(
+                        stopRequested = { stop.value },
+                        onReady = { scope.launch { if (voice.listening && voice.heard == null) voice.note = R.string.voice_search_listening } },
+                        onPartial = { words -> scope.launch { if (voice.listening) voice.heard = words } },
+                    )
+                    voice.listening = false
+                    voice.heard = null
+                    // Scribe writes down what was said, names included: it goes into the field as said. The search
+                    // itself finds titles, people and descriptions; swapping it for a similar-sounding name broke those.
+                    if (outcome is ScribeRealtime.Outcome.Said) { voice.note = null; result(outcome.text) }
+                    else voice.note = R.string.voice_search_not_understood
+                    return@launch
+                }
                 if (OfflineSpeech.needsDownload(context)) { voice.note = R.string.voice_search_loading_model; voice.noteArg = 0 }
                 // Both callbacks come from the recording thread; the field's state is set on the main thread.
                 val model = OfflineSpeech.prepare(context) { p -> scope.launch { if (voice.note == R.string.voice_search_loading_model) voice.noteArg = p } }
                 voice.noteArg = null
                 voice.note = R.string.voice_search_listening
                 voice.listening = true
-                // With Scribe, the box's own guesses are too rough to show while speaking.
                 val heard = OfflineSpeech.listen(model, stopRequested = { stop.value }) { words ->
-                    if (!scribe.available) scope.launch { if (voice.listening) voice.heard = words }
+                    scope.launch { if (voice.listening) voice.heard = words }
                 }
                 voice.listening = false
-                val said = if (scribe.available && heard.pcm.isNotEmpty()) {
-                    voice.note = R.string.voice_search_understanding
-                    scribe.transcribe(heard.pcm)?.let { listOf(it) } ?: heard.guesses
-                } else {
-                    heard.guesses
-                }
+                val said = heard.guesses
                 if (said.isEmpty()) {
                     voice.heard = null
                     voice.note = R.string.voice_search_not_understood

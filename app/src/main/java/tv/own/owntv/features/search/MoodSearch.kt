@@ -242,7 +242,8 @@ class MoodSearch(
      * [query] ("Tom Cruise", "Nolan"). Empty when no well-known person has that name; null when a call failed.
      */
     suspend fun people(query: String, sources: ActiveProfileSources): MoodResults? {
-        val wish = query.trim()
+        // Spoken, a person comes wrapped: "Filme mit Tom Hanks" asks TMDB for "Tom Hanks".
+        val wish = personName(query)
         if (wish.length < MIN_SECTION_LENGTH) return MoodResults()
         val key = cacheKey(wish) + "#people"
         synchronized(cache) { cache[key] }?.let { return it }
@@ -447,7 +448,7 @@ class MoodSearch(
         private const val MAX_TERMS = 6
 
         /** The frame of a spoken wish ("ich möchte einen … schauen"): no keyword lookup of their own. */
-        private val SENTENCE_WORDS = ("ich möchte moechte will würde gerne gern einen eine einem einer den dem der die das des " +
+        private val SENTENCE_WORDS = ("ich möchte moechte will würde gerne gern ein einen eine einem einer den dem der die das des " +
             "mit und oder ohne schauen sehen gucken anschauen ansehen zeig zeige mir bitte irgendwas etwas was wie " +
             "gibt geben auf für von aus bei nach über heute abend wir uns want watch something with the and about some see " +
             "like").split(' ').toSet()
@@ -481,6 +482,20 @@ class MoodSearch(
         private fun enc(s: String): String = URLEncoder.encode(s, Charsets.UTF_8.name())
 
         private fun cacheKey(query: String) = query.trim().lowercase()
+
+        /** The words that put a person after them: "Filme mit Tom Hanks", "movies by Nolan". */
+        private val PERSON_MARKERS = setOf("mit", "von", "with", "by", "starring")
+
+        /**
+         * The person a query names: what follows its last "mit"/"von"/"with"/"by", without "Filme" or "Serien"
+         * around it. A query without such a word stays whole ("Tom Hanks", "Will Smith").
+         */
+        internal fun personName(query: String): String {
+            val words = query.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+            val marker = words.indexOfLast { it.lowercase() in PERSON_MARKERS }
+            val rest = if (marker >= 0) words.drop(marker + 1) else words
+            return rest.filter { it.lowercase().trim('-') !in FILLER }.joinToString(" ")
+        }
 
         /** The query's words, and each without a filler ending, as TMDB keyword searches (at most four). */
         internal fun keywordTerms(query: String): List<String> {
