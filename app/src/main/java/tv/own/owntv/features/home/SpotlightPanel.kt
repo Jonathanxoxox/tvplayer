@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
@@ -150,6 +151,79 @@ internal fun HighlightInfo(
 }
 
 /** The picture side for a highlight that has no live picture: the teams' crests, or the film's still. */
+/**
+ * A match without a programme picture (Jonathan, 6 Nov 2026, variant A "Vereinsfarben"): the screen split on a
+ * slant between the two clubs' colours, a white seam between them, each crest large on its own colour; the score
+ * under them once the match is on. The Spotlight's washes keep the text on the left readable.
+ */
+@Composable
+internal fun SportColorsBackdrop(match: tv.own.owntv.core.sports.model.Match) {
+    val (homeColor, awayColor) = remember(match.key) { ClubColors.pair(match.home?.team, match.away?.team) }
+    Box(Modifier.fillMaxSize()) {
+        androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
+            val w = size.width
+            val h = size.height
+            // The seam leans like the board: further right at the top than at the bottom.
+            val top = w * 0.66f
+            val bottom = w * 0.56f
+            val home = androidx.compose.ui.graphics.Path().apply {
+                moveTo(0f, 0f); lineTo(top, 0f); lineTo(bottom, h); lineTo(0f, h); close()
+            }
+            val away = androidx.compose.ui.graphics.Path().apply {
+                moveTo(top, 0f); lineTo(w, 0f); lineTo(w, h); lineTo(bottom, h); close()
+            }
+            drawPath(home, androidx.compose.ui.graphics.Brush.linearGradient(listOf(homeColor, homeColor.darken(0.35f)), end = androidx.compose.ui.geometry.Offset(top, h)))
+            drawPath(away, androidx.compose.ui.graphics.Brush.linearGradient(listOf(awayColor.darken(0.2f), awayColor), start = androidx.compose.ui.geometry.Offset(bottom, 0f), end = androidx.compose.ui.geometry.Offset(w, h)))
+            drawLine(Color.White.copy(alpha = 0.85f), androidx.compose.ui.geometry.Offset(top, 0f), androidx.compose.ui.geometry.Offset(bottom, h), strokeWidth = 6.mpx.toPx())
+        }
+        val live = match.state != tv.own.owntv.core.sports.model.MatchState.PRE
+        listOf(match.home to 0.50f, match.away to 0.80f).forEach { (c, x) ->
+            val team = c?.team ?: return@forEach
+            androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
+                Column(
+                    Modifier.padding(start = maxWidth * x - 130.mpx, top = maxHeight * 0.42f - 150.mpx).width(260.mpx),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(14.mpx),
+                ) {
+                    AsyncImage(model = team.logoUrl, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(240.mpx))
+                    if (live) Text(c.score?.text.orEmpty(), style = stageText(54, 800), color = StageColors.Text, maxLines = 1)
+                }
+            }
+        }
+    }
+}
+
+/** The two clubs' colours for [SportColorsBackdrop]: usable on screen, and told apart from each other. */
+internal object ClubColors {
+    private val homeFallback = Color(0xFF1D4F91)
+    private val awayFallback = Color(0xFF2B2B2B)
+
+    fun pair(home: tv.own.owntv.core.sports.model.Team?, away: tv.own.owntv.core.sports.model.Team?): Pair<Color, Color> {
+        val h = pick(home) ?: homeFallback
+        var a = pick(away) ?: awayFallback
+        // Two red clubs: the away side takes its second colour, else a dark neutral.
+        if (distance(h, a) < 0.18f) a = away?.alternateColor?.let(::parse)?.takeIf { usable(it) && distance(h, it) >= 0.18f } ?: awayFallback
+        return h to a
+    }
+
+    /** The club's colour, or its second one when the first is near white (a white half would swallow the crest). */
+    private fun pick(team: tv.own.owntv.core.sports.model.Team?): Color? =
+        listOfNotNull(team?.color, team?.alternateColor).mapNotNull(::parse).firstOrNull(::usable)
+
+    private fun usable(c: Color): Boolean = luminance(c) < 0.75f
+
+    fun parse(hex: String): Color? = hex.removePrefix("#").takeIf { it.length == 6 }?.toLongOrNull(16)?.let { Color(0xFF000000 or it) }
+
+    private fun luminance(c: Color) = 0.2126f * c.red + 0.7152f * c.green + 0.0722f * c.blue
+
+    private fun distance(a: Color, b: Color): Float {
+        val dr = a.red - b.red; val dg = a.green - b.green; val db = a.blue - b.blue
+        return kotlin.math.sqrt((dr * dr + dg * dg + db * db) / 3f)
+    }
+}
+
+private fun Color.darken(by: Float) = Color(red * (1 - by), green * (1 - by), blue * (1 - by), alpha)
+
 @Composable
 internal fun HighlightPicture(hl: Highlight) {
     when (hl) {

@@ -305,6 +305,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/home/SpotlightHighlights.kt	sport:${match.key}
 1	technical	app/src/main/java/tv/own/owntv/features/home/SpotlightHighlights.kt	tips
 1	technical	app/src/main/java/tv/own/owntv/features/home/SpotlightPanel.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/home/SpotlightPanel.kt	#
 1	regex	app/src/main/java/tv/own/owntv/features/home/SpotlightPanel.kt	\\s+
 2	technical	app/src/main/java/tv/own/owntv/features/home/SpotlightPanel.kt	·
 1	technical	app/src/main/java/tv/own/owntv/features/live/CatchupJumpDialog.kt	EEEHm
