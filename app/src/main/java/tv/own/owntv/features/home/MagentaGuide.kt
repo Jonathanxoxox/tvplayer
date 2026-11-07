@@ -462,6 +462,11 @@ internal object MagentaNames {
             val isDoc = p.optString("tipCategory") == "documentary" ||
                 (docs && stop - start >= DOC_MIN_MS && DOC_WORDS.any { it in genres })
             if (!highlight && !tip && !isDoc && !(films && isFilm)) continue
+            // A long tip the guide does not file as anything ("Meg" on ProSieben, 7 Nov 2026): maybe a film. TMDB
+            // decides (ProgrammeArt.film) whether it is one; a series, documentary, sport or show never is.
+            val candidate = !isFilm && !isDoc && !series && stop - start >= CANDIDATE_MIN_MS &&
+                p.optString("tipCategory").let { it.isBlank() || it == "null" } &&
+                NOT_FILM_WORDS.none { it in genres }
             val text = (title + " " + description.orEmpty()).lowercase()
             out += GuidePick(
                 channel = channel,
@@ -474,6 +479,7 @@ internal object MagentaNames {
                 picture = pictureOf(p),
                 description = description,
                 film = isFilm,
+                filmCandidate = candidate,
                 series = series,
                 premiere = isFilm && (PREMIERE_WORDS.any { it in text } || "premiere" in key(channel.name)),
                 year = p.optString("producedate").take(4).toIntOrNull()?.takeIf { it in 1900..2100 },
@@ -514,6 +520,10 @@ internal object MagentaNames {
 
     /** A film is at least this long; shorter ones on a film channel are trailers and magazines. */
     private const val FILM_MIN_MS = 70 * 60_000L
+    /** A tip this long that says nothing of what it is may be a film; TMDB decides. */
+    private const val CANDIDATE_MIN_MS = 80 * 60_000L
+    /** Genres that are never a film: shows, sport, news, magazines, music, reality. */
+    private val NOT_FILM_WORDS = listOf("show", "sport", "nachricht", "magazin", "musik", "reality", "talk", "quiz", "doku", "reportage")
     private const val DOC_MIN_MS = 30 * 60_000L
     /** How the guide names documentary genres ("Dokumentation", "Doku-Reihe", "Reportage"). */
     private val DOC_WORDS = listOf("doku", "reportage")

@@ -72,49 +72,56 @@ class ProgrammeArt(private val provider: MetadataProvider, private val magenta: 
         return ""
     }
 
-    /** Film title key → its TMDB rating, or NaN for none; kept like the pictures. */
-    private val ratings = ConcurrentHashMap<String, Double>()
+    /** Film title key → what TMDB knows of it, or [FilmInfo.NONE] when it has no such film; kept like the pictures. */
+    private val films = ConcurrentHashMap<String, FilmInfo>()
 
-    /** A film's TMDB rating as far as it is known now, without asking: the rating, or null (none, or not yet asked). */
-    fun peekRating(title: String): Double? = ratings[ProgrammeTitles.key(title)]?.takeUnless { it.isNaN() }
+    /** What TMDB knows of the film called [title], as far as it is known now, without asking: null when none, or not yet asked. */
+    fun peekFilm(title: String): FilmInfo? = films[ProgrammeTitles.key(title)]?.takeUnless { it === FilmInfo.NONE }
+
+    /** Whether [title] has been asked about already (with or without a film found). */
+    fun filmKnown(title: String): Boolean = films.containsKey(ProgrammeTitles.key(title))
 
     /**
-     * The TMDB rating (0–10) of the film called [title] (made in [year], when known), for the Spotlight's films
-     * (Jonathan, 6 Nov 2026). Only a film with the very same title counts, and only one TMDB has some votes for.
-     * Null when there is none or TMDB could not be asked.
+     * The film called [title] (made in [year], when known) as TMDB has it: its rating, year and first genre, for
+     * the Spotlight's films (Jonathan, 6 Nov 2026), and to tell a film from a long show when the guide does not
+     * say (7 Nov 2026: "Meg" on ProSieben came as a tip with no genre). Only a film with the very same title
+     * counts. Null when TMDB has none, or could not be asked.
      */
-    suspend fun rating(title: String, year: Int?): Double? {
+    suspend fun film(title: String, year: Int?): FilmInfo? {
         val key = ProgrammeTitles.key(title)
         if (key.isBlank()) return null
-        ratings[key]?.let { return it.takeUnless(Double::isNaN) }
+        films[key]?.let { return it.takeUnless { f -> f === FilmInfo.NONE } }
         val now = System.currentTimeMillis()
-        prefs.getString(RATING + key, null)?.let { stored ->
+        prefs.getString(FILM + key, null)?.let { stored ->
             val at = stored.substringBefore(SEP).toLongOrNull() ?: 0L
-            val value = stored.substringAfter(SEP, "").toDoubleOrNull() ?: Double.NaN
-            if (now - at < if (value.isNaN()) NONE_TTL_MS else RATING_TTL_MS) {
-                ratings[key] = value
-                return value.takeUnless(Double::isNaN)
+            val value = FilmInfo.decode(stored.substringAfter(SEP, ""))
+            if (now - at < if (value === FilmInfo.NONE) NONE_TTL_MS else FILM_TTL_MS) {
+                films[key] = value
+                return value.takeUnless { it === FilmInfo.NONE }
             }
         }
         val found = withContext(Dispatchers.IO) {
             runCatching {
                 // Unanswered (no network, no key): nothing is kept, and it is asked again next time.
                 val hits = provider.searchMovie(title, year) ?: return@runCatching null
-                val hit = ProgrammeTitles.best(title, year, hits) ?: return@runCatching Double.NaN
+                val hit = ProgrammeTitles.best(title, year, hits) ?: return@runCatching FilmInfo.NONE
                 val details = provider.movieDetails(hit.tmdbId) ?: return@runCatching null
-                details.rating?.takeIf { it > 0.0 } ?: Double.NaN
+                FilmInfo(
+                    details.rating?.takeIf { it > 0.0 }, details.year ?: hit.year, details.genres.firstOrNull(),
+                    details.cast.map { it.name.trim() }.filter { it.isNotEmpty() }.take(FilmInfo.CAST_SHOWN),
+                )
             }.getOrNull()
         } ?: return null
-        ratings[key] = found
-        prefs.edit().putString(RATING + key, "$now$SEP${if (found.isNaN()) "" else found}").apply()
-        return found.takeUnless(Double::isNaN)
+        films[key] = found
+        prefs.edit().putString(FILM + key, "$now$SEP${found.encode()}").apply()
+        return found.takeUnless { it === FilmInfo.NONE }
     }
 
     private companion object {
         const val FILE = "mayo_programme_art"
-        const val RATING = "rating:"
+        const val FILM = "film:"
         /** A rating moves slowly: a week. */
-        const val RATING_TTL_MS = 7L * 24 * 60 * 60_000
+        const val FILM_TTL_MS = 7L * 24 * 60 * 60_000
         const val SEP = '|'
         const val FOUND_TTL_MS = 30L * 24 * 60 * 60_000
         const val NONE_TTL_MS = 3L * 24 * 60 * 60_000
@@ -155,5 +162,33 @@ internal object ProgrammeTitles {
             .filter { key(it.title) == k || it.originalTitle?.let(::key) == k }
             .sortedWith(compareByDescending<MetadataSearchResult> { year != null && it.year == year }.thenByDescending { it.popularity })
             .firstOrNull()
+    }
+}
+
+/**
+ * What TMDB knows of a TV film: its rating (0–10), year and first genre, each when it says, and its first
+ * [CAST_SHOWN] actors in TMDB's billing order (Jonathan, 7 Nov 2026).
+ */
+data class FilmInfo(val rating: Double?, val year: Int?, val genre: String?, val cast: List<String> = emptyList()) {
+    internal fun encode(): String = if (this === NONE) "" else listOf(
+        rating?.toString().orEmpty(), year?.toString().orEmpty(), genre.orEmpty(), cast.joinToString(NAMES),
+    ).joinToString(FIELD)
+
+    internal companion object {
+        /** TMDB has no film of that title. */
+        val NONE = FilmInfo(null, null, null)
+        private const val FIELD = "\t"
+        private const val NAMES = "|"
+        /** The leads, not the whole call sheet: one line on the Spotlight. */
+        const val CAST_SHOWN = 3
+
+        fun decode(text: String): FilmInfo {
+            if (text.isEmpty()) return NONE
+            val f = text.split(FIELD)
+            return FilmInfo(
+                f.getOrNull(0)?.toDoubleOrNull(), f.getOrNull(1)?.toIntOrNull(), f.getOrNull(2)?.ifBlank { null },
+                f.getOrNull(3)?.split(NAMES)?.filter { it.isNotBlank() }.orEmpty(),
+            )
+        }
     }
 }

@@ -43,6 +43,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.graphics.Color
@@ -107,8 +110,8 @@ internal fun HomeStage(
     autoAdvanceSecs: Int = 0,
     /** Films the playlist also has on demand: [GuidePick.key] → the movie's id ([FilmLibrary]). */
     onDemand: Map<String, Long> = emptyMap(),
-    /** Plays the playlist's movie from the start. */
-    onPlayOnDemand: (Long) -> Unit = {},
+    /** Opens the playlist's movie on its page in Movies. */
+    onOpenOnDemand: (Long) -> Unit = {},
     /** The top tier's gold badge over the title ([HighlightTier]; Settings › Spotlight). */
     badges: Boolean = true,
     /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
@@ -138,7 +141,8 @@ internal fun HomeStage(
     // on screen must stay the one shown rather than jump back to the first.
     var hlKey by remember { mutableStateOf<String?>(null) }
     val hlIndex = highlights.indexOfFirst { it.key == hlKey }.coerceAtLeast(0)
-    // ◀ ▶ go round: past the last comes the first again, before the first the last (Jonathan, 6 Nov 2026).
+    // ▶ goes round: past the last comes the first again (6 Nov 2026). ◀ steps back, but not past the first:
+    // there it leaves for the menu (HighlightInfo, 7 Nov 2026). stepHighlight(-1) is only asked off the first.
     fun stepHighlight(d: Int) {
         if (highlights.isNotEmpty()) hlKey = highlights[(hlIndex + d).mod(highlights.size)].key
     }
@@ -269,10 +273,22 @@ internal fun HomeStage(
         value = art.backdrop(p, picChannel.name)?.let(ArtState::Picture) ?: ArtState.None
     }
     val now = System.currentTimeMillis()
-    Box(modifier) {
+    // Spotlight: how far the stage's top is below the screen's, in px. Its picture reaches up that far, behind the
+    // app buttons and the clock (Jonathan, 7 Nov 2026: "the Spotlight up to the top edge, very faint up there").
+    // Read only in layout, so scrolling moves the picture without recomposing the stage.
+    var stageTop by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    val reach = { stageTop.coerceAtLeast(0f).toInt() }
+    val topFadePast = with(androidx.compose.ui.platform.LocalDensity.current) { TOP_FADE_PAST.roundToPx() }
+    Box(
+        if (!spotlight) modifier else modifier
+            // Behind the rows above it (the app buttons), which its picture now runs under.
+            .zIndex(-1f)
+            .onGloballyPositioned { stageTop = it.positionInRoot().y },
+    ) {
     // Spotlight (Jonathan, 5 Nov 2026, after Netflix): the picture fills the whole width and the text lies over
-    // it, the page's wash fading in from the left for the text and from below for the channel strip.
-    if (spotlight) Box(Modifier.matchParentSize()) {
+    // it, the page's wash fading in from the left for the text and from below for the channel strip; above the
+    // stage it runs on to the top of the screen under a wash that leaves only a hint of it.
+    if (spotlight) Box(Modifier.matchParentSize().reachUp(reach)) {
         when (hl) {
             // A match with a picture shows it full width like any highlight; without one, its crests (below).
             is Highlight.Sport -> sportArt?.let { url ->
@@ -296,16 +312,27 @@ internal fun HomeStage(
             )
         }
         val wash = StageColors.Wash
+        // The stage's own washes, on the stage alone (not stretched over the part above it).
+        Box(Modifier.fillMaxSize().belowReach(reach)) {
+            Box(
+                Modifier.fillMaxSize().gradientWash(
+                    false,
+                    0f to wash.copy(alpha = 0.94f), 0.32f to wash.copy(alpha = 0.78f), 0.6f to wash.copy(alpha = 0.12f), 1f to wash.copy(alpha = 0f),
+                ),
+            )
+            Box(
+                Modifier.fillMaxSize().gradientWash(
+                    true,
+                    0f to wash.copy(alpha = 0f), 0.58f to wash.copy(alpha = 0f), 0.84f to wash.copy(alpha = 0.88f), 1f to wash,
+                ),
+            )
+        }
+        // Above the stage: the page's colour over the picture, nearly opaque at the top edge, so the app buttons and
+        // the clock read as before, thinning out to nothing a little way into the stage.
         Box(
-            Modifier.fillMaxSize().gradientWash(
-                false,
-                0f to wash.copy(alpha = 0.94f), 0.32f to wash.copy(alpha = 0.78f), 0.6f to wash.copy(alpha = 0.12f), 1f to wash.copy(alpha = 0f),
-            ),
-        )
-        Box(
-            Modifier.fillMaxSize().gradientWash(
+            Modifier.fillMaxWidth().topReach(reach, topFadePast).gradientWash(
                 true,
-                0f to wash.copy(alpha = 0f), 0.58f to wash.copy(alpha = 0f), 0.84f to wash.copy(alpha = 0.88f), 1f to wash,
+                0f to wash.copy(alpha = 0.93f), 0.55f to wash.copy(alpha = 0.78f), 0.8f to wash.copy(alpha = 0.4f), 1f to wash.copy(alpha = 0f),
             ),
         )
     }
@@ -323,7 +350,7 @@ internal fun HomeStage(
                     index = hlIndex,
                     onStep = { d -> stepHighlight(d) },
                     rating = (hl as? Highlight.Pick)?.let { ratings[it.key] },
-                    onOnDemand = (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onPlayOnDemand(id) } },
+                    onOnDemand = (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onOpenOnDemand(id) } },
                     tier = if (badges) HighlightTier.of(hl, (hl as? Highlight.Pick)?.let { ratings[it.key] }) else null,
                     onOpen = {
                         when (hl) {
@@ -468,6 +495,30 @@ internal fun HomeStage(
     }
     }
 }
+
+/** Laid out [reach] px taller than its slot and moved up by as much: it draws on up to the screen's top. */
+private fun Modifier.reachUp(reach: () -> Int): Modifier = layout { measurable, constraints ->
+    val up = reach()
+    val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(constraints.maxWidth, constraints.maxHeight + up))
+    layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, -up) }
+}
+
+/** Inside a [reachUp] box: only its lower part, the stage's own slot. */
+private fun Modifier.belowReach(reach: () -> Int): Modifier = layout { measurable, constraints ->
+    val up = reach().coerceAtMost(constraints.maxHeight)
+    val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(constraints.maxWidth, constraints.maxHeight - up))
+    layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, up) }
+}
+
+/** Inside a [reachUp] box: from its top down past the stage's top by [past] px. */
+private fun Modifier.topReach(reach: () -> Int, past: Int): Modifier = layout { measurable, constraints ->
+    val height = (reach() + past).coerceAtMost(constraints.maxHeight)
+    val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(constraints.maxWidth, height))
+    layout(constraints.maxWidth, height) { placeable.place(0, 0) }
+}
+
+/** How far into the stage the wash from the top still reaches. */
+private val TOP_FADE_PAST = 140.mpx
 
 /** Home settles first; then the row's programme pictures are fetched ahead. */
 private const val ART_PREFETCH_DELAY_MS = 4000L

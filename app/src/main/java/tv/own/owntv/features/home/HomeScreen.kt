@@ -278,33 +278,36 @@ fun HomeScreen(
     val spotlightSources = remember(launcherConfig.spotlightOrder, launcherConfig.spotlightOff) {
         SpotlightSource.ordered(launcherConfig.spotlightOrder, launcherConfig.spotlightOff)
     }
-    // The films' TMDB ratings (Jonathan, 6 Nov 2026): known ones at once, the rest looked up one by one, and the
-    // Spotlight ranks again as they come in. Asked for while ratings show or Films is on (they also rank them).
+    // What TMDB knows of the films (Jonathan, 6 Nov 2026): their rating, year and genre, known ones at once, the
+    // rest looked up one by one, the Spotlight ranking again as they come in. Also a long tip the guide files as
+    // nothing: TMDB decides whether it is a film (7 Nov 2026, "Meg" on ProSieben).
     val programmeArt = koinInject<ProgrammeArt>()
-    val filmPicks = remember(picks) { picks.filter { it.film } }
-    val wantRatings = launcherConfig.spotlightRatings || filmsWanted
-    val filmRatings by androidx.compose.runtime.produceState(emptyMap<String, Double>(), filmPicks.map { it.key }, wantRatings) {
-        if (!wantRatings) { value = emptyMap(); return@produceState }
-        value = filmPicks.mapNotNull { p -> programmeArt.peekRating(p.title)?.let { p.key to it } }.toMap()
-        for (p in filmPicks.distinctBy { ProgrammeTitles.key(it.title) }) {
-            if (programmeArt.peekRating(p.title) != null) continue
-            val r = programmeArt.rating(p.title, p.year) ?: continue
-            value = value + filmPicks.filter { ProgrammeTitles.key(it.title) == ProgrammeTitles.key(p.title) }.associate { it.key to r }
+    val filmLookups = remember(picks) { picks.filter { it.film || it.filmCandidate } }
+    val filmInfos by androidx.compose.runtime.produceState(emptyMap<String, FilmInfo>(), filmLookups.map { it.key }) {
+        value = filmLookups.mapNotNull { p -> programmeArt.peekFilm(p.title)?.let { p.key to it } }.toMap()
+        for (p in filmLookups.distinctBy { ProgrammeTitles.key(it.title) }) {
+            if (programmeArt.filmKnown(p.title)) continue
+            val f = programmeArt.film(p.title, p.year) ?: continue
+            value = value + filmLookups.filter { ProgrammeTitles.key(it.title) == ProgrammeTitles.key(p.title) }.associate { it.key to f }
         }
     }
+    val guidePicks = remember(picks, filmInfos) { SpotlightHighlights.withFilms(picks, filmInfos) }
+    val filmPicks = remember(guidePicks) { guidePicks.filter { it.film } }
+    val filmRatings = remember(filmInfos) { filmInfos.mapNotNull { (k, f) -> f.rating?.let { k to it } }.toMap() }
     // Which of tonight's films the playlist also has on demand: the Spotlight offers them from the start.
     val filmLibrary = koinInject<FilmLibrary>()
+    val onDemandScope = androidx.compose.runtime.rememberCoroutineScope()
     val onDemand by androidx.compose.runtime.produceState(emptyMap<String, Long>(), filmPicks.map { it.key }) {
         value = runCatching { filmLibrary.find(filmPicks) }.getOrDefault(emptyMap())
     }
     val spotlightHighlights = remember(
-        spotlightLayout, spotlightSources, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems, picks,
+        spotlightLayout, spotlightSources, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems, guidePicks,
         launcherConfig.spotlightMax, launcherConfig.spotlightHideSeries, filmRatings,
     ) {
         if (!spotlightLayout) emptyList()
         else SpotlightHighlights.rank(
             System.currentTimeMillis(), spotlightSources, spotlightMatches, state.catalog?.channels.orEmpty(), state.recentOnNow,
-            state.spotlightWatched, state.heroItems, picks,
+            state.spotlightWatched, state.heroItems, guidePicks,
             max = launcherConfig.spotlightMax, hideSeries = launcherConfig.spotlightHideSeries, ratings = filmRatings,
         )
     }
@@ -681,7 +684,9 @@ fun HomeScreen(
                             autoAdvanceSecs = launcherConfig.spotlightAutoSecs,
                             onDemand = onDemand,
                             badges = launcherConfig.spotlightBadges,
-                            onPlayOnDemand = { movieId -> onPlayMovie(movieId, 0L) },
+                            // To the film's page in Movies, not straight into the player (Jonathan, 7 Nov 2026): from
+                            // there it plays, or goes to the favourites for later.
+                            onOpenOnDemand = { movieId -> onDemandScope.launch { filmLibrary.movie(movieId)?.let(onOpenMovie) } },
                             spotlightFocusRequest = spotlightFocusRequest,
                             onOpenMatch = onOpenMatch,
                             onResume = { item ->

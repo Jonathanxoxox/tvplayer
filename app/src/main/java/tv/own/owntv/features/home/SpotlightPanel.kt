@@ -43,8 +43,8 @@ import tv.own.owntv.ui.theme.stageText
 
 /**
  * The Spotlight's text side for a [Highlight]: why it is there, what it is, and its one button — Watch, To
- * the match, Watch on. ◀ ▶ on the button go through the highlights, round from the last to the first; the
- * dots say how many there are. A film shows its [rating] (TMDB), year and kind.
+ * the match, Watch on. ▶ on the button goes through the highlights, round from the last to the first; ◀ goes
+ * back, and on the first one on to the menu at the left. The dots say how many there are. A film shows its [rating] (TMDB), year and kind.
  */
 @Composable
 internal fun HighlightInfo(
@@ -62,7 +62,7 @@ internal fun HighlightInfo(
     now: Long,
     modifier: Modifier = Modifier,
     rating: Double? = null,
-    /** The film is also in the playlist's library: a second button plays it from the start, now. */
+    /** The film is also in the playlist's library: a second button opens its page in Movies. */
     onOnDemand: (() -> Unit)? = null,
     /** The top tier, when this highlight is in it: a gold badge before its label. */
     tier: HighlightTier? = null,
@@ -76,6 +76,7 @@ internal fun HighlightInfo(
         }
         Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         FilmFacts(hl, rating)
+        FilmCast(hl)
         lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
         // that has one, not only the guide's picks).
@@ -99,7 +100,10 @@ internal fun HighlightInfo(
                             // ▶ goes to On demand when the film has it; from there ▶ goes on to the next highlight.
                             e.key == Key.DirectionRight && onOnDemand != null -> { runCatching { onDemandButton.requestFocus() }; true }
                             e.key == Key.DirectionRight && count > 1 -> { onStep(1); true }
-                            e.key == Key.DirectionLeft && count > 1 -> { onStep(-1); true }
+                            // ◀ goes back through the highlights, but on the first it leaves for the menu on
+                            // the left as from every other row, rather than round to the last (Jonathan, 7 Nov
+                            // 2026: "I'm caught in a loop and have to go down to the channels to get left").
+                            e.key == Key.DirectionLeft && index > 0 -> { onStep(-1); true }
                             else -> false
                         }
                     },
@@ -109,7 +113,8 @@ internal fun HighlightInfo(
                     Text(buttonLabel(hl, now), style = stageText(20, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            // The same film in the playlist's library: watch it now, from the start (Jonathan, 6 Nov 2026).
+            // The same film in the playlist's library: its page in Movies, to watch it from the start or keep it for
+            // later (Jonathan, 6 and 7 Nov 2026).
             if (onOnDemand != null) StageSurface(
                 onClick = onOnDemand,
                 radius = 30.mpx,
@@ -381,6 +386,16 @@ private const val MIN_DESCRIPTION = 12
 @Composable
 internal fun SpotlightDescription(text: String, modifier: Modifier = Modifier) {
     Text(text, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = modifier)
+}
+
+/** A film's leads under its facts: "Mit Jason Statham, Li Bingbing, Ruby Rose" (TMDB's billing order). */
+@Composable
+private fun FilmCast(hl: Highlight) {
+    val cast = (hl as? Highlight.Pick)?.pick?.takeIf { it.film }?.cast?.takeIf { it.isNotEmpty() } ?: return
+    Text(
+        stringResource(R.string.home_hl_cast, cast.joinToString(stringResource(R.string.home_hl_cast_separator))),
+        style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
+    )
 }
 
 /** A time of day as the box shows it (20:15). */

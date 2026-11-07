@@ -1,5 +1,8 @@
 package tv.own.owntv.launcher.apps
 
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
+import androidx.compose.foundation.gestures.BringIntoViewSpec
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
@@ -445,6 +448,7 @@ private fun YouTubeFace(height: Dp) {
  * The Apps row as small buttons on one line, for the Classic and Stage layouts: each app's icon and
  * name, then All apps.
  */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 @Composable
 fun HomeAppPills(
     start: Dp,
@@ -462,6 +466,11 @@ fun HomeAppPills(
     var menuFor by remember { mutableStateOf<LauncherApp?>(null) }
     // What Spotify or YouTube plays in the background, beside the apps (Jonathan, 4 Nov 2026).
     val playing = rememberNowPlaying()
+    // The row stays put while ◀ ▶ walk it (Jonathan, 7 Nov 2026: "the apps jump as if animated"). It used to inherit
+    // Home's vertical spec, which keeps room above for the clock and below for the focused card: across, that
+    // shifted the row on every step though every button was on screen. Now it only moves for a button not wholly
+    // on screen, and only as far as that one needs.
+    CompositionLocalProvider(LocalBringIntoViewSpec provides PillRowScroll) {
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(14.mpx),
         contentPadding = PaddingValues(start = start, end = 64.mpx, top = 6.mpx, bottom = 6.mpx),
@@ -493,7 +502,21 @@ fun HomeAppPills(
             )
         }
     }
+    }
     menuFor?.let { app -> RowAppMenu(app, row, onDismiss = { menuFor = null }) }
+}
+
+/** Scrolls a row only for an item not wholly in view, and only as far as it needs; never for one already in view. */
+@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+private val PillRowScroll = object : BringIntoViewSpec {
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float {
+        val trailing = offset + size - containerSize
+        return when {
+            offset >= 0f && trailing <= 0f -> 0f
+            offset < 0f || size > containerSize -> offset
+            else -> trailing
+        }
+    }
 }
 
 @Composable
