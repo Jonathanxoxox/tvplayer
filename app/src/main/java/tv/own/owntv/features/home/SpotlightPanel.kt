@@ -157,7 +157,16 @@ internal fun HighlightInfo(
  * under them once the match is on. The Spotlight's washes keep the text on the left readable.
  */
 @Composable
-internal fun SportColorsBackdrop(match: tv.own.owntv.core.sports.model.Match) {
+internal fun SportColorsBackdrop(
+    match: tv.own.owntv.core.sports.model.Match,
+    /** The crests' size: the Spotlight's 240; a tile on the sports page passes its own. */
+    crestSize: androidx.compose.ui.unit.Dp = 240.mpx,
+    /** The score under the crests once the match is on; a tile shows it in its own line instead. */
+    showScore: Boolean = true,
+    /** Where the crests' middles sit, across and down, as fractions of the box. */
+    crestX: Pair<Float, Float> = 0.50f to 0.80f,
+    crestY: Float = 0.42f,
+) {
     val (homeColor, awayColor) = remember(match.key) { ClubColors.pair(match.home?.team, match.away?.team) }
     Box(Modifier.fillMaxSize()) {
         androidx.compose.foundation.Canvas(Modifier.fillMaxSize()) {
@@ -176,16 +185,16 @@ internal fun SportColorsBackdrop(match: tv.own.owntv.core.sports.model.Match) {
             drawPath(away, androidx.compose.ui.graphics.Brush.linearGradient(listOf(awayColor.darken(0.2f), awayColor), start = androidx.compose.ui.geometry.Offset(bottom, 0f), end = androidx.compose.ui.geometry.Offset(w, h)))
             drawLine(Color.White.copy(alpha = 0.85f), androidx.compose.ui.geometry.Offset(top, 0f), androidx.compose.ui.geometry.Offset(bottom, h), strokeWidth = 6.mpx.toPx())
         }
-        val live = match.state != tv.own.owntv.core.sports.model.MatchState.PRE
-        listOf(match.home to 0.50f, match.away to 0.80f).forEach { (c, x) ->
+        val live = showScore && match.state != tv.own.owntv.core.sports.model.MatchState.PRE
+        listOf(match.home to crestX.first, match.away to crestX.second).forEach { (c, x) ->
             val team = c?.team ?: return@forEach
             androidx.compose.foundation.layout.BoxWithConstraints(Modifier.fillMaxSize()) {
                 Column(
-                    Modifier.padding(start = maxWidth * x - 130.mpx, top = maxHeight * 0.42f - 150.mpx).width(260.mpx),
+                    Modifier.padding(start = (maxWidth * x - crestSize / 2 - 10.mpx).coerceAtLeast(0.mpx), top = (maxHeight * crestY - crestSize / 2 - 30.mpx).coerceAtLeast(0.mpx)).width(crestSize + 20.mpx),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(14.mpx),
                 ) {
-                    AsyncImage(model = team.logoUrl, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(240.mpx))
+                    AsyncImage(model = team.logoUrl, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(crestSize))
                     if (live) Text(c.score?.text.orEmpty(), style = stageText(54, 800), color = StageColors.Text, maxLines = 1)
                 }
             }

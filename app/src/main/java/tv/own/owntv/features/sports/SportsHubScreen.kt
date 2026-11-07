@@ -35,6 +35,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -455,6 +456,119 @@ internal fun SportsChip(
  */
 @Composable
 internal fun MatchCard(
+    m: Match,
+    featured: Boolean,
+    config: SportsConfig,
+    now: Long,
+    reminded: Boolean,
+    onClick: () -> Unit,
+    onPlay: () -> Unit,
+    onHold: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // Two sides: a matchday poster (Jonathan, 7 Nov 2026). A race or a tournament stays the plain card.
+    if (m.home != null && m.away != null) MatchPoster(m, featured, config, reminded, onClick, onPlay, onHold, modifier)
+    else MatchCardPlain(m, featured, config, now, reminded, onClick, onPlay, onHold, modifier)
+}
+
+/**
+ * A match as a poster: MagentaTV's or TheSportsDB's picture of it ([SportPosters]), else the clubs' colours with
+ * their crests; over its lower part the league and kick-off or LIVE with the minute, the two sides and the score.
+ */
+@Composable
+private fun MatchPoster(
+    m: Match,
+    featured: Boolean,
+    config: SportsConfig,
+    reminded: Boolean,
+    onClick: () -> Unit,
+    onPlay: () -> Unit,
+    onHold: () -> Unit,
+    modifier: Modifier,
+) {
+    val r = 20.mpx
+    val locale = LocalConfiguration.current.locales[0]
+    val posters = org.koin.compose.koinInject<SportPosters>()
+    val url by androidx.compose.runtime.produceState(posters.peek(m)?.ifEmpty { null }, m.key) { value = posters.posterFor(m) }
+    val ink = Color.White
+    val soft = Color(0xFFD3E2DF)
+    StageSurface(
+        onClick = onClick,
+        onLongClick = onHold,
+        radius = r,
+        focusStyle = StageFocus.FX,
+        contentAlignment = Alignment.TopStart,
+        modifier = modifier
+            .width((if (featured) 576 else 384).mpx)
+            .height((if (featured) 324 else 216).mpx)
+            .onPreviewKeyEvent { e ->
+                val playKey = e.key == Key.MediaPlay || e.key == Key.MediaPlayPause || e.key == Key.MediaFastForward
+                if (playKey && e.type == KeyEventType.KeyUp) onPlay()
+                playKey
+            },
+        idle = Modifier.background(StageColors.Ink.copy(alpha = 0.045f), RoundedCornerShape(r)),
+    ) { _ ->
+        Box(Modifier.fillMaxSize().clip(RoundedCornerShape(r))) {
+            val picture = url
+            if (picture != null) {
+                coil3.compose.AsyncImage(
+                    model = picture, contentDescription = null,
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop, modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                tv.own.owntv.features.home.SportColorsBackdrop(
+                    m, crestSize = (if (featured) 120 else 78).mpx, showScore = false, crestX = 0.30f to 0.72f, crestY = 0.36f,
+                )
+            }
+            // The lower part darkened for the text, whatever the picture.
+            Box(
+                Modifier.fillMaxSize().background(
+                    androidx.compose.ui.graphics.Brush.verticalGradient(
+                        0f to Color.Transparent, 0.38f to Color.Transparent, 0.72f to Color(0xB3050C10), 1f to Color(0xF2050C10),
+                    ),
+                ),
+            )
+            val followed = m.competitors.any { c -> config.teams.any { it.sport == m.sport && it.id == c.team.id } }
+            Box(Modifier.align(Alignment.TopEnd).padding(12.mpx)) {
+                if (reminded) StageTag(stringResource(R.string.sports_reminder_set))
+                else if (followed) tv.own.owntv.ui.components.OwnTVIcon(OwnTVIcon.STAR, Color(0xFFE7C56A), Modifier.size(22.mpx))
+            }
+            Column(
+                Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 18.mpx, vertical = 14.mpx),
+                verticalArrangement = Arrangement.spacedBy(4.mpx),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.mpx)) {
+                    if (m.isLive) LiveMark(stringResource(R.string.player_live) + stringResource(R.string.content_epg_bits_separator) + clockText(m), 16f)
+                    val day = if (m.isLive) null else dayOf(m.startMs, locale)
+                    val time = when {
+                        m.isLive -> null
+                        m.off || m.state == MatchState.POST -> statusText(m)
+                        else -> timeText(m.startMs)
+                    }
+                    val line = listOfNotNull(leagueName(m), m.subtitle?.takeIf { featured }, day, time).joinToString(stringResource(R.string.content_epg_bits_separator))
+                    Text(line, style = stageText(16, 700), color = soft, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    val home = m.home!!.team
+                    val away = m.away!!.team
+                    Text(
+                        teamLabel(home) + " – " + teamLabel(away),
+                        style = stageText(if (featured) 26 else 20, 800), color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (m.state != MatchState.PRE && !m.off && m.sport !in LINE_SCORE_SPORTS) {
+                        val score = if (config.spoilerFree) "– : –" else "${scoreText(m.sport, m.home!!.score)} – ${scoreText(m.sport, m.away!!.score)}"
+                        Text(score, style = stageText(if (featured) 32 else 24, 800), color = ink, maxLines = 1, modifier = Modifier.padding(start = 12.mpx))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** The card as it was: a race or anything without two sides. */
+@Composable
+private fun MatchCardPlain(
     m: Match,
     featured: Boolean,
     config: SportsConfig,
