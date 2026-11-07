@@ -38,6 +38,7 @@ import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageSurface
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.mpxSp
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
@@ -62,10 +63,16 @@ internal fun HighlightInfo(
     now: Long,
     modifier: Modifier = Modifier,
     rating: Double? = null,
-    /** The film is also in the playlist's library: a second button opens its page in Movies. */
+    /**
+     * A second button: a film also in the playlist's library opens its page in Movies; a match opens its page
+     * in Sports ([secondIcon] says which).
+     */
     onOnDemand: (() -> Unit)? = null,
+    secondIcon: OwnTVIcon = OwnTVIcon.MOVIES,
     /** The top tier, when this highlight is in it: a gold badge before its label. */
     tier: HighlightTier? = null,
+    /** A match's text, which [descriptionOf] cannot know: matchday, venue, table ([sportText]). */
+    sportText: String? = null,
 ) {
     val accent = stageAccent.accent
     val onDemandButton = remember { FocusRequester() }
@@ -80,8 +87,10 @@ internal fun HighlightInfo(
         lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
         // that has one, not only the guide's picks).
-        descriptionOf(hl)?.let { SpotlightDescription(it) }
+        // The room left, at most eight lines: a long title, cast and director never push the buttons out.
+        (descriptionOf(hl) ?: sportText)?.let { SpotlightDescription(it, Modifier.weight(1f, fill = false)) }
         Row(Modifier.padding(top = 10.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
+            // Round buttons with their icon alone (Jonathan, 7 Nov 2026: "cleaner").
             StageSurface(
                 onClick = onOpen,
                 radius = 30.mpx,
@@ -89,7 +98,7 @@ internal fun HighlightInfo(
                 idle = Modifier.clip(RoundedCornerShape(30.mpx)).background(StageColors.ControlFill),
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .height(60.mpx)
+                    .size(60.mpx)
                     .then(if (focusRequester != null) Modifier.focusRequester(focusRequester) else Modifier)
                     .focusRequester(ownRequester)
                     .tracked(ownRequester, track)
@@ -108,10 +117,7 @@ internal fun HighlightInfo(
                         }
                     },
             ) { focused ->
-                Row(Modifier.padding(horizontal = 28.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
-                    OwnTVIcon(OwnTVIcon.PLAY, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(22.mpx), filled = true)
-                    Text(buttonLabel(hl, now), style = stageText(20, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
+                OwnTVIcon(OwnTVIcon.PLAY, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(24.mpx), filled = true)
             }
             // The same film in the playlist's library: its page in Movies, to watch it from the start or keep it for
             // later (Jonathan, 6 and 7 Nov 2026).
@@ -122,7 +128,7 @@ internal fun HighlightInfo(
                 idle = Modifier.clip(RoundedCornerShape(30.mpx)).background(StageColors.ControlFill),
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .height(60.mpx)
+                    .size(60.mpx)
                     .focusRequester(onDemandButton)
                     .onFocusChanged { if (it.hasFocus) onFocus() }
                     .onPreviewKeyEvent { e ->
@@ -138,13 +144,7 @@ internal fun HighlightInfo(
                         }
                     },
             ) { focused ->
-                Row(Modifier.padding(horizontal = 28.mpx), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
-                    OwnTVIcon(OwnTVIcon.MOVIES, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(22.mpx))
-                    Text(
-                        stringResource(R.string.home_hl_on_demand),
-                        style = stageText(20, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                OwnTVIcon(secondIcon, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(24.mpx))
             }
             if (count > 1) Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically) {
                 repeat(count) { i ->
@@ -382,20 +382,53 @@ private val WHITESPACE = Regex("\\s+")
 /** Shorter than this it is a label ("Spielfilm", "n/a"), not a description. */
 private const val MIN_DESCRIPTION = 12
 
-/** The two lines of what it is about, under the title and its facts. */
+/** What it is about, under the title and its facts: up to eight lines, the Spotlight has the room (Jonathan, 7 Nov 2026). */
 @Composable
 internal fun SpotlightDescription(text: String, modifier: Modifier = Modifier) {
-    Text(text, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = modifier)
+    Text(
+        text, style = stageText(18, 500).copy(lineHeight = (18 * 1.45f).mpxSp), color = StageColors.Text,
+        maxLines = 8, overflow = TextOverflow.Ellipsis, modifier = modifier,
+    )
 }
+
+/**
+ * A match's lines for the Spotlight: the matchday and where ("9. Spieltag · Signal Iduna Park"), then both
+ * sides' places in the table. Null when nothing is known.
+ */
+@Composable
+internal fun sportText(m: tv.own.owntv.core.sports.model.Match, notes: MatchNotes?, table: tv.own.owntv.core.sports.model.StandingsTable?): String? {
+    val place = listOfNotNull(
+        notes?.round,
+        m.venue?.takeIf { it.isNotBlank() }?.let { stringResource(R.string.home_sport_venue, it) } ?: notes?.line,
+    ).joinToString(stringResource(R.string.content_epg_bits_separator)).takeIf { it.isNotBlank() }
+    val rows = table?.groups?.flatMap { it.rows }.orEmpty()
+    fun row(c: tv.own.owntv.core.sports.model.Competitor?) = c?.let { comp -> rows.firstOrNull { it.team.id == comp.team.id } }
+    val home = row(m.home)
+    val away = row(m.away)
+    val standing = if (home != null && away != null) {
+        stringResource(R.string.home_sport_table, sideName(m.home), home.rank, home.points, sideName(m.away), away.rank, away.points)
+    } else null
+    return listOfNotNull(place, standing).joinToString(stringResource(R.string.home_sport_sentence_separator)).takeIf { it.isNotBlank() }
+}
+
+private fun sideName(c: tv.own.owntv.core.sports.model.Competitor?): String =
+    c?.team?.let { t -> t.shortName?.takeIf { it.isNotBlank() } ?: t.name }.orEmpty()
 
 /** A film's leads under its facts: "Mit Jason Statham, Li Bingbing, Ruby Rose" (TMDB's billing order). */
 @Composable
 private fun FilmCast(hl: Highlight) {
-    val cast = (hl as? Highlight.Pick)?.pick?.takeIf { it.film }?.cast?.takeIf { it.isNotEmpty() } ?: return
-    Text(
-        stringResource(R.string.home_hl_cast, cast.joinToString(stringResource(R.string.home_hl_cast_separator))),
-        style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
-    )
+    val pick = (hl as? Highlight.Pick)?.pick?.takeIf { it.film } ?: return
+    // "Mit Tom Hanks, Matt Damon", and "Regie: Steven Spielberg" on a line of its own: after the actors it was
+    // cut off (Jonathan, 7 Nov 2026).
+    pick.cast.takeIf { it.isNotEmpty() }?.let {
+        Text(
+            stringResource(R.string.home_hl_cast, it.joinToString(stringResource(R.string.home_hl_cast_separator))),
+            style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+    }
+    pick.director?.let {
+        Text(stringResource(R.string.home_hl_director, it), style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }
 
 /** A time of day as the box shows it (20:15). */
@@ -432,13 +465,3 @@ private fun lineOf(hl: Highlight, now: Long): String? = when (hl) {
     }
 }
 
-@Composable
-private fun buttonLabel(hl: Highlight, now: Long): String = stringResource(
-    when (hl) {
-        is Highlight.Live -> R.string.home_hl_watch
-        // Not on yet: the button takes you to the channel, which shows what runs before it.
-        is Highlight.Pick -> if (hl.pick.startMs > now) R.string.home_hl_to_channel else R.string.home_hl_watch
-        is Highlight.Sport -> R.string.home_hl_to_match
-        is Highlight.Resume -> R.string.home_hl_continue
-    },
-)

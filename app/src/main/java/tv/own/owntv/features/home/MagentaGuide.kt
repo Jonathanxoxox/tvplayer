@@ -105,6 +105,12 @@ class MagentaGuide(private val http: OkHttpClient) {
     /** Match key → picture URL, or "" when the sports channels were all asked and none shows it. */
     private val matchPictures = ConcurrentHashMap<String, String>()
 
+    /** Match key → what the broadcast's listing says besides its picture: the matchday, the venue line. */
+    private val matchNotes = ConcurrentHashMap<String, MatchNotes>()
+
+    /** The matchday and the guide's line on the match, once [matchPicture] found its broadcast. */
+    fun matchNotes(key: String): MatchNotes? = matchNotes[key]
+
     /**
      * A picture for a match, from the programme that shows it on one of the guide's sports channels (Sky Sport,
      * DAZN, MagentaSport …): "Live BL: Hamburger SV - Borussia M'gladbach" on Sky Sport Bundesliga 1 for HSV
@@ -116,7 +122,10 @@ class MagentaGuide(private val http: OkHttpClient) {
         withContext(Dispatchers.IO) {
             matchPictures[key]?.let { return@withContext it.ifEmpty { null } }
             // The shared board first: one read for every match around now (the sports page's posters use it too).
-            boardPicture(home, away, kickoffMs)?.let { matchPictures[key] = it; return@withContext it }
+            boardPlaybill(home, away, kickoffMs)?.let { p ->
+                matchNotes[key] = MagentaNames.matchNotes(p)
+                MagentaNames.picture(p)?.let { matchPictures[key] = it; return@withContext it }
+            }
             runCatching {
                 lock.withLock {
                     channelId("") // fills the channel list
@@ -129,14 +138,16 @@ class MagentaGuide(private val http: OkHttpClient) {
                             .put("count", -1)
                             .put("isFillProgram", 0)
                             .put("offset", 0)
-                            .put("properties", JSONArray().put(JSONObject().put("include", "starttime,name,pictures").put("name", "playbill")))
+                            .put("properties", JSONArray().put(JSONObject().put("include", MATCH_FIELDS).put("name", "playbill")))
                             .put("type", 2)
                             .put("begintime", utc(kickoffMs - MatchPictures.BEFORE_MS))
                             .put("channelid", id)
                             .put("endtime", utc(kickoffMs + MatchPictures.AFTER_MS))
                         val list = post("PlayBillList", body)?.optJSONArray("playbilllist")
                         if (list == null) { answered = false; continue }
-                        found = MagentaNames.matchPicture(list, home, away, kickoffMs) ?: continue
+                        val p = MagentaNames.matchPlaybill(list, home, away, kickoffMs) ?: continue
+                        matchNotes[key] = MagentaNames.matchNotes(p)
+                        found = MagentaNames.picture(p) ?: continue
                         break
                     }
                     // Remembered only when every channel answered: a network hiccup asks again next time.
@@ -157,11 +168,15 @@ class MagentaGuide(private val http: OkHttpClient) {
      * page's posters instead of one per match (Jonathan, 7 Nov 2026). Null when the match lies outside the
      * board's window, nothing on it names both teams, or the guide cannot be asked.
      */
-    suspend fun boardPicture(home: List<String>, away: List<String>, kickoffMs: Long): String? = withContext(Dispatchers.IO) {
+    suspend fun boardPicture(home: List<String>, away: List<String>, kickoffMs: Long): String? =
+        boardPlaybill(home, away, kickoffMs)?.let(MagentaNames::picture)
+
+    /** The match's broadcast on the shared board, see [boardPicture]. */
+    private suspend fun boardPlaybill(home: List<String>, away: List<String>, kickoffMs: Long): JSONObject? = withContext(Dispatchers.IO) {
         runCatching {
             val b = sportsBoard() ?: return@runCatching null
             if (kickoffMs < boardFrom || kickoffMs > boardTo) return@runCatching null
-            MagentaNames.matchPicture(b, home, away, kickoffMs)
+            MagentaNames.matchPlaybill(b, home, away, kickoffMs)
         }.getOrNull()
     }
 
@@ -183,7 +198,7 @@ class MagentaGuide(private val http: OkHttpClient) {
                     .put("count", -1)
                     .put("isFillProgram", 0)
                     .put("offset", 0)
-                    .put("properties", JSONArray().put(JSONObject().put("include", "starttime,name,pictures").put("name", "playbill")))
+                    .put("properties", JSONArray().put(JSONObject().put("include", MATCH_FIELDS).put("name", "playbill")))
                     .put("type", 2)
                     .put("begintime", utc(from))
                     .put("channelid", id)
@@ -356,7 +371,24 @@ internal object MagentaNames {
      * The picture of the programme that shows the match: both teams named, starting from an hour and a half
      * before to 20 minutes after [kickoffMs]; the live broadcast before a countdown, conference or highlights.
      */
-    fun matchPicture(playbills: JSONArray, home: List<String>, away: List<String>, kickoffMs: Long): String? {
+    fun matchPicture(playbills: JSONArray, home: List<String>, away: List<String>, kickoffMs: Long): String? =
+        matchPlaybill(playbills, home, away, kickoffMs)?.let(::pictureOf)
+
+    /** A listing's picture, as [matchPicture] takes it. */
+    fun picture(p: JSONObject): String? = pictureOf(p)
+
+    /**
+     * What a match broadcast's listing says besides its picture: the matchday after the last comma of its
+     * title ("Live BL: Borussia Dortmund - SV Elversberg, 9. Spieltag") and its line on the match
+     * ("Aus dem Signal Iduna Park, Dortmund, Deutschland").
+     */
+    fun matchNotes(p: JSONObject): MatchNotes = MatchNotes(
+        round = p.optString("name").substringAfterLast(", ", "").trim().takeIf { it.isNotEmpty() && it.any(Char::isDigit) },
+        line = p.optString("introduce").trim().takeIf { it.isNotEmpty() },
+    )
+
+    /** The listing of the programme that shows the match, see [matchPicture]. */
+    fun matchPlaybill(playbills: JSONArray, home: List<String>, away: List<String>, kickoffMs: Long): JSONObject? {
         if (home.isEmpty() || away.isEmpty()) return null
         var best: JSONObject? = null
         var bestScore = Long.MAX_VALUE
@@ -373,7 +405,7 @@ internal object MagentaNames {
             val score = kotlin.math.abs(start - kickoffMs)
             if (score < bestScore) { best = p; bestScore = score }
         }
-        return best?.let(::pictureOf)
+        return best
     }
 
     /** Programmes about a match that are not its broadcast. */
@@ -528,3 +560,9 @@ internal object MagentaNames {
     /** How the guide names documentary genres ("Dokumentation", "Doku-Reihe", "Reportage"). */
     private val DOC_WORDS = listOf("doku", "reportage")
 }
+
+/** What a match broadcast's listing adds: its matchday ("9. Spieltag") and the guide's line on it. */
+data class MatchNotes(val round: String?, val line: String?)
+
+/** A match broadcast's listing: when, what, its picture and the guide's line on it. */
+private const val MATCH_FIELDS = "starttime,name,pictures,introduce"

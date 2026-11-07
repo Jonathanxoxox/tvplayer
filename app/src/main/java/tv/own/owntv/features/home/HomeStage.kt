@@ -56,6 +56,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import tv.own.owntv.ui.components.OwnTVIcon
 import androidx.tv.material3.Text
 import tv.own.owntv.R
 import tv.own.owntv.core.database.entity.ChannelEntity
@@ -118,7 +122,12 @@ internal fun HomeStage(
     badges: Boolean = true,
     /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
     spotlightFocusRequest: Long = 0L,
+    /** A match's first channel as Watch live lists it, searching if needed: the match highlight's play button. */
+    findMatchChannel: suspend (tv.own.owntv.core.sports.model.Match) -> ChannelEntity? = { null },
 ) {
+    val stageScope = androidx.compose.runtime.rememberCoroutineScope()
+    // A match's channel being looked up for its play button: a second press meanwhile does nothing.
+    var matchSearching by remember { mutableStateOf(false) }
     val channels = row.channels
     if (channels.isEmpty()) return
     // Keyed on the category, not the row object: Home builds the row anew (coming back from full screen) and
@@ -130,6 +139,9 @@ internal fun HomeStage(
     var picked by remember(row.category.key) { mutableStateOf<ChannelEntity?>(null) }
     // Picked with OK it plays with its sound; started by Spotlight on its own, muted.
     var pickedAudible by remember { mutableStateOf(true) }
+    // Picked from a highlight's button (a programme on now or tonight): it plays in the picture beside the
+    // highlight, as a channel from the strip does (Jonathan, 7 Nov 2026), and stays while focus is on the button.
+    var pickedFromHighlight by remember { mutableStateOf(false) }
     var stripFocused by remember { mutableStateOf(false) }
     val previewOn by liveVm.livePreviewEnabled.collectAsStateWithLifecycle()
     LaunchedEffect(picked?.id, previewOn) {
@@ -151,8 +163,8 @@ internal fun HomeStage(
     val hl = if (spotlight && !stripFocused) highlights.getOrNull(hlIndex) else null
     // The automatic advance, when switched on: the next highlight after a while, round and round. It waits
     // while the player is full screen and while focus is in the strip; any step starts the wait again.
-    if (spotlight && autoAdvanceSecs > 0) LaunchedEffect(hlKey, highlights, stripFocused, active, autoAdvanceSecs) {
-        if (!active || stripFocused || highlights.size < 2) return@LaunchedEffect
+    if (spotlight && autoAdvanceSecs > 0) LaunchedEffect(hlKey, highlights, stripFocused, active, autoAdvanceSecs, picked) {
+        if (!active || stripFocused || highlights.size < 2 || picked != null) return@LaunchedEffect
         delay(autoAdvanceSecs * 1000L)
         stepHighlight(1)
     }
@@ -169,7 +181,7 @@ internal fun HomeStage(
     // highlights show their pictures again. A moment's grace, so coming back from full screen keeps it playing.
     // Only while Home is in front: full screen takes the focus too, and must keep its picture.
     if (spotlight) LaunchedEffect(stripFocused, active) {
-        if (!active || stripFocused || picked == null) return@LaunchedEffect
+        if (!active || stripFocused || picked == null || pickedFromHighlight) return@LaunchedEffect
         delay(STRIP_LEFT_GRACE_MS)
         liveVm.stopPreview()
         picked = null
@@ -207,12 +219,24 @@ internal fun HomeStage(
         liveVm.stopPreview()
         picked = null
     }
+    // Another highlight, or focus into the strip: the programme picked from a highlight stops.
+    LaunchedEffect(hlKey, stripFocused) {
+        if (!pickedFromHighlight || picked == null) return@LaunchedEffect
+        liveVm.stopPreview()
+        picked = null
+        pickedFromHighlight = false
+    }
     // Back first ends the picture, then (with nothing playing) goes on to the menu as before.
     BackHandler(enabled = active && picked != null) { liveVm.stopPreview(); picked = null }
     // No corner left behind for the shell to draw into once the stage is gone.
     DisposableEffect(Unit) { onDispose { GuidePreviewSpot.rect = null } }
     // A highlight other than a live channel shows no picture; the strip's channel shows the one picked.
-    val video = picked?.takeIf { previewOn && (hl == null || (hl is Highlight.Live && hl.channel.id == it.id)) }
+    val video = picked?.takeIf {
+        previewOn && (
+            hl == null || (hl is Highlight.Live && hl.channel.id == it.id) || (hl is Highlight.Pick && hl.pick.channel.id == it.id) ||
+                (hl is Highlight.Sport && pickedFromHighlight)
+            )
+    }
     val programme = onNow[shown.id]
     // The picture until the channel plays: the programme's own, from TMDB (ProgrammeArt), else the logo.
     val art = org.koin.compose.koinInject<ProgrammeArt>()
@@ -226,13 +250,22 @@ internal fun HomeStage(
     // A match: its programme's picture from the guide's sports channels, when one shows it.
     val magenta = org.koin.compose.koinInject<MagentaGuide>()
     val sportMatch = (hl as? Highlight.Sport)?.match
+    var sportNotes by remember(sportMatch?.key) { mutableStateOf<MatchNotes?>(null) }
     val sportArt by androidx.compose.runtime.produceState<String?>(null, sportMatch?.key) {
         value = null
         val m = sportMatch ?: return@produceState
         fun names(c: tv.own.owntv.core.sports.model.Competitor?) =
             listOfNotNull(c?.team?.name, c?.team?.shortName, c?.team?.abbreviation).filter { it.isNotBlank() }
         value = magenta.matchPicture(m.key, names(m.home), names(m.away), m.startMs)
+        sportNotes = magenta.matchNotes(m.key)
     }
+    // The table, for the match's text: the board's, as the sports page has it.
+    val sportsRepo = org.koin.compose.koinInject<tv.own.owntv.core.sports.SportsRepository>()
+    // Only that league's table, so live scores elsewhere on the board do not redraw the stage.
+    val sportTable by remember(sportMatch?.feed) {
+        val feed = sportMatch?.feed
+        sportsRepo.board.map { b -> feed?.let { b.standings[it] } }.distinctUntilChanged()
+    }.collectAsState(null)
     val picProgramme = if (hl is Highlight.Live) hl.programme else if (hl == null) programme else null
     // The row's pictures ahead, once Home has settled: browsing then shows them at once. Only their
     // addresses and the files on disk; decoded, thirty 1080p pictures would take some 240 MB.
@@ -364,14 +397,43 @@ internal fun HomeStage(
                     index = hlIndex,
                     onStep = { d -> stepHighlight(d) },
                     rating = (hl as? Highlight.Pick)?.let { ratings[it.key] },
-                    onOnDemand = (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onOpenOnDemand(id) } },
+                    // A match's second button: its page in Sports (Jonathan, 7 Nov 2026); the first plays it here.
+                    onOnDemand = if (hl is Highlight.Sport) ({ onOpenMatch(hl.match) })
+                        else (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onOpenOnDemand(id) } },
+                    secondIcon = if (hl is Highlight.Sport) OwnTVIcon.SPORTS else OwnTVIcon.MOVIES,
                     tier = if (badges) HighlightTier.of(hl, (hl as? Highlight.Pick)?.let { ratings[it.key] }) else null,
+                    sportText = sportMatch?.let { sportText(it, sportNotes, sportTable) },
                     onOpen = {
+                        // A channel's programme, on now or later: the first OK plays the channel in the picture
+                        // here, as the strip does; the second takes it full screen.
+                        fun open(channel: ChannelEntity) {
+                            if (previewOn && picked?.id != channel.id) {
+                                pickedAudible = true
+                                pickedFromHighlight = true
+                                picked = channel
+                            } else onPlayFullscreen(channel, channels)
+                        }
                         when (hl) {
-                            is Highlight.Live -> onPlayFullscreen(hl.channel, channels)
-                            // On now or later: to the channel either way.
-                            is Highlight.Pick -> onPlayFullscreen(hl.pick.channel, channels)
-                            is Highlight.Sport -> onOpenMatch(hl.match)
+                            is Highlight.Live -> open(hl.channel)
+                            is Highlight.Pick -> open(hl.pick.channel)
+                            // A match: its first channel (as Watch live lists them) plays here; OK again full screen.
+                            // No channel shows it, or no preview: its page in Sports, as before.
+                            is Highlight.Sport -> {
+                                val playing = picked?.takeIf { pickedFromHighlight }
+                                when {
+                                    playing != null -> onPlayFullscreen(playing, channels)
+                                    !previewOn -> onOpenMatch(hl.match)
+                                    !matchSearching -> stageScope.launch {
+                                        matchSearching = true
+                                        val ch = try { findMatchChannel(hl.match) } finally { matchSearching = false }
+                                        if (ch != null) {
+                                            pickedAudible = true
+                                            pickedFromHighlight = true
+                                            picked = ch
+                                        } else onOpenMatch(hl.match)
+                                    }
+                                }
+                            }
                             is Highlight.Resume -> onResume(hl.item)
                         }
                     },
@@ -412,7 +474,8 @@ internal fun HomeStage(
                 }
             }
             Box(
-                Modifier.size(if (spotlight) 960.mpx else 540.mpx, if (spotlight) 540.mpx else 304.mpx)
+                // Spotlight: 1024 × 576 since it grew taller (Jonathan, 7 Nov 2026), still 16:9.
+                Modifier.size(if (spotlight) 1024.mpx else 540.mpx, if (spotlight) 576.mpx else 304.mpx)
                     .clip(RoundedCornerShape(StageRadii.Poster))
                     // Spotlight: only the playing channel has a frame here; otherwise the picture behind shows through.
                     .then(if (!spotlight || video != null) Modifier.background(StageColors.ControlFill) else Modifier),
@@ -481,7 +544,7 @@ internal fun HomeStage(
                     // As in the guide: the first OK plays it here, the second takes it full screen.
                     onClick = {
                         when {
-                            previewOn && picked?.id != channel.id -> { pickedAudible = true; picked = channel }
+                            previewOn && picked?.id != channel.id -> { pickedAudible = true; pickedFromHighlight = false; picked = channel }
                             else -> onPlayFullscreen(channel, channels)
                         }
                     },

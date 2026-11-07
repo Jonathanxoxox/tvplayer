@@ -95,7 +95,9 @@ class ProgrammeArt(private val provider: MetadataProvider, private val magenta: 
         prefs.getString(FILM + key, null)?.let { stored ->
             val at = stored.substringBefore(SEP).toLongOrNull() ?: 0L
             val value = FilmInfo.decode(stored.substringAfter(SEP, ""))
-            if (now - at < if (value === FilmInfo.NONE) NONE_TTL_MS else FILM_TTL_MS) {
+            // Kept before films had their director: asked again once.
+            val current = value === FilmInfo.NONE || FilmInfo.hasDirectorField(stored.substringAfter(SEP, ""))
+            if (current && now - at < if (value === FilmInfo.NONE) NONE_TTL_MS else FILM_TTL_MS) {
                 films[key] = value
                 return value.takeUnless { it === FilmInfo.NONE }
             }
@@ -109,6 +111,7 @@ class ProgrammeArt(private val provider: MetadataProvider, private val magenta: 
                 FilmInfo(
                     details.rating?.takeIf { it > 0.0 }, details.year ?: hit.year, details.genres.firstOrNull(),
                     details.cast.map { it.name.trim() }.filter { it.isNotEmpty() }.take(FilmInfo.CAST_SHOWN),
+                    details.directors.firstOrNull()?.name?.trim()?.takeIf { it.isNotEmpty() },
                 )
             }.getOrNull()
         } ?: return null
@@ -169,9 +172,15 @@ internal object ProgrammeTitles {
  * What TMDB knows of a TV film: its rating (0–10), year and first genre, each when it says, and its first
  * [CAST_SHOWN] actors in TMDB's billing order (Jonathan, 7 Nov 2026).
  */
-data class FilmInfo(val rating: Double?, val year: Int?, val genre: String?, val cast: List<String> = emptyList()) {
+data class FilmInfo(
+    val rating: Double?,
+    val year: Int?,
+    val genre: String?,
+    val cast: List<String> = emptyList(),
+    val director: String? = null,
+) {
     internal fun encode(): String = if (this === NONE) "" else listOf(
-        rating?.toString().orEmpty(), year?.toString().orEmpty(), genre.orEmpty(), cast.joinToString(NAMES),
+        rating?.toString().orEmpty(), year?.toString().orEmpty(), genre.orEmpty(), cast.joinToString(NAMES), director.orEmpty(),
     ).joinToString(FIELD)
 
     internal companion object {
@@ -188,7 +197,13 @@ data class FilmInfo(val rating: Double?, val year: Int?, val genre: String?, val
             return FilmInfo(
                 f.getOrNull(0)?.toDoubleOrNull(), f.getOrNull(1)?.toIntOrNull(), f.getOrNull(2)?.ifBlank { null },
                 f.getOrNull(3)?.split(NAMES)?.filter { it.isNotBlank() }.orEmpty(),
+                f.getOrNull(4)?.ifBlank { null },
             )
         }
+
+        /** Written since films keep their director: five fields. */
+        fun hasDirectorField(text: String): Boolean = text.split(FIELD).size >= DIRECTOR_FIELDS
+
+        private const val DIRECTOR_FIELDS = 5
     }
 }

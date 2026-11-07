@@ -354,12 +354,16 @@ fun AppChannelRows(
                     Text(title, style = stageText(26, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(appLabel, style = stageText(17, 700), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 8.mpx))
                 }
+                // Entered for the first time (nothing to restore yet), the row starts at its first card: from the
+                // channel strip above, with the row still below the screen's edge, focus landed on the last one
+                // (Jonathan, 7 Nov 2026).
+                val firstCard = remember(channel.key) { FocusRequester() }
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(20.mpx),
                     contentPadding = PaddingValues(start = start, end = 64.mpx),
-                    modifier = Modifier.focusRestorer().focusGroup(),
+                    modifier = Modifier.focusRestorer(firstCard).focusGroup(),
                 ) {
-                    itemsIndexed(channel.programs, key = { _, p -> p.id }) { _, program ->
+                    itemsIndexed(channel.programs, key = { _, p -> p.id }) { index, program ->
                         val requester = remember { FocusRequester() }
                         val portrait = program.aspect < 1f
                         val h = if (portrait) 294.mpx else 180.mpx
@@ -375,6 +379,7 @@ fun AppChannelRows(
                             lineSize = 14,
                             progress = program.progress,
                             modifier = Modifier
+                                .then(if (index == 0) Modifier.focusRequester(firstCard) else Modifier)
                                 .focusRequester(requester)
                                 .onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
                         ) {
@@ -498,7 +503,8 @@ fun HomeAppPills(
             val requester = remember { FocusRequester() }
             NowPlayingPill(
                 playing,
-                Modifier.focusRequester(requester).onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
+                requester,
+                Modifier.onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
             )
         }
     }

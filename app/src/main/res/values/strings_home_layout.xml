@@ -70,6 +70,12 @@
     <string name="home_hl_badge_sport">YOUR SPORT</string>
     <string name="home_spotlight_badges">Highlight the best</string>
     <string name="home_spotlight_badges_desc">Premieres, MagentaTV\'s highlights, films rated 8 or more and your matches wear a gold badge</string>
+    <string name="vod_role_director">Director</string>
+    <string name="vod_role_creator">Creator</string>
+    <string name="home_hl_director">Directed by %1$s</string>
+    <string name="home_sport_venue">Venue: %1$s</string>
+    <string name="home_sport_table">Table: %1$s #%2$d (%3$d pts), %4$s #%5$d (%6$d pts)</string>
+    <string name="home_sport_sentence_separator">". "</string>
     <string name="home_hl_cast">With %1$s</string>
     <string name="home_hl_cast_separator">", "</string>
 </resources>

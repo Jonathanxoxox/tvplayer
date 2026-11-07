@@ -214,19 +214,10 @@ fun SportsMatchScreen(
                         GuidePreviewSpot.rect = it.boundsInRoot().translate(-GuidePreviewSpot.shift(), 0f)
                     },
                 )
-                Row(Modifier.fillMaxWidth().padding(top = 18.mpx), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        pluralStringResource(R.plurals.sports_watch_live_count, state.list.total, state.list.total),
-                        style = stageText(24, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f, fill = false),
-                    )
-                    // More channels are still coming in: the list grows below while the guides answer.
-                    if ((state.search as? ChannelSearch.Found)?.searching == true) {
-                        tv.own.owntv.ui.components.LandmarkLoader(sizeDp = 18, modifier = Modifier.padding(start = 12.mpx))
-                    }
-                    Spacer(Modifier.weight(1f))
-                    state.preferredLanguages.firstOrNull()?.let { lang ->
-                        Text(stringResource(R.string.sports_language_first, languageName(lang)), style = stageText(18, 400), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
+                // No "Watch live · 17 channels … German first" line under the picture (Jonathan, 7 Nov 2026): the chips
+                // say the filter, the list the channels. More channels still coming in: the loader alone.
+                if ((state.search as? ChannelSearch.Found)?.searching == true) {
+                    tv.own.owntv.ui.components.LandmarkLoader(sizeDp = 18, modifier = Modifier.padding(top = 18.mpx))
                 }
                 FilterChips(state.filter, onOpenFilters)
                 // Ends above the key hints at the bottom of the screen, which would otherwise cover the last rows.
@@ -272,8 +263,8 @@ fun SportsMatchScreen(
                             (it != MatchTab.TABLE || state.standings?.groups?.any { g -> g.rows.isNotEmpty() } == true) &&
                                 (it != MatchTab.STATS || !state.summary?.stats.isNullOrEmpty()) &&
                                 (it != MatchTab.LINEUPS || !state.summary?.lineups.isNullOrEmpty()) && (it != MatchTab.FORM || !state.summary?.form.isNullOrEmpty()) &&
-                                // The user's own channels are in Watch live beside; this tab only adds ESPN's list.
-                                (it != MatchTab.BROADCASTS || m.broadcasts.isNotEmpty())
+                                // No Broadcasts tab (Jonathan, 7 Nov 2026): ESPN lists only US channels there; Watch live shows yours.
+                                it != MatchTab.BROADCASTS
                         }
                         tabs.forEach { t ->
                             StageTab(
