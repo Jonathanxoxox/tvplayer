@@ -531,7 +531,7 @@ private fun MatchPoster(
                     )
                     if (m.state != MatchState.PRE && !m.off && m.sport !in LINE_SCORE_SPORTS) {
                         val score = if (config.spoilerFree) "– : –" else "${scoreText(m.sport, m.home!!.score)} – ${scoreText(m.sport, m.away!!.score)}"
-                        Text(score, style = stageText(if (featured) 32 else 24, 800), color = ink, maxLines = 1, modifier = Modifier.padding(start = 12.mpx))
+                        Text(score, style = stageText(if (featured) 32 else 24, 800), color = ink, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(start = 12.mpx))
                     }
                 }
             }

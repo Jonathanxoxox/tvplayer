@@ -200,7 +200,7 @@ internal fun SportColorsBackdrop(
                     verticalArrangement = Arrangement.spacedBy(14.mpx),
                 ) {
                     AsyncImage(model = team.logoUrl, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(crestSize))
-                    if (live) Text(c.score?.text.orEmpty(), style = stageText(54, 800), color = StageColors.Text, maxLines = 1)
+                    if (live) Text(c.score?.text.orEmpty(), style = stageText(54, 800), color = StageColors.Text, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
             }
         }
