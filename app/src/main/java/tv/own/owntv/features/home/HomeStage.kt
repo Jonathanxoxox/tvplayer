@@ -279,13 +279,16 @@ internal fun HomeStage(
     // app buttons and the clock (Jonathan, 7 Nov 2026: "the Spotlight up to the top edge, very faint up there").
     // Read only in layout, so scrolling moves the picture without recomposing the stage.
     var stageTop by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    // Where the stage sits with the page at rest (scrolled to the top): the lowest top it has had.
+    var restTop by remember { androidx.compose.runtime.mutableFloatStateOf(0f) }
+    val rootView = androidx.compose.ui.platform.LocalView.current
     val reach = { stageTop.coerceAtLeast(0f).toInt() }
     val topFadePast = with(androidx.compose.ui.platform.LocalDensity.current) { TOP_FADE_PAST.roundToPx() }
     Box(
         if (!spotlight) modifier else modifier
             // Behind the rows above it (the app buttons), which its picture now runs under.
             .zIndex(-1f)
-            .onGloballyPositioned { stageTop = it.positionInRoot().y },
+            .onGloballyPositioned { stageTop = it.positionInRoot().y; restTop = maxOf(restTop, stageTop) },
     ) {
     // Spotlight (Jonathan, 5 Nov 2026, after Netflix): the picture fills the whole width and the text lies over
     // it, the page's wash fading in from the left for the text and from below for the channel strip; above the
@@ -293,9 +296,10 @@ internal fun HomeStage(
     // Its lower part fades to nothing, picture and washes alike, so the page's own background runs on under the
     // channel strip without a seam: a wash ending in a colour showed a step where the page's darker one began
     // (Jonathan, 7 Nov 2026: "komplett fließend").
-    // It also runs on below the stage through the room Home leaves under it ([SpotlightFold]), fading out at the
-    // screen's bottom edge instead of above the empty room.
-    val below = with(androidx.compose.ui.platform.LocalDensity.current) { SpotlightFold.roundToPx() }
+    // It also runs on below the stage, through the room Home leaves under it, to the screen's bottom edge, and fades
+    // out exactly there: at rest it spans the whole screen, whatever the stage's height (Jonathan, 7 Nov 2026).
+    // Measured from the resting position, so scrolling moves it with the stage instead of stretching it.
+    val below = { slot: Int -> (rootView.height - restTop.toInt() - slot).coerceAtLeast(0) }
     if (spotlight) Box(Modifier.matchParentSize().reachUp(reach, below).fadeOutBelow(SPOTLIGHT_FADE_FROM)) {
         when (hl) {
             // A match with a picture shows it full width like any highlight; without one, its crests (below).
@@ -507,9 +511,9 @@ internal fun HomeStage(
 }
 
 /** Laid out [reach] px taller than its slot and moved up by as much, and [below] px longer: it draws on up to the screen's top and past its slot's bottom. */
-private fun Modifier.reachUp(reach: () -> Int, below: Int = 0): Modifier = layout { measurable, constraints ->
+private fun Modifier.reachUp(reach: () -> Int, below: (slot: Int) -> Int = { 0 }): Modifier = layout { measurable, constraints ->
     val up = reach()
-    val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(constraints.maxWidth, constraints.maxHeight + up + below))
+    val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(constraints.maxWidth, constraints.maxHeight + up + below(constraints.maxHeight)))
     layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, -up) }
 }
 
@@ -542,7 +546,7 @@ private fun Modifier.topReach(reach: () -> Int, past: Int): Modifier = layout { 
 private val TOP_FADE_PAST = 140.mpx
 
 /** Where the Spotlight starts fading into the page, as a fraction of its height counted from the screen's top. */
-private const val SPOTLIGHT_FADE_FROM = 0.74f
+private const val SPOTLIGHT_FADE_FROM = 0.76f
 
 /** The room Home leaves under the Spotlight's channel strip: the strip ends as far above the screen's bottom as the app buttons begin below its top (Jonathan, 7 Nov 2026), and the next row starts past the edge. */
 internal val SpotlightFold = 40.mpx
