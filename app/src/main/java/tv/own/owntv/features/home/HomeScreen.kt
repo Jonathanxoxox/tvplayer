@@ -69,6 +69,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import tv.own.owntv.R
@@ -246,9 +247,11 @@ fun HomeScreen(
     // The Spotlight's highlights (Jonathan, 4 Nov 2026): followed matches, the evening, habits, watching on.
     // The Spotlight's own list: the followed matches also before one is near (the row waits for that).
     val spotlightMatches = if (spotlightLayout) sportsVm.spotlightRow.collectAsStateWithLifecycle().value else emptyList()
-    // Today's picks from MagentaTV's guide (its tips and highlights, arte's documentaries), asked once Home has
-    // settled and every half hour after: the shown channels and arte (Jonathan, 5 Nov 2026).
-    val magentaGuide = koinInject<MagentaGuide>()
+    // Today's picks from MagentaTV's guide (its tips and highlights, arte's documentaries) on the shown channels and
+    // arte (Jonathan, 5 Nov 2026). Kept app-wide and on the device ([SpotlightPicks]): a start shows the last ones at
+    // once, coming back to Home keeps them, and they are asked again once the start has settled, every half hour,
+    // and on waking from standby (7 Nov 2026).
+    val spotlightPicks = koinInject<SpotlightPicks>()
     val pickChannels = remember(state.catalog) {
         val row = state.catalog
         val arte = row?.all.orEmpty().filter { MagentaNames.key(it.name) == ARTE_KEY }
@@ -256,41 +259,59 @@ fun HomeScreen(
     }
     val docsOn = remember(pickChannels) { pickChannels.filter { MagentaNames.key(it.name) == ARTE_KEY }.map { it.id }.toSet() }
     // The film channels (Sky Cinema …) for the Spotlight's Films, wherever they are in the playlist (Jonathan,
-    // 6 Nov 2026). Looked for once per row, and only while Films is on.
+    // 6 Nov 2026). Looked for once per row, and only while Films is on; null until looked for, once Home has its row.
     val homeCatalog = koinInject<HomeCatalog>()
     val filmsWanted = SpotlightSource.FILMS.key !in launcherConfig.spotlightOff
-    val filmChannels by androidx.compose.runtime.produceState(emptyList<tv.own.owntv.core.database.entity.ChannelEntity>(), spotlightLayout, filmsWanted, state.catalog?.category?.key) {
+    val filmChannels by androidx.compose.runtime.produceState<List<tv.own.owntv.core.database.entity.ChannelEntity>?>(
+        null, spotlightLayout, filmsWanted, state.isLoading, state.catalog?.category?.key,
+    ) {
+        if (state.isLoading) return@produceState
         value = if (!spotlightLayout || !filmsWanted) emptyList() else runCatching { homeCatalog.filmChannels(state.catalog) }.getOrDefault(emptyList())
     }
-    val guideChannels = remember(pickChannels, filmChannels) { (pickChannels + filmChannels).distinctBy { it.id } }
-    val filmsOn = remember(filmChannels) { filmChannels.map { it.id }.toSet() }
-    val picks by androidx.compose.runtime.produceState(emptyList<GuidePick>(), spotlightLayout, guideChannels.map { it.id }) {
-        if (!spotlightLayout || guideChannels.isEmpty()) { value = emptyList(); return@produceState }
-        kotlinx.coroutines.delay(PICKS_FIRST_DELAY_MS)
-        while (true) {
-            val now = System.currentTimeMillis()
-            val fresh = magentaGuide.picks(guideChannels, docsOn, now - PICKS_BACK_MS, now + PICKS_AHEAD_MS, filmsOn)
-            if (fresh.isNotEmpty() || value.isEmpty()) value = fresh
-            // Nothing came back (no network yet, e.g. just woken): ask again soon, not in half an hour.
-            kotlinx.coroutines.delay(if (fresh.isEmpty()) PICKS_RETRY_MS else PICKS_REFRESH_MS)
-        }
+    val guideChannels = remember(pickChannels, filmChannels) { (pickChannels + filmChannels.orEmpty()).distinctBy { it.id } }
+    val filmsOn = remember(filmChannels) { filmChannels.orEmpty().map { it.id }.toSet() }
+    // Asked for only once all the channels are known: one that came a moment later would only start the round anew.
+    val picksRequest = remember(spotlightLayout, state.isLoading, filmChannels == null, guideChannels, docsOn, filmsOn) {
+        if (!spotlightLayout || state.isLoading || filmChannels == null) null else SpotlightPicks.Request(guideChannels, docsOn, filmsOn)
     }
+    LaunchedEffect(picksRequest) { picksRequest?.let(spotlightPicks::want) }
+    val picksState by spotlightPicks.state.collectAsStateWithLifecycle()
+    val picks = if (spotlightLayout) picksState.picks else emptyList()
     val spotlightSources = remember(launcherConfig.spotlightOrder, launcherConfig.spotlightOff) {
         SpotlightSource.ordered(launcherConfig.spotlightOrder, launcherConfig.spotlightOff)
     }
-    // What TMDB knows of the films (Jonathan, 6 Nov 2026): their rating, year and genre, known ones at once, the
-    // rest looked up one by one, the Spotlight ranking again as they come in. Also a long tip the guide files as
-    // nothing: TMDB decides whether it is a film (7 Nov 2026, "Meg" on ProSieben).
+    // What TMDB knows of the films (Jonathan, 6 Nov 2026): their rating, year and genre. Those kept on the device in
+    // one go, then the rest looked up one by one and handed on together every [FILM_BATCH_MS]: each hand-over ranks
+    // the Spotlight again, and on a small box one ranking per answer was a redraw per answer (7 Nov 2026). Also a
+    // long tip the guide files as nothing: TMDB decides whether it is a film (7 Nov 2026, "Meg" on ProSieben).
     val programmeArt = koinInject<ProgrammeArt>()
     val filmLookups = remember(picks) { picks.filter { it.film || it.filmCandidate } }
-    val filmInfos by androidx.compose.runtime.produceState(emptyMap<String, FilmInfo>(), filmLookups.map { it.key }) {
-        value = filmLookups.mapNotNull { p -> programmeArt.peekFilm(p.title)?.let { p.key to it } }.toMap()
-        for (p in filmLookups.distinctBy { ProgrammeTitles.key(it.title) }) {
+    val filmLookupKeys = remember(filmLookups) { filmLookups.map { it.key } }
+    val filmInfoState by androidx.compose.runtime.produceState(FilmInfos(), filmLookupKeys) {
+        val byTitle = filmLookups.groupBy { ProgrammeTitles.key(it.title) }
+        fun spread(found: Map<String, FilmInfo>) = filmLookups.mapNotNull { p -> found[ProgrammeTitles.key(p.title)]?.let { p.key to it } }.toMap()
+        val found = HashMap<String, FilmInfo>()
+        for ((k, ps) in byTitle) programmeArt.storedFilm(ps.first().title)?.let { found[k] = it }
+        value = FilmInfos(filmLookupKeys, spread(found))
+        var handedAt = android.os.SystemClock.elapsedRealtime()
+        var unhanded = false
+        for ((k, ps) in byTitle) {
+            val p = ps.first()
             if (programmeArt.filmKnown(p.title)) continue
             val f = programmeArt.film(p.title, p.year) ?: continue
-            value = value + filmLookups.filter { ProgrammeTitles.key(it.title) == ProgrammeTitles.key(p.title) }.associate { it.key to f }
+            found[k] = f
+            unhanded = true
+            if (android.os.SystemClock.elapsedRealtime() - handedAt >= FILM_BATCH_MS) {
+                value = FilmInfos(filmLookupKeys, spread(found))
+                handedAt = android.os.SystemClock.elapsedRealtime()
+                unhanded = false
+            }
         }
+        if (unhanded) value = FilmInfos(filmLookupKeys, spread(found))
     }
+    val filmInfos = filmInfoState.infos
+    // The kept ratings are in for these picks (one read of the device's store, a few milliseconds).
+    val filmInfosRead = filmInfoState.keys == filmLookupKeys
     val guidePicks = remember(picks, filmInfos) { SpotlightHighlights.withFilms(picks, filmInfos) }
     val filmPicks = remember(guidePicks) { guidePicks.filter { it.film } }
     val filmRatings = remember(filmInfos) { filmInfos.mapNotNull { (k, f) -> f.rating?.let { k to it } }.toMap() }
@@ -300,9 +321,11 @@ fun HomeScreen(
     val onDemand by androidx.compose.runtime.produceState(emptyMap<String, Long>(), filmPicks.map { it.key }) {
         value = runCatching { filmLibrary.find(filmPicks) }.getOrDefault(emptyMap())
     }
+    // Ranked again on waking from standby too: the time has moved on, and what has ended goes.
+    val wake by tv.own.owntv.launcher.apps.LauncherSystem.wake.collectAsStateWithLifecycle()
     val spotlightHighlights = remember(
         spotlightLayout, spotlightSources, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems, guidePicks,
-        launcherConfig.spotlightMax, launcherConfig.spotlightHideSeries, filmRatings,
+        launcherConfig.spotlightMax, launcherConfig.spotlightHideSeries, filmRatings, wake,
     ) {
         if (!spotlightLayout) emptyList()
         else SpotlightHighlights.rank(
@@ -311,11 +334,34 @@ fun HomeScreen(
             max = launcherConfig.spotlightMax, hideSeries = launcherConfig.spotlightHideSeries, ratings = filmRatings,
         )
     }
+    // The Spotlight waits a moment before it shows its highlights and Home lands on it (7 Nov 2026), so they do not
+    // swap under the viewer as the parts come in: at the start until the kept picks and ratings are read (a few
+    // milliseconds, at most [SpotlightHold.START_MS]); on waking from standby until the guide is asked again, while
+    // the television is still lighting up (at most [SpotlightHold.WAKE_MS]). It costs nothing to wait.
+    val holdKey: Any? = when {
+        !spotlightLayout -> null
+        wake != 0L && wake != picksState.wakeServed -> wake
+        !SpotlightHold.startReleased && (!picksState.ready || !filmInfosRead) -> SpotlightHold.START
+        else -> null
+    }
+    var holdOver by remember { mutableStateOf<Any?>(null) }
+    LaunchedEffect(holdKey) {
+        if (holdKey == null) { if (spotlightLayout && picksState.ready) SpotlightHold.startReleased = true; return@LaunchedEffect }
+        // The start's limit counts from Home's first data: before it there is no stage to show anything on.
+        if (holdKey == SpotlightHold.START) vm.uiState.first { !it.isLoading }
+        kotlinx.coroutines.delay(if (holdKey == SpotlightHold.START) SpotlightHold.START_MS else SpotlightHold.WAKE_MS)
+        holdOver = holdKey
+        if (holdKey == SpotlightHold.START) SpotlightHold.startReleased = true
+    }
+    val spotlightHeld = holdKey != null && holdOver != holdKey
+    // At the start nothing is shown yet while it waits (the stage shows its first channel, as before); on a wake
+    // the highlights stay and only the landing waits.
+    val stageHighlights = if (spotlightHeld && holdKey == SpotlightHold.START) emptyList() else spotlightHighlights
     // The Spotlight is where Home starts and where the Home button lands (Jonathan, 6 Nov 2026): once per
     // start, as soon as it has highlights, and on every Home press. Switching to Home in the rail stays as it was.
     val homePress by tv.own.owntv.launcher.apps.LauncherSystem.homePress.collectAsStateWithLifecycle()
     var spotlightFocusRequest by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
-    val spotlightReady = spotlightLayout && spotlightHighlights.isNotEmpty()
+    val spotlightReady = spotlightLayout && stageHighlights.isNotEmpty() && !spotlightHeld
     LaunchedEffect(homePress, spotlightReady) {
         if (!spotlightReady) return@LaunchedEffect
         val request = SpotlightLanding.take(homePress) ?: return@LaunchedEffect
@@ -679,7 +725,7 @@ fun HomeScreen(
                             active = previewEnabled,
                             modifier = rowModifier,
                             spotlight = spotlightLayout,
-                            highlights = spotlightHighlights,
+                            highlights = stageHighlights,
                             ratings = if (launcherConfig.spotlightRatings) filmRatings else emptyMap(),
                             autoAdvanceSecs = launcherConfig.spotlightAutoSecs,
                             onDemand = onDemand,
@@ -1711,13 +1757,26 @@ private fun AllRowsHiddenState(
 
 /** arte, as MagentaTV's guide and the playlist both name it (MagentaNames.key). */
 private const val ARTE_KEY = "arte"
-/** Home settles first; then the guide is asked for today's picks, and again every half hour. */
-private const val PICKS_FIRST_DELAY_MS = 3_000L
-private const val PICKS_REFRESH_MS = 30 * 60_000L
-private const val PICKS_RETRY_MS = 30_000L
-/** From a little back (programmes on now) to late tonight. */
-private const val PICKS_BACK_MS = 3 * 60 * 60_000L
-private const val PICKS_AHEAD_MS = 12 * 60 * 60_000L
+/** TMDB's answers on tonight's films are handed to the Spotlight together, at most this often. */
+private const val FILM_BATCH_MS = 2_000L
+
+/** What TMDB knows of the films, by [GuidePick.key]; [keys] are the picks it was read for (null: none yet). */
+@androidx.compose.runtime.Immutable
+private data class FilmInfos(val keys: List<String>? = null, val infos: Map<String, FilmInfo> = emptyMap())
+
+/**
+ * How long the Spotlight waits before it shows its highlights and Home lands on it (HomeScreen). Process-wide: the
+ * start's wait happens once, not again when Home is built anew (back from another section).
+ */
+internal object SpotlightHold {
+    /** At the start: the kept picks and ratings are read in milliseconds; this is only the limit. */
+    const val START_MS = 1_500L
+    /** On waking from standby: the guide is asked again while the television lights up. */
+    const val WAKE_MS = 3_000L
+    /** The start's wait, as a key beside the wakes' (their elapsedRealtime). */
+    const val START = "start"
+    @Volatile var startReleased = false
+}
 
 /**
  * When Home lands on the Spotlight: once per app start, and once for each Home button press (the shell counts

@@ -1,6 +1,11 @@
 package tv.own.owntv.features.home
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -25,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap
  */
 class MagentaGuide(private val http: OkHttpClient) {
     private val lock = Mutex()
+    // The guest session, only read and written in [session].
     private var token: String? = null
     private var cookies: String = ""
     private var sessionAt = 0L
@@ -63,7 +69,9 @@ class MagentaGuide(private val http: OkHttpClient) {
     /**
      * Today's picks on [channels] from [fromMs] to [toMs]: MagentaTV's tips and highlights, on the channels
      * in [docsOn] (arte) their documentaries, and on those in [filmsOn] (Sky Cinema …) their films. One call
-     * per channel; empty when the guide cannot be asked.
+     * per channel, [PICKS_PARALLEL] at a time on low-priority threads ([pickDispatcher]), so the box's first
+     * seconds and the picture stay smooth while they come in. Null when the guide cannot be asked at all (no
+     * network, no guest session, not one channel answered); a channel that fails alone is left out.
      */
     suspend fun picks(
         channels: List<tv.own.owntv.core.database.entity.ChannelEntity>,
@@ -71,32 +79,71 @@ class MagentaGuide(private val http: OkHttpClient) {
         fromMs: Long,
         toMs: Long,
         filmsOn: Set<Long> = emptySet(),
-    ): List<GuidePick> = withContext(Dispatchers.IO) {
-        runCatching {
-            lock.withLock {
-                channels.distinctBy { it.id }.flatMap { ch ->
-                    val id = channelId(ch.name) ?: return@flatMap emptyList()
-                    fun ask(fields: String): JSONArray? {
-                        val body = JSONObject()
-                            .put("count", -1)
-                            .put("isFillProgram", 0)
-                            .put("offset", 0)
-                            .put("properties", JSONArray().put(JSONObject().put("include", fields).put("name", "playbill")))
-                            .put("type", 2)
-                            .put("begintime", utc(fromMs))
-                            .put("channelid", id)
-                            .put("endtime", utc(toMs))
-                        return post("PlayBillList", body)?.takeIf { it.optString("retcode", "0") == "0" }?.optJSONArray("playbilllist")
-                    }
-                    // Season, episode and year are asked for too; should the guide ever refuse them, it is asked
-                    // again with the fields it has always answered, and from then on only with those.
-                    val list = (if (extraFields) ask(PICK_FIELDS + PICK_EXTRA_FIELDS) else null)
-                        ?: ask(PICK_FIELDS)?.also { if (extraFields) extraFields = false }
-                        ?: return@flatMap emptyList()
-                    MagentaNames.picks(list, ch, docs = ch.id in docsOn, films = ch.id in filmsOn)
+    ): List<GuidePick>? {
+        // The session and the guide's channel list once, under the lock; the channels' calls after it in
+        // parallel, without holding the lock (a picture asked for meanwhile does not wait behind them).
+        val ids = withContext(Dispatchers.IO) {
+            runCatching { lock.withLock { channels.distinctBy { it.id }.map { ch -> ch to channelId(ch.name) } } }.getOrNull()
+        } ?: return null
+        if (channels.isNotEmpty() && this.channels.isEmpty()) return null
+        val asked = ids.mapNotNull { (ch, id) -> id?.let { ch to it } }
+        if (asked.isEmpty()) return emptyList()
+        val lists = coroutineScope {
+            asked.map { (ch, id) ->
+                async(pickDispatcher) {
+                    // Given up (Home asked for other channels): the calls not yet begun are not made.
+                    ensureActive()
+                    runCatching { channelPicks(ch, id, fromMs, toMs, docs = ch.id in docsOn, films = ch.id in filmsOn) }.getOrNull()
                 }
-            }
-        }.getOrDefault(emptyList())
+            }.awaitAll()
+        }
+        if (lists.all { it == null }) return null
+        return lists.flatMap { it.orEmpty() }
+    }
+
+    /** [channel]'s picks (see [picks]), null when the guide did not answer for it. */
+    private fun channelPicks(
+        channel: tv.own.owntv.core.database.entity.ChannelEntity,
+        id: String,
+        fromMs: Long,
+        toMs: Long,
+        docs: Boolean,
+        films: Boolean,
+    ): List<GuidePick>? {
+        fun ask(fields: String): JSONArray? {
+            val body = JSONObject()
+                .put("count", -1)
+                .put("isFillProgram", 0)
+                .put("offset", 0)
+                .put("properties", JSONArray().put(JSONObject().put("include", fields).put("name", "playbill")))
+                .put("type", 2)
+                .put("begintime", utc(fromMs))
+                .put("channelid", id)
+                .put("endtime", utc(toMs))
+            return post("PlayBillList", body)?.takeIf { it.optString("retcode", "0") == "0" }?.optJSONArray("playbilllist")
+        }
+        // Season, episode and year are asked for too; should the guide ever refuse them, it is asked
+        // again with the fields it has always answered, and from then on only with those.
+        val list = (if (extraFields) ask(PICK_FIELDS + PICK_EXTRA_FIELDS) else null)
+            ?: ask(PICK_FIELDS)?.also { if (extraFields) extraFields = false }
+            ?: return null
+        return MagentaNames.picks(list, channel, docs = docs, films = films)
+    }
+
+    /**
+     * The threads the picks are asked and read on: at most [PICKS_PARALLEL], at background priority, so on a
+     * small box they give way to the interface and the decoder. Made when first needed, gone when idle.
+     */
+    private val pickDispatcher by lazy {
+        java.util.concurrent.ThreadPoolExecutor(
+            PICKS_PARALLEL, PICKS_PARALLEL, 30L, java.util.concurrent.TimeUnit.SECONDS, java.util.concurrent.LinkedBlockingQueue<Runnable>(),
+            java.util.concurrent.ThreadFactory { r ->
+                Thread({
+                    runCatching { android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND) }
+                    r.run()
+                }, "spotlight-guide").apply { isDaemon = true }
+            },
+        ).apply { allowCoreThreadTimeOut(true) }.asCoroutineDispatcher()
     }
 
     /** Off once the guide has refused [PICK_EXTRA_FIELDS] and answered without them. */
@@ -255,23 +302,37 @@ class MagentaGuide(private val http: OkHttpClient) {
         return MagentaNames.pictureFor(list, startMs)
     }
 
-    /** One call to the guide, signing in as a guest first (again, when the session is old or refused). */
+    /**
+     * One call to the guide, signing in as a guest first (again, when the session is old or refused). Safe from
+     * several threads at once: the picks' calls run in parallel ([picks]), the session is shared ([session]).
+     */
     private fun post(path: String, body: JSONObject, retry: Boolean = true): JSONObject? {
-        if (token == null || System.currentTimeMillis() - sessionAt > SESSION_TTL_MS) authenticate() ?: return null
+        val (t, c) = session() ?: return null
         val request = Request.Builder()
             .url(BASE + path)
-            .header("X_CSRFTOKEN", token.orEmpty())
-            .header("Cookie", cookies)
+            .header("X_CSRFTOKEN", t)
+            .header("Cookie", c)
             .post(body.toString().toRequestBody(JSON))
             .build()
         val json = http.newCall(request).execute().use { r -> if (r.isSuccessful) r.body?.string() else null } ?: return null
         val o = JSONObject(json)
-        // A session the guide no longer knows: sign in again once.
+        // A session the guide no longer knows: sign in again once (once for all the calls that found it refused).
         if (o.optString("retcode", "0") != "0" && retry) {
-            token = null
+            session(refused = t) ?: return null
             return post(path, body, retry = false)
         }
         return o
+    }
+
+    /**
+     * The guest session's token and cookies, signing in when there is none, it is old, or [refused] is the one the
+     * guide just turned down (and nobody has signed in again since). One thread at a time.
+     */
+    @Synchronized
+    private fun session(refused: String? = null): Pair<String, String>? {
+        if (refused != null && token == refused) token = null
+        if (token == null || System.currentTimeMillis() - sessionAt > SESSION_TTL_MS) authenticate() ?: return null
+        return token?.let { it to cookies }
     }
 
     private fun authenticate(): Unit? {
@@ -315,6 +376,8 @@ class MagentaGuide(private val http: OkHttpClient) {
         const val PICK_FIELDS = "name,starttime,endtime,tipType,tipCategory,genres,pictures,introduce"
         /** What tells a film from an episode, and its year. */
         const val PICK_EXTRA_FIELDS = ",seasonNO,sitcomNO,seriesID,producedate"
+        /** The picks' calls at once: enough to be quick, few enough not to crowd a small box. */
+        const val PICKS_PARALLEL = 3
     }
 }
 

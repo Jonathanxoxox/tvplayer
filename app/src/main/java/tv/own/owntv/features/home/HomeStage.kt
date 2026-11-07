@@ -122,6 +122,7 @@ internal fun HomeStage(
     badges: Boolean = true,
     /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
     spotlightFocusRequest: Long = 0L,
+
     /** A match's first channel as Watch live lists it, searching if needed: the match highlight's play button. */
     findMatchChannel: suspend (tv.own.owntv.core.sports.model.Match) -> ChannelEntity? = { null },
 ) {
@@ -155,12 +156,32 @@ internal fun HomeStage(
     // on screen must stay the one shown rather than jump back to the first.
     var hlKey by remember { mutableStateOf<String?>(null) }
     val hlIndex = highlights.indexOfFirst { it.key == hlKey }.coerceAtLeast(0)
+    // When the Spotlight last landed (start, Home button, wake), and whether it has gone on to another highlight since.
+    var landedAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
+    var hlStepped by remember { mutableStateOf(false) }
+    var followedAt by remember { androidx.compose.runtime.mutableLongStateOf(0L) }
     // ▶ goes round: past the last comes the first again (6 Nov 2026). ◀ steps back, but not past the first:
     // there it leaves for the menu (HighlightInfo, 7 Nov 2026). stepHighlight(-1) is only asked off the first.
     fun stepHighlight(d: Int) {
         if (highlights.isNotEmpty()) hlKey = highlights[(hlIndex + d).mod(highlights.size)].key
+        hlStepped = true
     }
     val hl = if (spotlight && !stripFocused) highlights.getOrNull(hlIndex) else null
+    // The highlight on screen is held from the moment it shows (7 Nov 2026): picks, matches and ratings that come in
+    // later rank behind it instead of swapping the picture under the viewer. It goes only when it is gone itself.
+    LaunchedEffect(hl?.key) { if (hlKey == null && hl != null) hlKey = hl.key }
+    // Right after landing, fresh picks and matches still come in (the guide is asked once the start has settled): the
+    // Spotlight follows a new first highlight for [FOLLOW_WINDOW_MS], at most every [FOLLOW_GAP_MS] and only the latest
+    // of those that came meanwhile, and not once the highlights have moved on or one plays in the picture. Then it stays.
+    val firstKey = highlights.firstOrNull()?.key
+    if (spotlight) LaunchedEffect(firstKey, hlStepped, landedAt, picked) {
+        if (firstKey == null || firstKey == hlKey || hlStepped || landedAt == 0L || picked != null) return@LaunchedEffect
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (now - landedAt > FOLLOW_WINDOW_MS) return@LaunchedEffect
+        delay((followedAt + FOLLOW_GAP_MS - now).coerceAtLeast(0L))
+        hlKey = firstKey
+        followedAt = android.os.SystemClock.elapsedRealtime()
+    }
     // The automatic advance, when switched on: the next highlight after a while, round and round. It waits
     // while the player is full screen and while focus is in the strip; any step starts the wait again.
     if (spotlight && autoAdvanceSecs > 0) LaunchedEffect(hlKey, highlights, stripFocused, active, autoAdvanceSecs, picked) {
@@ -207,6 +228,9 @@ internal fun HomeStage(
         if (picked != null) { liveVm.stopPreview(); picked = null }
         stripFocused = false
         hlKey = highlights.firstOrNull()?.key
+        hlStepped = false
+        landedAt = android.os.SystemClock.elapsedRealtime()
+        followedAt = landedAt
         delay(RETURN_FOCUS_MS + 50)
         withFrameNanos { }
         runCatching { hlButton.requestFocus() }
@@ -626,6 +650,10 @@ private const val STRIP_LEFT_GRACE_MS = 800L
 
 /** After Home puts focus back on its own (60 ms), the stage takes it to the playing channel's logo. */
 private const val RETURN_FOCUS_MS = 150L
+/** After landing, the Spotlight follows a new first highlight for this long (fresh picks and matches come in)… */
+private const val FOLLOW_WINDOW_MS = 15_000L
+/** …but changes its picture at most this often, so it never flickers through them. */
+private const val FOLLOW_GAP_MS = 4_000L
 
 /** A logo's stand-in: the channel's number, else the first letters of its name. */
 @Composable

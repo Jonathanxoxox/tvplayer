@@ -217,6 +217,18 @@ class HomeViewModel(
                 .drop(1)
                 .collect { online -> if (online) fillCatalogOnNow() }
         }
+        // Woken from standby: the five-minute round below stood still while the box slept, so in the morning the row
+        // and the Spotlight still had last night's programmes (7 Nov 2026). Those that ended are asked again at once,
+        // as soon as the network is back; the ones still running cost nothing.
+        viewModelScope.launch {
+            tv.own.owntv.launcher.apps.LauncherSystem.wake
+                .drop(1)
+                .collectLatest { w ->
+                    if (w == 0L) return@collectLatest
+                    connectivity.isOnline.first { it }
+                    fillCatalogOnNow()
+                }
+        }
         // A programme that has ended is replaced by the one after it (09:59 still showed the 05:30–09:00
         // morning show). Only ended ones are asked again, a few channels per round.
         viewModelScope.launch {

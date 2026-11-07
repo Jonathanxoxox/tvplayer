@@ -22,6 +22,7 @@ import tv.own.owntv.features.home.HomeCatalog
 import tv.own.owntv.features.home.MagentaGuide
 import tv.own.owntv.features.sports.SportPosters
 import tv.own.owntv.features.home.ProgrammeArt
+import tv.own.owntv.features.home.SpotlightPicks
 import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MovieViewModel
@@ -128,6 +129,8 @@ val appModule = module {
     singleOf(::WatchProviders)
     // Pictures for TV programmes (Spotlight, Stage), from TMDB by title.
     singleOf(::MagentaGuide)
+    // The Spotlight's picks from that guide, kept on the device and current across starts and standby.
+    singleOf(::SpotlightPicks)
     singleOf(::SportPosters)
     singleOf(::ProgrammeArt)
     // The TMDB catalogs of Movies and Series, matched to the playlist once a day.
