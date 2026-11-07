@@ -377,12 +377,12 @@ private val WHITESPACE = Regex("\\s+")
 /** Shorter than this it is a label ("Spielfilm", "n/a"), not a description. */
 private const val MIN_DESCRIPTION = 12
 
-/** What it is about, under the title and its facts: four lines, the Spotlight has the room (Jonathan, 7 Nov 2026). */
+/** What it is about, under the title and its facts: up to six lines, the Spotlight has the room (Jonathan, 7 Nov 2026). */
 @Composable
 internal fun SpotlightDescription(text: String, modifier: Modifier = Modifier) {
     Text(
         text, style = stageText(18, 500).copy(lineHeight = (18 * 1.45f).mpxSp), color = StageColors.Text,
-        maxLines = 4, overflow = TextOverflow.Ellipsis, modifier = modifier,
+        maxLines = 6, overflow = TextOverflow.Ellipsis, modifier = modifier,
     )
 }
 
@@ -413,16 +413,17 @@ private fun sideName(c: tv.own.owntv.core.sports.model.Competitor?): String =
 @Composable
 private fun FilmCast(hl: Highlight) {
     val pick = (hl as? Highlight.Pick)?.pick?.takeIf { it.film } ?: return
-    // "Mit Tom Hanks, Matt Damon · Regie: Steven Spielberg" (Jonathan, 7 Nov 2026).
-    val parts = listOfNotNull(
-        pick.cast.takeIf { it.isNotEmpty() }?.let { stringResource(R.string.home_hl_cast, it.joinToString(stringResource(R.string.home_hl_cast_separator))) },
-        pick.director?.let { stringResource(R.string.home_hl_director, it) },
-    )
-    if (parts.isEmpty()) return
-    Text(
-        parts.joinToString(stringResource(R.string.content_epg_bits_separator)),
-        style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
-    )
+    // "Mit Tom Hanks, Matt Damon", and "Regie: Steven Spielberg" on a line of its own: after the actors it was
+    // cut off (Jonathan, 7 Nov 2026).
+    pick.cast.takeIf { it.isNotEmpty() }?.let {
+        Text(
+            stringResource(R.string.home_hl_cast, it.joinToString(stringResource(R.string.home_hl_cast_separator))),
+            style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        )
+    }
+    pick.director?.let {
+        Text(stringResource(R.string.home_hl_director, it), style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
 }
 
 /** A time of day as the box shows it (20:15). */
