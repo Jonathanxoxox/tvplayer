@@ -26,7 +26,6 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.Locale
 import java.util.concurrent.TimeUnit
-import kotlin.math.abs
 
 /**
  * Spoken search the way TizenTube does it (Jonathan, 7 Nov 2026: "Der Soldat James Ryan" arrived as
@@ -35,7 +34,7 @@ import kotlin.math.abs
  * first, and nothing is cut: sound recorded before the socket is open is kept and sent once it is.
  *
  * The remote's microphone reaches the app only some time after recording starts (the box bridges it in,
- * 1.6 s on the Nokia box): [listen]'s `onReady` fires when sound really arrives, so "Speak now" is not shown
+ * about 0.6 s on the Nokia box): [listen]'s `onReady` fires when it does, so "Speak now" is not shown
  * before anyone can hear it. Blank key = off (the on-box recogniser stands in, see [OfflineSpeech]).
  */
 class ScribeRealtime(private val context: Context, okHttp: OkHttpClient) {
@@ -168,7 +167,7 @@ class ScribeRealtime(private val context: Context, okHttp: OkHttpClient) {
                     bytes.asShortBuffer().put(chunk, 0, n)
                     val audio = Base64.encodeToString(bytes.array(), 0, n * 2, Base64.NO_WRAP)
                     if (started) send(audio, false) else waiting += audio
-                    if (!ready && (heard(chunk, n) || bridged(record) || now - opened > READY_FALLBACK_MS)) {
+                    if (!ready && (bridged(record) || now - opened > READY_FALLBACK_MS)) {
                         ready = true
                         readyAt = now
                         Log.i(TAG, "microphone ready after ${now - opened} ms (${record.routedDevice?.type})")
@@ -203,12 +202,6 @@ class ScribeRealtime(private val context: Context, okHttp: OkHttpClient) {
             .apply { keyterms.forEach { addQueryParameter(P_KEYTERMS, it) } }
             .build()
         return Request.Builder().url(url).header(H_KEY, apiKey).build()
-    }
-
-    /** Sound, not the digital silence an unconnected input gives. */
-    private fun heard(chunk: ShortArray, n: Int): Boolean {
-        for (i in 0 until n) if (abs(chunk[i].toInt()) > SOUND_LEVEL) return true
-        return false
     }
 
     /** The box has switched the recording over to the remote's microphone. */
@@ -249,10 +242,12 @@ class ScribeRealtime(private val context: Context, okHttp: OkHttpClient) {
         const val MAX_KEYTERMS = 50
         const val MAX_KEYTERM_LENGTH = 20
         const val NORMAL_CLOSE = 1000
-        /** Above the noise of an input that is not connected yet. */
-        const val SOUND_LEVEL = 40
-        /** No sign of the remote's microphone after this long: say "Speak now" anyway. */
-        const val READY_FALLBACK_MS = 2_500L
+        /**
+         * No switch to the remote's microphone after this long: say "Speak now" anyway (a box with a microphone
+         * of its own never switches). The Nokia box switches after about 0.6 s; its empty built-in input hums
+         * above silence before that, so sound alone does not tell.
+         */
+        const val READY_FALLBACK_MS = 1_200L
         /** Nothing said at all after "Speak now": stop. */
         const val SILENCE_TIMEOUT_MS = 8_000L
         /** However long the speaking, a search is one sentence. */
