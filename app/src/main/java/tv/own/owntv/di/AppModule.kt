@@ -29,7 +29,7 @@ import tv.own.owntv.features.profiles.ProfileGateSessionViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
 import tv.own.owntv.features.search.MoodSearch
 import tv.own.owntv.features.search.VoiceQuery
-import tv.own.owntv.features.voice.ScribeClient
+import tv.own.owntv.features.voice.ScribeRealtime
 import tv.own.owntv.features.shell.components.WatchProviders
 import tv.own.owntv.features.vod.VodCatalogSource
 import tv.own.owntv.features.search.SearchViewModel
@@ -124,7 +124,7 @@ val appModule = module {
     // What a spoken search meant (Jev picks among the recogniser's guesses and playlist names).
     singleOf(::VoiceQuery)
     // Speech to text for the mic button (ElevenLabs Scribe); off without a key.
-    singleOf(::ScribeClient)
+    singleOf(::ScribeRealtime)
     singleOf(::WatchProviders)
     // Pictures for TV programmes (Spotlight, Stage), from TMDB by title.
     singleOf(::MagentaGuide)

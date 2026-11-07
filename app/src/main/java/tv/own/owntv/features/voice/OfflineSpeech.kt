@@ -158,8 +158,8 @@ object OfflineSpeech {
 
     /**
      * Listens until the speaker stops (or [stopRequested] turns true), showing what it hears so far
-     * through [partial]. The recording comes back too (16 kHz mono 16-bit little-endian), for
-     * [ScribeClient]. Throws [IllegalStateException] when the microphone cannot be opened.
+     * through [partial]. The recording comes back too (16 kHz mono 16-bit little-endian).
+     * Throws [IllegalStateException] when the microphone cannot be opened.
      */
     @SuppressLint("MissingPermission") // The caller asks for RECORD_AUDIO first.
     suspend fun listen(model: Model, stopRequested: () -> Boolean, partial: (String) -> Unit): Heard = withContext(Dispatchers.IO) {

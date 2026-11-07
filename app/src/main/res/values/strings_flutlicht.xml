@@ -77,12 +77,12 @@
     <string name="search_mood_searching">Jev is looking for titles that fit…</string>
     <string name="vod_search_movies_hint">Search movies: title, actor, genre…</string>
     <string name="vod_search_series_hint">Search series: title, actor, genre…</string>
+    <string name="voice_search_connecting">Connecting microphone…</string>
     <string name="voice_search_listening">Speak now…</string>
     <string name="voice_search_not_understood">Didn\'t catch that – press the mic again</string>
     <string name="voice_search_no_microphone">Microphone not allowed</string>
     <string name="voice_search_loading_model">Loading speech recognition (once only)… %1$d %%</string>
     <string name="voice_search_model_failed">Speech recognition could not be loaded – check the internet</string>
-    <string name="voice_search_understanding">Understanding…</string>
     <string name="voice_search_mic_failed">Microphone not available</string>
     <string name="content_move_in_group_only">only within a group</string>
     <string name="vod_catalog_continue">Continue watching</string>

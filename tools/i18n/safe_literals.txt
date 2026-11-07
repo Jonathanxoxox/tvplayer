@@ -1360,24 +1360,43 @@
 1	file-path	app/src/main/java/tv/own/owntv/features/voice/OfflineSpeech.kt	voice/${spec.name}
 1	file-path	app/src/main/java/tv/own/owntv/features/voice/OfflineSpeech.kt	vosk-model-small-de-0.15
 1	file-path	app/src/main/java/tv/own/owntv/features/voice/OfflineSpeech.kt	vosk-model-small-en-us-0.15
-1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	HTTP ${r.code}: ${body.take(300)}
-1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	Scribe
-1	mime	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	application/octet-stream
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	file
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	file_format
-1	url	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	https://api.elevenlabs.io/v1/speech-to-text
-2	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	keyterms
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	language_code
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	model_id
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	none
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	pcm_s16le_16
-1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	request failed: ${it.message}
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	scribe_v2
-1	file-path	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	search.pcm
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	tag_audio_events
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	text
-1	json	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	timestamps_granularity
-1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeClient.kt	xi-api-key
+3	empty	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	\0
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	$type ${o.optString(F_ERROR).take(200)}
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	1.0
+1	compiler	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	MissingPermission
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	ScribeRealtime
+1	compiler	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	UNREACHABLE_CODE
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	audio_base_64
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	audio_format
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	closed $code $reason
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	commit
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	commit_strategy
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	committed_transcript
+2	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	error
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	exceeded
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	https://api.elevenlabs.io/v1/speech-to-text/realtime
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	input_audio_chunk
+2	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	keyterms
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	language_code
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	message_type
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone could not be opened
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone is busy
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone read failed: $n
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone ready after ${now - opened} ms (${record.routedDevice?.type})
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	model_id
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	partial_transcript
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	pcm_16000
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	realtime: ${e.why}
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	said "$text" ${SystemClock.elapsedRealtime() - opened} ms after the mic opened
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	sample_rate
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	scribe_v2_realtime
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	session after ${SystemClock.elapsedRealtime() - opened} ms, ${waiting.size} chunks waiting
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	session_started
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	socket ${response?.code ?: -1} ${t.message}
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	text
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	vad
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	vad_silence_threshold_secs
+1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	xi-api-key
 1	technical	app/src/main/java/tv/own/owntv/launcher/FootballGroup.kt	,
 1	preference-key	app/src/main/java/tv/own/owntv/launcher/FootballGroup.kt	football_group_id_$profileId
 1	preference-key	app/src/main/java/tv/own/owntv/launcher/FootballGroup.kt	football_group_members_$profileId
