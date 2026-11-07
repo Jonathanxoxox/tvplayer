@@ -311,7 +311,9 @@ class SportsViewModel(
     fun open(match: Match?) {
         pageFilter.value = null
         // A live match is what one opens to watch: its channels are searched at once, no Find channels first.
-        findAsked.value = match?.isLive == true
+        // The channels are what this page is for (Jonathan, 6 Nov 2026): searched as it opens, before kick-off
+        // too, rather than after a press on Find channels. Outside the match's window there is still no search.
+        findAsked.value = match != null
         openMatch.value = match
     }
 

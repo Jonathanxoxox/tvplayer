@@ -168,10 +168,10 @@ fun SportsMatchScreen(
     Box(modifier.fillMaxSize().onFocusChanged { StageRailOpen.fullPageFocused = it.hasFocus }) {
         // Up and Down stay on this page: a held ▲ must never run out of the page.
         Row(Modifier.fillMaxSize().padding(start = contentStart, end = 60.mpx, top = 39.mpx).trapVerticalFocusExit(), horizontalArrangement = Arrangement.spacedBy(39.mpx)) {
-            // --- Left: the match ------------------------------------------------------------------
-            // The crumb is fixed in a 75-high band, so the score box (21 below it) starts at 96, level
-            // with the right column's video box, and stays level while the list scrolls.
-            Column(Modifier.width(915.mpx).fillMaxHeight()) {
+            // --- Left: Watch live -----------------------------------------------------------------
+            // First, because the channels are what this page is for (Jonathan, 6 Nov 2026): the crumb on top,
+            // then the picture, level with the score box on the right, then the list the focus starts on.
+            Column(Modifier.weight(1f).fillMaxSize().focusGroup()) {
                 Box(Modifier.height(75.mpx).fillMaxWidth(), contentAlignment = Alignment.BottomStart) {
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.mpx)) {
                         OwnTVIcon(OwnTVIcon.CHEVRON_LEFT, StageColors.Muted, Modifier.size(21.mpx))
@@ -184,62 +184,7 @@ fun SportsMatchScreen(
                         )
                     }
                 }
-            LazyColumn(Modifier.fillMaxWidth().weight(1f).padding(bottom = 30.mpx).focusGroup(), contentPadding = PaddingValues(bottom = 24.mpx)) {
-                item {
-                    ScoreHeader(m, state.summary, hidden = state.config.spoilerFree && !revealed, onReveal = { revealed = true })
-                }
-                item {
-                    Row(
-                        Modifier.fillMaxWidth().padding(top = 21.mpx).focusRestorer().focusGroup(),
-                        horizontalArrangement = Arrangement.spacedBy(8.mpx),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        val tabs = MatchTab.entries.filter {
-                            (it != MatchTab.TABLE || state.standings?.groups?.any { g -> g.rows.isNotEmpty() } == true) &&
-                                (it != MatchTab.STATS || !state.summary?.stats.isNullOrEmpty()) &&
-                                (it != MatchTab.LINEUPS || !state.summary?.lineups.isNullOrEmpty()) && (it != MatchTab.FORM || !state.summary?.form.isNullOrEmpty()) &&
-                                // The user's own channels are in Watch live beside; this tab only adds ESPN's list.
-                                (it != MatchTab.BROADCASTS || m.broadcasts.isNotEmpty())
-                        }
-                        tabs.forEach { t ->
-                            StageTab(
-                                label = stringResource(t.label), count = "", selected = tab == t, onClick = { tab = t },
-                                modifier = if (t == MatchTab.TIMELINE) Modifier.focusRequester(tabFocus) else Modifier,
-                            )
-                        }
-                        Spacer(Modifier.weight(1f))
-                        val following = vm.follows(state.config, m.feed)
-                        SportsChip(
-                            stringResource(if (following) R.string.sports_following else R.string.sports_follow),
-                            on = following, icon = OwnTVIcon.STAR,
-                        ) { vm.toggleLeague(m.feed) }
-                    }
-                }
-                when (tab) {
-                    MatchTab.TIMELINE -> {
-                        val events = (state.summary?.timeline ?: m.events).asReversed()
-                        items(events) { e -> TimelineRow(e, m) }
-                        // Before kick-off the tab was an empty space under the tabs.
-                        if (events.isEmpty()) item {
-                            Text(
-                                stringResource(if (m.state == MatchState.PRE) R.string.tvplayer_sports_timeline_before else R.string.tvplayer_sports_timeline_none),
-                                style = stageText(19, 400), color = StageColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.padding(start = 18.mpx, top = 27.mpx),
-                            )
-                        }
-                    }
-                    MatchTab.STATS -> items(state.summary?.stats.orEmpty()) { s -> StatRow(statLabel(s.label), percentText(s.label, s.home), percentText(s.label, s.away)) }
-                    MatchTab.LINEUPS -> item { Lineups(m, state.summary) }
-                    MatchTab.TABLE -> item { TablePreview(state.standings, m, onOpenLeague) }
-                    MatchTab.FORM -> item { Form(m, state.summary) }
-                    MatchTab.BROADCASTS -> item { Broadcasts(m) }
-                }
-            }
-            }
-
-            // --- Right: Watch live ----------------------------------------------------------------
-            // Level with the score box on the left.
-            Column(Modifier.weight(1f).fillMaxSize().padding(top = 96.mpx).focusGroup()) {
+                androidx.compose.foundation.layout.Spacer(Modifier.height(21.mpx))
                 if (!state.hasPlaylist) {
                     NoPlaylistNote(onAddPlaylist)
                     return@Column
@@ -307,6 +252,63 @@ fun SportsMatchScreen(
                         }
                     }
                 }
+            }
+
+            // --- Right: the match ------------------------------------------------------------------
+            // Below the crumb's 75-high band on the left, so the score box (21 below it) starts at 96, level
+            // with the video box there, and stays level while the list scrolls.
+            Column(Modifier.width(915.mpx).fillMaxHeight().padding(top = 75.mpx)) {
+            LazyColumn(Modifier.fillMaxWidth().weight(1f).padding(bottom = 30.mpx).focusGroup(), contentPadding = PaddingValues(bottom = 24.mpx)) {
+                item {
+                    ScoreHeader(m, state.summary, hidden = state.config.spoilerFree && !revealed, onReveal = { revealed = true })
+                }
+                item {
+                    Row(
+                        Modifier.fillMaxWidth().padding(top = 21.mpx).focusRestorer().focusGroup(),
+                        horizontalArrangement = Arrangement.spacedBy(8.mpx),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        val tabs = MatchTab.entries.filter {
+                            (it != MatchTab.TABLE || state.standings?.groups?.any { g -> g.rows.isNotEmpty() } == true) &&
+                                (it != MatchTab.STATS || !state.summary?.stats.isNullOrEmpty()) &&
+                                (it != MatchTab.LINEUPS || !state.summary?.lineups.isNullOrEmpty()) && (it != MatchTab.FORM || !state.summary?.form.isNullOrEmpty()) &&
+                                // The user's own channels are in Watch live beside; this tab only adds ESPN's list.
+                                (it != MatchTab.BROADCASTS || m.broadcasts.isNotEmpty())
+                        }
+                        tabs.forEach { t ->
+                            StageTab(
+                                label = stringResource(t.label), count = "", selected = tab == t, onClick = { tab = t },
+                                modifier = if (t == MatchTab.TIMELINE) Modifier.focusRequester(tabFocus) else Modifier,
+                            )
+                        }
+                        Spacer(Modifier.weight(1f))
+                        val following = vm.follows(state.config, m.feed)
+                        SportsChip(
+                            stringResource(if (following) R.string.sports_following else R.string.sports_follow),
+                            on = following, icon = OwnTVIcon.STAR,
+                        ) { vm.toggleLeague(m.feed) }
+                    }
+                }
+                when (tab) {
+                    MatchTab.TIMELINE -> {
+                        val events = (state.summary?.timeline ?: m.events).asReversed()
+                        items(events) { e -> TimelineRow(e, m) }
+                        // Before kick-off the tab was an empty space under the tabs.
+                        if (events.isEmpty()) item {
+                            Text(
+                                stringResource(if (m.state == MatchState.PRE) R.string.tvplayer_sports_timeline_before else R.string.tvplayer_sports_timeline_none),
+                                style = stageText(19, 400), color = StageColors.Muted, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(start = 18.mpx, top = 27.mpx),
+                            )
+                        }
+                    }
+                    MatchTab.STATS -> items(state.summary?.stats.orEmpty()) { s -> StatRow(statLabel(s.label), percentText(s.label, s.home), percentText(s.label, s.away)) }
+                    MatchTab.LINEUPS -> item { Lineups(m, state.summary) }
+                    MatchTab.TABLE -> item { TablePreview(state.standings, m, onOpenLeague) }
+                    MatchTab.FORM -> item { Form(m, state.summary) }
+                    MatchTab.BROADCASTS -> item { Broadcasts(m) }
+                }
+            }
             }
         }
     }
