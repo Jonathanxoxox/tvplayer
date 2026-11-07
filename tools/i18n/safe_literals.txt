@@ -416,7 +416,7 @@
 1	json	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	questions
 1	log	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	request failed: ${it.message}
 1	json	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	state
-3	empty	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	\0
+4	empty	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	#
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	#people
 2	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	$Q_FIT$i
@@ -460,7 +460,9 @@
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	Western
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	Writing
 1	regex	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	[^\\p{L}\\p{N}]+
+1	regex	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	\\s+
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	backdrop_path
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	by
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	cast
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	crew
 2	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	describes
@@ -476,7 +478,7 @@
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	genres
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	gibt geben auf für von aus bei nach über heute abend wir uns want watch something with the and about some see
 1	url	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	https://api.themoviedb.org
-1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	ich möchte moechte will würde gerne gern einen eine einem einer den dem der die das des
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	ich möchte moechte will würde gerne gern ein einen eine einem einer den dem der die das des
 3	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	id
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	job
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	keyword
@@ -486,6 +488,7 @@
 2	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	kind
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	known_for_department
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	like
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	mit
 1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	mit und oder ohne schauen sehen gucken anschauen ansehen zeig zeige mir bitte irgendwas etwas was wie
 3	protocol	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	movie
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	movie_credits
@@ -504,13 +507,16 @@
 2	protocol	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	series
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	show
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	shows
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	starring
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	streifen
 2	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	title
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	titles
 1	protocol	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	tv
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	tv_credits
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	von
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	vote_average
 2	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	wish
+1	technical	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	with
 1	url	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	with_genres
 1	url	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	with_keywords
 1	json	app/src/main/java/tv/own/owntv/features/search/MoodSearch.kt	year

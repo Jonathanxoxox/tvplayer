@@ -18,6 +18,18 @@ class MoodSearchTermsTest {
     fun shortWordsAreIgnored() = assertEquals(listOf("lustige", "kiffer", "kifferfilme", "lustige kifferfilme"), MoodSearch.keywordTerms("lustige Kifferfilme am"))
 
     @Test
+    fun spokenPersonIsUnwrapped() {
+        assertEquals("Tom Hanks", MoodSearch.personName("Filme mit Tom Hanks"))
+        assertEquals("Will Smith", MoodSearch.personName("Will Smith"))
+        assertEquals("Will Smith", MoodSearch.personName("Serien mit Will Smith"))
+        assertEquals("Nolan", MoodSearch.personName("movies by Nolan"))
+        assertEquals("Tom Hanks", MoodSearch.personName("Tom Hanks Filme"))
+    }
+
+    @Test
+    fun spokenArticleIsNoKeyword() = assertEquals(listOf("stoner"), MoodSearch.keywordTerms("ein Stoner-Film"))
+
+    @Test
     fun spokenSentenceKeepsTheWish() = assertEquals(
         listOf("gruseligen", "hütte", "wald"),
         MoodSearch.keywordTerms("Ich möchte einen gruseligen Film mit Hütte im Wald schauen"),
