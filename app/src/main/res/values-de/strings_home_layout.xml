@@ -69,6 +69,12 @@
     <string name="home_hl_badge_sport">DEIN SPORT</string>
     <string name="home_spotlight_badges">Highlights hervorheben</string>
     <string name="home_spotlight_badges_desc">Premieren, MagentaTV-Highlights, Filme ab Bewertung 8 und deine Spiele bekommen ein goldenes Abzeichen</string>
+    <string name="vod_role_director">Regie</string>
+    <string name="vod_role_creator">Idee</string>
+    <string name="home_hl_director">Regie: %1$s</string>
+    <string name="home_sport_venue">Spielort: %1$s</string>
+    <string name="home_sport_table">Tabelle: %1$s %2$d. (%3$d Pkt.), %4$s %5$d. (%6$d Pkt.)</string>
+    <string name="home_sport_sentence_separator">". "</string>
     <string name="home_hl_cast">Mit %1$s</string>
     <string name="home_hl_cast_separator">", "</string>
 </resources>

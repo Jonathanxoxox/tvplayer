@@ -68,6 +68,9 @@ data class MediaDetailsUi(
     val genres: List<String> = emptyList(),
     val plot: String? = null,
     val cast: List<tv.own.owntv.core.metadata.CastMember> = emptyList(),
+    /** A film's director(s) or a series' creators ([directorsAreCreators]). */
+    val directors: List<tv.own.owntv.core.metadata.CastMember> = emptyList(),
+    val directorsAreCreators: Boolean = false,
     /** TMDB's "movie" or "tv" and the title's id, for "Streaming on Netflix…"; null = not shown. */
     val tmdbType: String? = null,
     val tmdbId: Int? = null,
@@ -150,6 +153,10 @@ fun MediaDetailsScreen(details: MediaDetailsUi, onExit: () -> Unit, modifier: Mo
                         streaming.forEach { tv.own.owntv.ui.stage.StageTag(it) }
                     }
                     Text(stringResource(R.string.details_streaming_source), style = stageText(14, 600), color = StageColors.Dim, modifier = Modifier.padding(top = 10.mpx))
+                }
+                if (details.directors.isNotEmpty()) {
+                    DetailsLabel(stringResource(if (details.directorsAreCreators) R.string.vod_role_creator else R.string.vod_role_director))
+                    CastGrid(details.directors)
                 }
                 if (details.cast.isNotEmpty()) {
                     DetailsLabel(stringResource(R.string.content_media_cast))

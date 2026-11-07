@@ -121,6 +121,9 @@ internal data class VodTitleInfo(
     val tags: List<String>,
     val plot: String?,
     val cast: List<CastMember>,
+    /** A film's director(s), a series' creators: shown first among the people, with their role. */
+    val directors: List<CastMember> = emptyList(),
+    val isSeries: Boolean = false,
 )
 
 /** A rating as the design writes it: one decimal, in the user's number format ("8.4", "8,4"). */
@@ -230,6 +233,21 @@ internal fun VodCinematicBackdrop(url: String?, series: Boolean, modifier: Modif
  */
 @Composable
 internal fun VodHero(info: VodTitleInfo, modifier: Modifier = Modifier, compact: Boolean = false) {
+    // Compact: the director and the actors beside the text, where the backdrop is (Jonathan, 7 Nov 2026);
+    // the strip has no room under it.
+    if (compact && (info.cast.isNotEmpty() || info.directors.isNotEmpty())) {
+        Row(modifier.clipToBounds(), verticalAlignment = Alignment.Bottom) {
+            VodHeroText(info, compact = true, modifier = Modifier.weight(1f, fill = false).widthIn(max = 900.mpx))
+            Spacer(Modifier.width(40.mpx))
+            VodCast(info.cast, 4, Modifier.padding(bottom = 4.mpx), directors = info.directors, series = info.isSeries)
+        }
+        return
+    }
+    VodHeroText(info, compact, modifier)
+}
+
+@Composable
+private fun VodHeroText(info: VodTitleInfo, compact: Boolean, modifier: Modifier) {
     Column(modifier.clipToBounds()) {
         var logoFailed by remember(info.logoUrl) { mutableStateOf(false) }
         // Compact: the slim info strip above the Movies / Series poster grid, title art 110 high and no cast.
@@ -256,7 +274,9 @@ internal fun VodHero(info: VodTitleInfo, modifier: Modifier = Modifier, compact:
                 maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 860.mpx),
             )
         }
-        if (info.cast.isNotEmpty() && !compact) VodCast(info.cast, 6, Modifier.padding(top = 20.mpx))
+        if ((info.cast.isNotEmpty() || info.directors.isNotEmpty()) && !compact) {
+            VodCast(info.cast, 6, Modifier.padding(top = 20.mpx), directors = info.directors, series = info.isSeries)
+        }
     }
 }
 
@@ -309,10 +329,21 @@ internal fun VodMeta(parts: List<String>, rating: Double?, tags: List<String>, s
 
 /** `.cast`: photos 64 round with a 2 px white-14% ring, the initials on the mint→blue gradient when there is no photo. */
 @Composable
-internal fun VodCast(cast: List<CastMember>, count: Int, modifier: Modifier = Modifier) {
+internal fun VodCast(
+    cast: List<CastMember>,
+    count: Int,
+    modifier: Modifier = Modifier,
+    /** Shown first, with "Director" (a series: "Creator") under the name; they count towards [count]. */
+    directors: List<CastMember> = emptyList(),
+    series: Boolean = false,
+) {
     val castRing = StageColors.Ink.copy(alpha = 0.14f)
+    val role = stringResource(if (series) R.string.vod_role_creator else R.string.vod_role_director)
+    val locale = androidx.compose.ui.platform.LocalConfiguration.current.locales[0]
+    // One director at most here: a film by two shows the first; a series with three creators the first.
+    val people = directors.take(1).map { it to role } + cast.filter { c -> directors.none { it.name == c.name } }.map { it to null }
     Row(modifier, horizontalArrangement = Arrangement.spacedBy(20.mpx)) {
-        cast.take(count).forEach { member ->
+        people.take(count).forEach { (member, roleLabel) ->
             Column(Modifier.width(84.mpx), horizontalAlignment = Alignment.CenterHorizontally) {
                 val photo = MetadataImages.profile(member.profilePath)
                 Box(
@@ -341,6 +372,12 @@ internal fun VodCast(cast: List<CastMember>, count: Int, modifier: Modifier = Mo
                     member.name, style = stageText(14.5f, 600).copy(lineHeight = (14.5f * 1.25f).mpxSp), color = StageColors.Muted,
                     maxLines = 2, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
                 )
+                roleLabel?.let {
+                    Text(
+                        it.uppercase(locale), style = stageText(11.5f, 800, 0.08.em), color = stageAccent.accent,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth().padding(top = 2.mpx),
+                    )
+                }
             }
         }
     }
@@ -393,8 +430,11 @@ internal fun VodDetailsCard(info: VodTitleInfo?, hints: List<Pair<String, String
                             maxLines = 5, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 14.mpx, bottom = 18.mpx),
                         )
                     }
-                    if (info.cast.isNotEmpty()) {
-                        VodCast(info.cast, 5, Modifier.graphicsLayer { scaleX = 0.92f; scaleY = 0.92f; transformOrigin = TransformOrigin(0f, 0f) })
+                    if (info.cast.isNotEmpty() || info.directors.isNotEmpty()) {
+                        VodCast(
+                            info.cast, 5, Modifier.graphicsLayer { scaleX = 0.92f; scaleY = 0.92f; transformOrigin = TransformOrigin(0f, 0f) },
+                            directors = info.directors, series = info.isSeries,
+                        )
                     }
                 }
             }

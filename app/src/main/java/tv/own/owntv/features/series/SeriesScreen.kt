@@ -676,7 +676,8 @@ private fun SeriesGrid(
                     section = stringResource(R.string.common_nav_series), category = headerLabel, count = vodCount(true, count),
                     showChevron = true, modifier = Modifier.padding(start = fx(84), top = 52.mpx).width(fx(900)),
                 )
-                titleInfo?.let { VodHero(it, Modifier.padding(start = listX, top = 122.mpx).width(fx(1000)).height(heroH), compact = true) }
+                // To the right margin: the people stand beside the text, over the backdrop.
+                titleInfo?.let { VodHero(it, Modifier.padding(start = listX, top = 122.mpx).width(screenW - listX - fx(64)).height(heroH), compact = true) }
                 Column(Modifier.padding(top = toolTop).fillMaxSize().then(paneModifier)) {
                     Row(
                         Modifier.padding(start = listX - fx(16), end = fx(64)).fillMaxWidth()
@@ -1198,6 +1199,8 @@ private fun buildSeriesDetails(
         genres = jsonStringList(meta?.genresJson),
         plot = plot,
         cast = tv.own.owntv.core.metadata.MetadataCast.parse(meta?.castJson),
+        directors = tv.own.owntv.core.metadata.MetadataCast.directors(meta?.castJson),
+        directorsAreCreators = true,
         tmdbType = meta?.type?.takeIf { it == "tv" },
         tmdbId = meta?.tmdbId,
     )
@@ -1444,6 +1447,13 @@ private fun EpisodeView(
             categoryName?.let {
                 Text(it, style = stageText(21, 700), color = tv.own.owntv.ui.theme.stageAccent.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+        }
+        // The creators and the actors beside the header, over the backdrop (Jonathan, 7 Nov 2026).
+        if (info.cast.isNotEmpty() || info.directors.isNotEmpty()) {
+            tv.own.owntv.features.shell.components.VodCast(
+                info.cast, 5, Modifier.padding(start = fx(1120), top = 300.mpx),
+                directors = info.directors, series = true,
+            )
         }
         Column(Modifier.padding(start = fx(84), top = 104.mpx).width(fx(980))) {
             // At most 170 high, the room the films' hero gives its title, so two lines shrink rather than
@@ -1939,6 +1949,8 @@ internal fun seriesTitleInfo(
         tags = cinematicQualityBadges(series.qualityRank, series.advertisedCapabilities),
         plot = if (tmdbWins) meta?.overview ?: providerPlot else providerPlot ?: meta?.overview,
         cast = tv.own.owntv.core.metadata.MetadataCast.parse(meta?.castJson),
+        directors = tv.own.owntv.core.metadata.MetadataCast.directors(meta?.castJson),
+        isSeries = true,
     )
 }
 

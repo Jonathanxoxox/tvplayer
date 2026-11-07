@@ -619,7 +619,8 @@ fun MoviesScreen(
                     section = stringResource(R.string.common_nav_movies), category = headerLabel, count = vodCount(false, count),
                     showChevron = true, modifier = Modifier.padding(start = fx(84), top = 52.mpx).width(fx(900)),
                 )
-                titleInfo?.let { VodHero(it, Modifier.padding(start = listX, top = 122.mpx).width(fx(1000)).height(heroH), compact = true) }
+                // To the right margin: the people stand beside the text, over the backdrop.
+                titleInfo?.let { VodHero(it, Modifier.padding(start = listX, top = 122.mpx).width(screenW - listX - fx(64)).height(heroH), compact = true) }
                 Column(Modifier.padding(top = toolTop).fillMaxSize().then(paneModifier)) {
                     Row(
                         Modifier.padding(start = listX - fx(16), end = fx(64)).fillMaxWidth()
@@ -1209,6 +1210,7 @@ private fun buildMovieDetails(
         genres = jsonList(meta?.genresJson),
         plot = plot,
         cast = tv.own.owntv.core.metadata.MetadataCast.parse(meta?.castJson),
+        directors = tv.own.owntv.core.metadata.MetadataCast.directors(meta?.castJson),
         tmdbType = meta?.type?.takeIf { it == "movie" },
         tmdbId = meta?.tmdbId,
     )
@@ -1249,5 +1251,6 @@ internal fun movieTitleInfo(
         tags = cinematicQualityBadges(movie.qualityRank, movie.advertisedCapabilities),
         plot = if (tmdbWins) meta?.overview ?: providerPlot else providerPlot ?: meta?.overview,
         cast = tv.own.owntv.core.metadata.MetadataCast.parse(meta?.castJson),
+        directors = tv.own.owntv.core.metadata.MetadataCast.directors(meta?.castJson),
     )
 }
