@@ -131,9 +131,6 @@ private val CompactHeroHeight = 228.mpx - RowGap
 private val NoHeroTop = 110.mpx
 private val RoomBelowFocus = 36.mpx
 
-/** Under the Spotlight's channel strip: pushes the next row just past the screen's bottom edge. */
-private val SpotlightFold = 120.mpx
-
 /** Where the app buttons of the Classic and Stage layouts sit: level with the clock. */
 private val AppPillsTop = 30.mpx
 

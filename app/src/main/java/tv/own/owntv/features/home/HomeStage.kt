@@ -293,7 +293,10 @@ internal fun HomeStage(
     // Its lower part fades to nothing, picture and washes alike, so the page's own background runs on under the
     // channel strip without a seam: a wash ending in a colour showed a step where the page's darker one began
     // (Jonathan, 7 Nov 2026: "komplett fließend").
-    if (spotlight) Box(Modifier.matchParentSize().reachUp(reach).fadeOutBelow(SPOTLIGHT_FADE_FROM)) {
+    // It also runs on below the stage through the room Home leaves under it ([SpotlightFold]), fading out at the
+    // screen's bottom edge instead of above the empty room.
+    val below = with(androidx.compose.ui.platform.LocalDensity.current) { SpotlightFold.roundToPx() }
+    if (spotlight) Box(Modifier.matchParentSize().reachUp(reach, below).fadeOutBelow(SPOTLIGHT_FADE_FROM)) {
         when (hl) {
             // A match with a picture shows it full width like any highlight; without one, its crests (below).
             is Highlight.Sport -> sportArt?.let { url ->
@@ -503,10 +506,10 @@ internal fun HomeStage(
     }
 }
 
-/** Laid out [reach] px taller than its slot and moved up by as much: it draws on up to the screen's top. */
-private fun Modifier.reachUp(reach: () -> Int): Modifier = layout { measurable, constraints ->
+/** Laid out [reach] px taller than its slot and moved up by as much, and [below] px longer: it draws on up to the screen's top and past its slot's bottom. */
+private fun Modifier.reachUp(reach: () -> Int, below: Int = 0): Modifier = layout { measurable, constraints ->
     val up = reach()
-    val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(constraints.maxWidth, constraints.maxHeight + up))
+    val placeable = measurable.measure(androidx.compose.ui.unit.Constraints.fixed(constraints.maxWidth, constraints.maxHeight + up + below))
     layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, -up) }
 }
 
@@ -539,7 +542,10 @@ private fun Modifier.topReach(reach: () -> Int, past: Int): Modifier = layout { 
 private val TOP_FADE_PAST = 140.mpx
 
 /** Where the Spotlight starts fading into the page, as a fraction of its height counted from the screen's top. */
-private const val SPOTLIGHT_FADE_FROM = 0.78f
+private const val SPOTLIGHT_FADE_FROM = 0.74f
+
+/** The room Home leaves under the Spotlight's channel strip, so the next row starts just past the screen's bottom. */
+internal val SpotlightFold = 120.mpx
 
 /** Home settles first; then the row's programme pictures are fetched ahead. */
 private const val ART_PREFETCH_DELAY_MS = 4000L
