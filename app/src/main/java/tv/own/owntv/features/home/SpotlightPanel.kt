@@ -381,12 +381,12 @@ private val WHITESPACE = Regex("\\s+")
 /** Shorter than this it is a label ("Spielfilm", "n/a"), not a description. */
 private const val MIN_DESCRIPTION = 12
 
-/** What it is about, under the title and its facts: up to six lines, the Spotlight has the room (Jonathan, 7 Nov 2026). */
+/** What it is about, under the title and its facts: up to eight lines, the Spotlight has the room (Jonathan, 7 Nov 2026). */
 @Composable
 internal fun SpotlightDescription(text: String, modifier: Modifier = Modifier) {
     Text(
         text, style = stageText(18, 500).copy(lineHeight = (18 * 1.45f).mpxSp), color = StageColors.Text,
-        maxLines = 6, overflow = TextOverflow.Ellipsis, modifier = modifier,
+        maxLines = 8, overflow = TextOverflow.Ellipsis, modifier = modifier,
     )
 }
 
