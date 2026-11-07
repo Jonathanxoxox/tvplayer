@@ -34,7 +34,12 @@ import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageSurface
@@ -51,6 +56,9 @@ data class NowPlayingInfo(
     val art: Bitmap?,
     val artUri: String?,
     val playing: Boolean,
+    /** The app offers ⏮ / ⏭ (Spotify does; a video app may not). */
+    val canPrevious: Boolean = false,
+    val canNext: Boolean = false,
 )
 
 /**
@@ -84,13 +92,29 @@ object NowPlaying {
         val uri = listOf(MediaMetadata.METADATA_KEY_ART_URI, MediaMetadata.METADATA_KEY_ALBUM_ART_URI, MediaMetadata.METADATA_KEY_DISPLAY_ICON_URI)
             .firstNotNullOfOrNull { k -> m.getString(k)?.takeIf { it.startsWith("http") } }
         val playing = c.playbackState?.state != PlaybackState.STATE_PAUSED
-        return NowPlayingInfo(c.packageName, title, artist?.takeIf { it.isNotBlank() && it != title }, art, uri, playing)
+        val actions = c.playbackState?.actions ?: 0L
+        return NowPlayingInfo(
+            c.packageName, title, artist?.takeIf { it.isNotBlank() && it != title }, art, uri, playing,
+            canPrevious = actions and PlaybackState.ACTION_SKIP_TO_PREVIOUS != 0L,
+            canNext = actions and PlaybackState.ACTION_SKIP_TO_NEXT != 0L,
+        )
+    }
+
+    /** Counts the pill's own presses, so it reads the new title at once instead of at the next poll. */
+    internal val pressed = MutableStateFlow(0)
+
+    /** The previous or the next track. */
+    fun skip(context: Context, pkg: String, next: Boolean) {
+        val c = controllers(context).firstOrNull { it.packageName == pkg } ?: return
+        if (next) c.transportControls.skipToNext() else c.transportControls.skipToPrevious()
+        pressed.value++
     }
 
     /** Play or pause the app's playback. */
     fun toggle(context: Context, pkg: String) {
         val c = controllers(context).firstOrNull { it.packageName == pkg } ?: return
         if (c.playbackState?.state == PlaybackState.STATE_PAUSED) c.transportControls.play() else c.transportControls.pause()
+        pressed.value++
     }
 
     /** Bring the playing app to the front. */
@@ -110,7 +134,9 @@ fun rememberNowPlaying(): NowPlayingInfo? {
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (true) {
                 value = withContext(Dispatchers.IO) { NowPlaying.read(context) }
-                delay(POLL_MS)
+                // The next poll, or a moment after a press of the pill's own (the app needs that long to switch).
+                val presses = NowPlaying.pressed.value
+                if (withTimeoutOrNull(POLL_MS) { NowPlaying.pressed.first { it != presses } } != null) delay(AFTER_PRESS_MS)
             }
         }
     }
@@ -118,17 +144,50 @@ fun rememberNowPlaying(): NowPlayingInfo? {
 }
 
 private const val POLL_MS = 2000L
+private const val AFTER_PRESS_MS = 350L
 
-/** Home's "Now playing" pill: cover, title and artist, ▶/❚❚. OK plays or pauses; held OK opens the app. */
+/**
+ * Home's "Now playing" pill: cover, title and artist, ▶/❚❚, then ⏮ and ⏭ where the app offers them
+ * (Jonathan, 7 Nov 2026), all in one capsule. OK on the title plays or pauses, held OK opens the app;
+ * ◀ ▶ reach the two buttons. [requester] lands on the title.
+ */
 @Composable
-internal fun NowPlayingPill(info: NowPlayingInfo, modifier: Modifier = Modifier) {
+internal fun NowPlayingPill(info: NowPlayingInfo, requester: FocusRequester, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    Row(
+        modifier.height(60.mpx).background(StageColors.GlassOff, RoundedCornerShape(30.mpx)),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        NowPlayingMain(info, Modifier.focusRequester(requester))
+        if (info.canPrevious) SkipButton(OwnTVIcon.SKIP_PREVIOUS) { NowPlaying.skip(context, info.pkg, next = false) }
+        if (info.canNext) SkipButton(OwnTVIcon.SKIP_NEXT) { NowPlaying.skip(context, info.pkg, next = true) }
+        if (info.canPrevious || info.canNext) androidx.compose.foundation.layout.Spacer(Modifier.size(4.mpx))
+    }
+}
+
+/** ⏮ or ⏭: a round button inside the pill. */
+@Composable
+private fun SkipButton(icon: OwnTVIcon, onClick: () -> Unit) {
+    StageSurface(
+        onClick = onClick,
+        radius = 26.mpx,
+        focusStyle = StageFocus.FILLED,
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.size(52.mpx),
+    ) { focused ->
+        OwnTVIcon(icon, if (focused) StageColors.FxText else StageColors.Text, Modifier.size(24.mpx), filled = true)
+    }
+}
+
+/** The pill's title part: cover, ▶/❚❚, title and artist. */
+@Composable
+private fun NowPlayingMain(info: NowPlayingInfo, modifier: Modifier) {
     val context = LocalContext.current
     StageSurface(
         onClick = { NowPlaying.toggle(context, info.pkg) },
         onLongClick = { NowPlaying.open(context, info.pkg) },
         radius = 30.mpx,
         focusStyle = StageFocus.FILLED,
-        idle = Modifier.clip(RoundedCornerShape(30.mpx)).background(StageColors.GlassOff),
         contentAlignment = Alignment.Center,
         modifier = modifier.height(60.mpx),
     ) { focused ->

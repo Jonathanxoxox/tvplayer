@@ -498,7 +498,8 @@ fun HomeAppPills(
             val requester = remember { FocusRequester() }
             NowPlayingPill(
                 playing,
-                Modifier.focusRequester(requester).onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
+                requester,
+                Modifier.onFocusChanged { if (it.hasFocus) { onFocus(); track(requester) } },
             )
         }
     }
