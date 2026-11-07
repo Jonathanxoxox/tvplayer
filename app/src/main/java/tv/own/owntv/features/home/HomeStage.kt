@@ -349,7 +349,7 @@ internal fun HomeStage(
     // Clear of the clock in the top-right corner, which the big plate would otherwise run into.
     Column(Modifier.padding(top = 24.mpx)) {
         Row(
-            Modifier.padding(start = start, end = 64.mpx).height(if (spotlight) 560.mpx else 330.mpx),
+            Modifier.padding(start = start, end = 64.mpx).height(if (spotlight) 660.mpx else 330.mpx),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(56.mpx),
         ) {
@@ -544,8 +544,8 @@ private val TOP_FADE_PAST = 140.mpx
 /** Where the Spotlight starts fading into the page, as a fraction of its height counted from the screen's top. */
 private const val SPOTLIGHT_FADE_FROM = 0.74f
 
-/** The room Home leaves under the Spotlight's channel strip, so the next row starts just past the screen's bottom. */
-internal val SpotlightFold = 120.mpx
+/** The room Home leaves under the Spotlight's channel strip: the strip ends as far above the screen's bottom as the app buttons begin below its top (Jonathan, 7 Nov 2026), and the next row starts past the edge. */
+internal val SpotlightFold = 40.mpx
 
 /** Home settles first; then the row's programme pictures are fetched ahead. */
 private const val ART_PREFETCH_DELAY_MS = 4000L
