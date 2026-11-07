@@ -70,4 +70,6 @@
     <string name="home_hl_badge_sport">YOUR SPORT</string>
     <string name="home_spotlight_badges">Highlight the best</string>
     <string name="home_spotlight_badges_desc">Premieres, MagentaTV\'s highlights, films rated 8 or more and your matches wear a gold badge</string>
+    <string name="home_hl_cast">With %1$s</string>
+    <string name="home_hl_cast_separator">", "</string>
 </resources>

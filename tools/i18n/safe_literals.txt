@@ -299,6 +299,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/home/ProgrammeArt.kt	serie
 1	technical	app/src/main/java/tv/own/owntv/features/home/ProgrammeArt.kt	spielfilm
 1	technical	app/src/main/java/tv/own/owntv/features/home/ProgrammeArt.kt	w1280
+1	technical	app/src/main/java/tv/own/owntv/features/home/ProgrammeArt.kt	|
 1	technical	app/src/main/java/tv/own/owntv/features/home/ProgrammeArt.kt	–
 1	technical	app/src/main/java/tv/own/owntv/features/home/SpotlightArt.kt	spotlight-art
 1	technical	app/src/main/java/tv/own/owntv/features/home/SpotlightHighlights.kt	docs

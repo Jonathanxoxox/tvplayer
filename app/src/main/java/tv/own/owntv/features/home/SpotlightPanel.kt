@@ -75,6 +75,7 @@ internal fun HighlightInfo(
         }
         Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         FilmFacts(hl, rating)
+        FilmCast(hl)
         lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
         // that has one, not only the guide's picks).
@@ -302,6 +303,16 @@ private const val MIN_DESCRIPTION = 12
 @Composable
 internal fun SpotlightDescription(text: String, modifier: Modifier = Modifier) {
     Text(text, style = stageText(18, 500), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = modifier)
+}
+
+/** A film's leads under its facts: "Mit Jason Statham, Li Bingbing, Ruby Rose" (TMDB's billing order). */
+@Composable
+private fun FilmCast(hl: Highlight) {
+    val cast = (hl as? Highlight.Pick)?.pick?.takeIf { it.film }?.cast?.takeIf { it.isNotEmpty() } ?: return
+    Text(
+        stringResource(R.string.home_hl_cast, cast.joinToString(stringResource(R.string.home_hl_cast_separator))),
+        style = stageText(18, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis,
+    )
 }
 
 /** A time of day as the box shows it (20:15). */

@@ -106,7 +106,10 @@ class ProgrammeArt(private val provider: MetadataProvider, private val magenta: 
                 val hits = provider.searchMovie(title, year) ?: return@runCatching null
                 val hit = ProgrammeTitles.best(title, year, hits) ?: return@runCatching FilmInfo.NONE
                 val details = provider.movieDetails(hit.tmdbId) ?: return@runCatching null
-                FilmInfo(details.rating?.takeIf { it > 0.0 }, details.year ?: hit.year, details.genres.firstOrNull())
+                FilmInfo(
+                    details.rating?.takeIf { it > 0.0 }, details.year ?: hit.year, details.genres.firstOrNull(),
+                    details.cast.map { it.name.trim() }.filter { it.isNotEmpty() }.take(FilmInfo.CAST_SHOWN),
+                )
             }.getOrNull()
         } ?: return null
         films[key] = found
@@ -162,20 +165,30 @@ internal object ProgrammeTitles {
     }
 }
 
-/** What TMDB knows of a TV film: its rating (0–10), year and first genre, each when it says. */
-data class FilmInfo(val rating: Double?, val year: Int?, val genre: String?) {
-    internal fun encode(): String =
-        if (this === NONE) "" else listOf(rating?.toString().orEmpty(), year?.toString().orEmpty(), genre.orEmpty()).joinToString(FIELD)
+/**
+ * What TMDB knows of a TV film: its rating (0–10), year and first genre, each when it says, and its first
+ * [CAST_SHOWN] actors in TMDB's billing order (Jonathan, 7 Nov 2026).
+ */
+data class FilmInfo(val rating: Double?, val year: Int?, val genre: String?, val cast: List<String> = emptyList()) {
+    internal fun encode(): String = if (this === NONE) "" else listOf(
+        rating?.toString().orEmpty(), year?.toString().orEmpty(), genre.orEmpty(), cast.joinToString(NAMES),
+    ).joinToString(FIELD)
 
     internal companion object {
         /** TMDB has no film of that title. */
         val NONE = FilmInfo(null, null, null)
         private const val FIELD = "\t"
+        private const val NAMES = "|"
+        /** The leads, not the whole call sheet: one line on the Spotlight. */
+        const val CAST_SHOWN = 3
 
         fun decode(text: String): FilmInfo {
             if (text.isEmpty()) return NONE
             val f = text.split(FIELD)
-            return FilmInfo(f.getOrNull(0)?.toDoubleOrNull(), f.getOrNull(1)?.toIntOrNull(), f.getOrNull(2)?.ifBlank { null })
+            return FilmInfo(
+                f.getOrNull(0)?.toDoubleOrNull(), f.getOrNull(1)?.toIntOrNull(), f.getOrNull(2)?.ifBlank { null },
+                f.getOrNull(3)?.split(NAMES)?.filter { it.isNotBlank() }.orEmpty(),
+            )
         }
     }
 }

@@ -111,6 +111,8 @@ data class GuidePick(
     val year: Int? = null,
     /** The guide's first genre ("Thriller"). */
     val genre: String? = null,
+    /** A film's leading actors, from TMDB ([withFilms]). */
+    val cast: List<String> = emptyList(),
 ) {
     val key: String get() = "pick:${channel.id}@$startMs"
 }
@@ -258,11 +260,11 @@ object SpotlightHighlights {
 
     /**
      * [picks] with what TMDB knows of their films ([films], by [GuidePick.key]): a candidate TMDB has as a film
-     * becomes one, and every film takes the year and genre the guide left out.
+     * becomes one, and every film takes the year, genre and cast the guide left out.
      */
     fun withFilms(picks: List<GuidePick>, films: Map<String, FilmInfo>): List<GuidePick> = picks.map { p ->
         val info = films[p.key]?.takeIf { p.film || p.filmCandidate } ?: return@map p
-        p.copy(film = true, filmCandidate = false, year = p.year ?: info.year, genre = p.genre ?: info.genre)
+        p.copy(film = true, filmCandidate = false, year = p.year ?: info.year, genre = p.genre ?: info.genre, cast = p.cast.ifEmpty { info.cast })
     }
 
     /** A programme from the provider's guide that is an episode of a series, by its numbering or its genre. */

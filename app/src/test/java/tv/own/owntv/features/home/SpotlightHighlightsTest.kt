@@ -229,10 +229,11 @@ class SpotlightHighlightsTest {
     fun `a long tip TMDB knows as a film becomes one, with its year and genre`() {
         val meg = GuidePick(channel(6), "Meg", at(20, 15), at(22, 20), highlight = false, tip = true, doc = false, picture = null, description = null, filmCandidate = true)
         val show = GuidePick(channel(7), "Die große Show", at(20, 15), at(23, 0), highlight = false, tip = true, doc = false, picture = null, description = null, filmCandidate = true)
-        val films = SpotlightHighlights.withFilms(listOf(meg, show), mapOf(meg.key to FilmInfo(5.7, 2018, "Action")))
+        val films = SpotlightHighlights.withFilms(listOf(meg, show), mapOf(meg.key to FilmInfo(5.7, 2018, "Action", listOf("Jason Statham", "Li Bingbing"))))
         assertEquals(listOf(true, false), films.map { it.film })
         assertEquals(2018, films[0].year)
         assertEquals("Action", films[0].genre)
+        assertEquals(listOf("Jason Statham", "Li Bingbing"), films[0].cast)
         // A tip that is neither a film nor a candidate stays a tip, whatever TMDB has under its title.
         val plain = pick(8, at(20, 15), at(21, 0), tip = true)
         assertEquals(false, SpotlightHighlights.withFilms(listOf(plain), mapOf(plain.key to FilmInfo(8.0, 2001, null))).single().film)
@@ -240,7 +241,7 @@ class SpotlightHighlightsTest {
 
     @Test
     fun `what TMDB knows of a film survives the cache, and none stays none`() {
-        val f = FilmInfo(7.4, 2018, "Science Fiction")
+        val f = FilmInfo(7.4, 2018, "Science Fiction", listOf("Jason Statham", "Li Bingbing", "Rainn Wilson"))
         assertEquals(f, FilmInfo.decode(f.encode()))
         assertTrue(FilmInfo.decode(FilmInfo.NONE.encode()) === FilmInfo.NONE)
         // A film TMDB has but says nothing more of is still a film.
