@@ -61,7 +61,7 @@ internal fun HighlightInfo(
     now: Long,
     modifier: Modifier = Modifier,
     rating: Double? = null,
-    /** The film is also in the playlist's library: a second button plays it from the start, now. */
+    /** The film is also in the playlist's library: a second button opens its page in Movies. */
     onOnDemand: (() -> Unit)? = null,
     /** The top tier, when this highlight is in it: a gold badge before its label. */
     tier: HighlightTier? = null,
@@ -111,7 +111,8 @@ internal fun HighlightInfo(
                     Text(buttonLabel(hl, now), style = stageText(20, 800), color = if (focused) StageColors.FxText else StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
-            // The same film in the playlist's library: watch it now, from the start (Jonathan, 6 Nov 2026).
+            // The same film in the playlist's library: its page in Movies, to watch it from the start or keep it for
+            // later (Jonathan, 6 and 7 Nov 2026).
             if (onOnDemand != null) StageSurface(
                 onClick = onOnDemand,
                 radius = 30.mpx,

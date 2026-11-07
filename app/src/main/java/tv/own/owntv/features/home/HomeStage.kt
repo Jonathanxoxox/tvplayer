@@ -107,8 +107,8 @@ internal fun HomeStage(
     autoAdvanceSecs: Int = 0,
     /** Films the playlist also has on demand: [GuidePick.key] → the movie's id ([FilmLibrary]). */
     onDemand: Map<String, Long> = emptyMap(),
-    /** Plays the playlist's movie from the start. */
-    onPlayOnDemand: (Long) -> Unit = {},
+    /** Opens the playlist's movie on its page in Movies. */
+    onOpenOnDemand: (Long) -> Unit = {},
     /** The top tier's gold badge over the title ([HighlightTier]; Settings › Spotlight). */
     badges: Boolean = true,
     /** Changes to ask for the Spotlight itself: its first highlight, focus on its button (start, Home button). */
@@ -324,7 +324,7 @@ internal fun HomeStage(
                     index = hlIndex,
                     onStep = { d -> stepHighlight(d) },
                     rating = (hl as? Highlight.Pick)?.let { ratings[it.key] },
-                    onOnDemand = (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onPlayOnDemand(id) } },
+                    onOnDemand = (hl as? Highlight.Pick)?.let { onDemand[it.key] }?.let { id -> { onOpenOnDemand(id) } },
                     tier = if (badges) HighlightTier.of(hl, (hl as? Highlight.Pick)?.let { ratings[it.key] }) else null,
                     onOpen = {
                         when (hl) {

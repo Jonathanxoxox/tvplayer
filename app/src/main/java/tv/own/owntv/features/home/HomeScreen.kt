@@ -296,6 +296,7 @@ fun HomeScreen(
     val filmRatings = remember(filmInfos) { filmInfos.mapNotNull { (k, f) -> f.rating?.let { k to it } }.toMap() }
     // Which of tonight's films the playlist also has on demand: the Spotlight offers them from the start.
     val filmLibrary = koinInject<FilmLibrary>()
+    val onDemandScope = androidx.compose.runtime.rememberCoroutineScope()
     val onDemand by androidx.compose.runtime.produceState(emptyMap<String, Long>(), filmPicks.map { it.key }) {
         value = runCatching { filmLibrary.find(filmPicks) }.getOrDefault(emptyMap())
     }
@@ -683,7 +684,9 @@ fun HomeScreen(
                             autoAdvanceSecs = launcherConfig.spotlightAutoSecs,
                             onDemand = onDemand,
                             badges = launcherConfig.spotlightBadges,
-                            onPlayOnDemand = { movieId -> onPlayMovie(movieId, 0L) },
+                            // To the film's page in Movies, not straight into the player (Jonathan, 7 Nov 2026): from
+                            // there it plays, or goes to the favourites for later.
+                            onOpenOnDemand = { movieId -> onDemandScope.launch { filmLibrary.movie(movieId)?.let(onOpenMovie) } },
                             spotlightFocusRequest = spotlightFocusRequest,
                             onOpenMatch = onOpenMatch,
                             onResume = { item ->
