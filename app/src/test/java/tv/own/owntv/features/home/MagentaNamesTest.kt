@@ -99,6 +99,22 @@ class MagentaNamesTest {
         assertEquals(emptyList<String>(), MagentaNames.picks(cinemaDay, ch, docs = false).map { it.title })
     }
 
+    private val privateDay = JSONArray(
+        """[
+          {"name":"Meg","starttime":"2026-11-06 19:14:00 UTC+00:00","endtime":"2026-11-06 21:20:00 UTC+00:00","tipType":"tip"},
+          {"name":"Schlag den Star","starttime":"2026-11-06 19:15:00 UTC+00:00","endtime":"2026-11-06 23:00:00 UTC+00:00","tipType":"tip","genres":"Show"},
+          {"name":"Kurzer Tipp","starttime":"2026-11-06 19:00:00 UTC+00:00","endtime":"2026-11-06 19:45:00 UTC+00:00","tipType":"tip"}
+        ]""",
+    )
+
+    @Test
+    fun `a long tip with no genre may be a film, a show or a short one not`() {
+        val picks = MagentaNames.picks(privateDay, ch, docs = false)
+        assertEquals(listOf("Meg", "Schlag den Star", "Kurzer Tipp"), picks.map { it.title })
+        assertEquals(listOf(true, false, false), picks.map { it.filmCandidate })
+        assertTrue(picks.none { it.film })
+    }
+
     @Test
     fun `film channels by name`() {
         assertTrue(MagentaNames.isFilmChannel("DE: Sky Cinema Premiere HD"))

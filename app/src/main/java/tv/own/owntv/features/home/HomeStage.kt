@@ -138,7 +138,8 @@ internal fun HomeStage(
     // on screen must stay the one shown rather than jump back to the first.
     var hlKey by remember { mutableStateOf<String?>(null) }
     val hlIndex = highlights.indexOfFirst { it.key == hlKey }.coerceAtLeast(0)
-    // ◀ ▶ go round: past the last comes the first again, before the first the last (Jonathan, 6 Nov 2026).
+    // ▶ goes round: past the last comes the first again (6 Nov 2026). ◀ steps back, but not past the first:
+    // there it leaves for the menu (HighlightInfo, 7 Nov 2026). stepHighlight(-1) is only asked off the first.
     fun stepHighlight(d: Int) {
         if (highlights.isNotEmpty()) hlKey = highlights[(hlIndex + d).mod(highlights.size)].key
     }

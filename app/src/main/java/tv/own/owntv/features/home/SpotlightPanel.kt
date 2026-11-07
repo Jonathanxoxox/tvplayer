@@ -42,8 +42,8 @@ import tv.own.owntv.ui.theme.stageText
 
 /**
  * The Spotlight's text side for a [Highlight]: why it is there, what it is, and its one button — Watch, To
- * the match, Watch on. ◀ ▶ on the button go through the highlights, round from the last to the first; the
- * dots say how many there are. A film shows its [rating] (TMDB), year and kind.
+ * the match, Watch on. ▶ on the button goes through the highlights, round from the last to the first; ◀ goes
+ * back, and on the first one on to the menu at the left. The dots say how many there are. A film shows its [rating] (TMDB), year and kind.
  */
 @Composable
 internal fun HighlightInfo(
@@ -98,7 +98,10 @@ internal fun HighlightInfo(
                             // ▶ goes to On demand when the film has it; from there ▶ goes on to the next highlight.
                             e.key == Key.DirectionRight && onOnDemand != null -> { runCatching { onDemandButton.requestFocus() }; true }
                             e.key == Key.DirectionRight && count > 1 -> { onStep(1); true }
-                            e.key == Key.DirectionLeft && count > 1 -> { onStep(-1); true }
+                            // ◀ goes back through the highlights, but on the first it leaves for the menu on
+                            // the left as from every other row, rather than round to the last (Jonathan, 7 Nov
+                            // 2026: "I'm caught in a loop and have to go down to the channels to get left").
+                            e.key == Key.DirectionLeft && index > 0 -> { onStep(-1); true }
                             else -> false
                         }
                     },

@@ -56,7 +56,7 @@
     <string name="home_spotlight_count_desc">How many highlights the Spotlight shows at most</string>
     <string name="home_spotlight_count_value">%1$d</string>
     <string name="home_spotlight_auto">Move on by itself</string>
-    <string name="home_spotlight_auto_desc">Shows the next highlight after a while, and starts over after the last. Off: only with ◀ ▶ (which also go round).</string>
+    <string name="home_spotlight_auto_desc">Shows the next highlight after a while, and starts over after the last. Off: only with ▶ (which also goes round) and ◀.</string>
     <string name="home_spotlight_auto_off">Off</string>
     <string name="home_spotlight_auto_value">every %1$d s</string>
     <string name="home_spotlight_ratings">Ratings</string>
