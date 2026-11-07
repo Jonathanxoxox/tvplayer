@@ -129,6 +129,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	live:${channel.id}
 1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	movie
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	movie:${movie.id}
+1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	spotlight_fold
 1	protocol	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	tv
 2	url	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	w1280
 2	url	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	w500

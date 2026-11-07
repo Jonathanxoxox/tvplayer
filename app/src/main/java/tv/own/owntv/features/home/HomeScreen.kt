@@ -131,6 +131,9 @@ private val CompactHeroHeight = 228.mpx - RowGap
 private val NoHeroTop = 110.mpx
 private val RoomBelowFocus = 36.mpx
 
+/** Under the Spotlight's channel strip: pushes the next row just past the screen's bottom edge. */
+private val SpotlightFold = 120.mpx
+
 /** Where the app buttons of the Classic and Stage layouts sit: level with the clock. */
 private val AppPillsTop = 30.mpx
 
@@ -790,6 +793,11 @@ fun HomeScreen(
                 appsAfter[HomeSlots.TOP]?.let { keys -> item(key = "apps_top") { appRows(keys) } }
                 renderRows.forEachIndexed { i, row ->
                 item(key = row.name) { rowContent(row) }
+                // Spotlight: the first screen ends with the channel strip, a little room under it; the next row
+                // comes into view only on the way down (Jonathan, 7 Nov 2026: "a clean start page").
+                if (i == 0 && spotlightLayout && row == HomeRow.RECENT_CHANNELS) item(key = "spotlight_fold") {
+                    androidx.compose.foundation.layout.Spacer(Modifier.height(SpotlightFold))
+                }
                 if (i == 0) {
                 // Mayo TV as start screen: the Apps row right under the big picture (Jonathan, 1 Nov 2026).
                 if (showAppsRow) item(key = "launcher_apps") {

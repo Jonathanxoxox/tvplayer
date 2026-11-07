@@ -1578,25 +1578,10 @@ fun OwnTVShell(
             val clusterAside = selectedSection == MainSection.LIVE_TV || fullPage
             val clusterAlpha by androidx.compose.animation.core.animateFloatAsState(if (clusterAside) 0f else 1f, tv.own.owntv.ui.theme.stageSlide())
             tv.own.owntv.features.shell.components.StageStatusCluster(
-                // No "Last channel" pill: Live TV opens on it anyway, and next to the clock it only took room
-                // (Jonathan, 4 Nov 2026). Films and series keep their Resume pill.
-                continuePill = continueTarget?.takeIf { it.kind != tv.own.owntv.features.home.ContinueKind.LIVE }?.let { target ->
-                    val live = target.kind == tv.own.owntv.features.home.ContinueKind.LIVE
-                    tv.own.owntv.features.shell.components.ContinuePill(
-                        icon = if (live) OwnTVIcon.LIVE_TV else OwnTVIcon.PLAY,
-                        iconFilled = !live,
-                        action = stringResource(
-                            when (target.action) {
-                                tv.own.owntv.features.home.ContinueAction.RESUME -> R.string.content_action_resume
-                                tv.own.owntv.features.home.ContinueAction.PLAY -> R.string.content_action_play
-                                tv.own.owntv.features.home.ContinueAction.NEXT_UP -> R.string.content_action_next_episode
-                                tv.own.owntv.features.home.ContinueAction.LAST_CHANNEL -> R.string.content_action_last_channel
-                            },
-                        ),
-                        title = target.name,
-                        onClick = continueLastWatched,
-                    )
-                },
+                // No Resume pill by the clock at all: Live TV opens on the last channel anyway (Jonathan, 4 Nov 2026),
+                // and a film's or series' pill sat beside Spotify's and slid under it with the rail open
+                // (Jonathan, 7 Nov 2026). Keep watching on Home and the remote's Continue key stay.
+                continuePill = null,
                 playlistLabel = playlistLabel,
                 playlistInteractive = playlists.size > 1,
                 onPlaylistClick = { showPlaylistPicker = true },
