@@ -199,6 +199,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	genres
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	ger
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	germany
+1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	goal rush
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	h265
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	hd
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	hevc
@@ -223,6 +224,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	magentasport
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	metaDataVer
 3	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	movie
+1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	multi
 8	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	name
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	name,starttime,endtime,tipType,tipCategory,genres,pictures,introduce
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	nitro

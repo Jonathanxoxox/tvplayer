@@ -367,12 +367,17 @@ internal object MagentaNames {
             if (!teamMatches(home, title, words) || !teamMatches(away, title, words)) continue
             val start = runCatching { utcFormat.get()!!.parse(p.optString("starttime").take(19))?.time }.getOrNull() ?: continue
             if (start < kickoffMs - MatchPictures.BEFORE_MS || start > kickoffMs + MatchPictures.AFTER_MS) continue
-            val aside = listOf("countdown", "fantasy", "konferenz", "highlights", "vorbericht", "analyse").any { it in title }
-            val score = kotlin.math.abs(start - kickoffMs) + if (aside) 6 * 60 * 60_000L else 0L
+            // Not the match itself: a conference's picture is its own show's ("Live PL: Goal Rush, CRY - LIV,
+            // Premier League Konferenz" gave Crystal Palace v Liverpool Goal Rush's, 7 Nov 2026).
+            if (ASIDE.any { it in title }) continue
+            val score = kotlin.math.abs(start - kickoffMs)
             if (score < bestScore) { best = p; bestScore = score }
         }
         return best?.let(::pictureOf)
     }
+
+    /** Programmes about a match that are not its broadcast. */
+    private val ASIDE = listOf("countdown", "fantasy", "konferenz", "goal rush", "highlights", "vorbericht", "analyse", "multi")
 
     /** Words that say nothing about which channel it is: country tags, quality, codec. */
     private val noise = setOf("de", "ger", "germany", "hd", "fhd", "uhd", "sd", "4k", "hevc", "h265", "raw", "50fps", "tv")

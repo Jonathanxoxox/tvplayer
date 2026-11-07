@@ -128,6 +128,18 @@ class MagentaNamesTest {
     }
 
     @Test
+    fun `a conference naming the match is not its picture`() {
+        val list = JSONArray(
+            """[
+              {"starttime":"2026-11-08 13:50:00 UTC+00:00","name":"Live PL: Goal Rush, CRY - LIV, Premier League Konferenz, 10. Spieltag","pictures":[
+                {"imageType":"17","href":"http://ngiss.t-online.de/goalrush_h10.jpg"}]}
+            ]""".trimIndent(),
+        )
+        val kickoff = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { clear(); set(2026, 10, 8, 14, 0) }.timeInMillis
+        assertNull(MagentaNames.matchPicture(list, listOf("Crystal Palace", "Palace", "CRY"), listOf("Liverpool", "Liverpool", "LIV"), kickoff))
+    }
+
+    @Test
     fun `sports channels, the Bundesliga ones first`() {
         val index = linkedMapOf("das erste" to "1", "sky sport news" to "2", "dazn 1" to "3", "sky sport bundesliga 1" to "4")
         assertEquals(listOf("4", "3", "2"), MagentaNames.sportChannels(index))

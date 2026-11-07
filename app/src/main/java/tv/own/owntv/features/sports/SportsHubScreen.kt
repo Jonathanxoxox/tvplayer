@@ -134,9 +134,10 @@ fun SportsHubScreen(
         while (true) { kotlinx.coroutines.delay(30_000L); value = System.currentTimeMillis() }
     }
     val playback = org.koin.compose.koinInject<SportsPlayback>()
-    // Both chip rows are multi-select: OK toggles a chip, nothing chosen = All. Kept while the app runs.
+    // Both chip rows are multi-select: OK toggles a chip, nothing chosen = All. Kept while the app runs;
+    // the first visit opens on My teams and Football, so the league row is on screen at once (Jonathan, 7 Nov 2026).
     @Suppress("UNCHECKED_CAST")
-    var chips by remember { mutableStateOf(playback.hubChip as? Set<HubChip> ?: emptySet()) }
+    var chips by remember { mutableStateOf(playback.hubChip as? Set<HubChip> ?: setOf(HubChip.MyTeams, HubChip.One(Sport.SOCCER))) }
     @Suppress("UNCHECKED_CAST")
     var leagues by remember { mutableStateOf(playback.hubLeague as? Set<String> ?: emptySet()) }
     androidx.compose.runtime.LaunchedEffect(chips, leagues) { playback.hubChip = chips; playback.hubLeague = leagues }
@@ -496,7 +497,8 @@ private fun MatchPoster(
         onClick = onClick,
         onLongClick = onHold,
         radius = r,
-        focusStyle = StageFocus.FX,
+        // A picture fills the tile, so FX's tint showed nothing: the posters' white frame (Jonathan, 7 Nov 2026).
+        focusStyle = StageFocus.POSTER,
         contentAlignment = Alignment.TopStart,
         modifier = modifier
             .width((if (featured) 576 else 384).mpx)
