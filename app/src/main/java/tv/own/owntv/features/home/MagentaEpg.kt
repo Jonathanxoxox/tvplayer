@@ -85,8 +85,11 @@ class MagentaEpg(
     private var verdicts: Map<String, List<MagentaMatch.Verdict>> = emptyMap()
     private var lastSyncAt = 0L
 
-    /** Channel id → its guide key, [NONE] for a channel the guide does not cover. Cleared with [covered]. */
-    private val memo = ConcurrentHashMap<Long, String>()
+    /**
+     * Channel id → its name and guide key ([NONE] for a channel the guide does not cover). Cleared with [covered];
+     * the name is kept beside the answer, so an id that a playlist sync gave to another channel is asked afresh.
+     */
+    private val memo = ConcurrentHashMap<Long, Pair<String, String>>()
 
     /** What Home wants synced: the channels' keys (also kept on the device) and the channels, for the check. */
     private data class Wanted(val keys: List<String>, val channels: List<ChannelEntity> = emptyList())
@@ -94,7 +97,7 @@ class MagentaEpg(
     /** The keys the last finished round was made for. */
     private var planned: Set<String> = emptySet()
     /** The open checks were tried for what is wanted now (a round does them itself). */
-    private var verifyTried = false
+    @Volatile private var verifyTried = false
     /** The playlist's football channels as the last round found them, for the check. */
     private var footballChannels: List<ChannelEntity> = emptyList()
 
@@ -133,12 +136,12 @@ class MagentaEpg(
 
     /** The key to read [ch]'s guide under, null when MagentaTV's rows do not cover it. O(1) after the first call. */
     private fun keyFor(ch: ChannelEntity): String? {
-        memo[ch.id]?.let { return it.ifEmpty { null } }
+        memo[ch.id]?.let { (name, key) -> if (name == ch.name) return key.ifEmpty { null } }
         val snapshot = covered
         val k = MagentaNames.key(ch.name)
         val answer = if (k.isNotEmpty() && k in snapshot) KEY_PREFIX + k else NONE
         // Not remembered when the covered set changed meanwhile: the answer may be stale.
-        if (covered === snapshot) memo[ch.id] = answer
+        if (covered === snapshot) memo[ch.id] = ch.name to answer
         return answer.ifEmpty { null }
     }
 
@@ -190,13 +193,17 @@ class MagentaEpg(
     private suspend fun round(want: Wanted, full: Boolean): Boolean {
         _status.update { it.copy(running = true) }
         val guide = magenta.value
-        // The playlist once per round, only to find its football channels.
-        val profile = activeProfileSources(settings.value, sourceDao.value).first { it.profileId >= 0 }
-        val football = channelDao.value.allForSources(profile.sourceIdsFor(MediaType.LIVE), CHANNEL_LIMIT)
-            .filter { MagentaNames.isFootballChannel(MagentaNames.key(it.name)) }
-            .distinctBy { MagentaNames.key(it.name) }
-        footballChannels = football
-        val footballKeys = football.map { MagentaNames.key(it.name) }
+        // The playlist only in a full round (every six hours), and only to find its football channels: it can hold
+        // thousands of channels. A partial round (Home asked for others) keeps the football keys already covered.
+        val football = if (full) {
+            val profile = activeProfileSources(settings.value, sourceDao.value).first { it.profileId >= 0 }
+            channelDao.value.allForSources(profile.sourceIdsFor(MediaType.LIVE), CHANNEL_LIMIT)
+                .filter { MagentaNames.isFootballChannel(MagentaNames.key(it.name)) }
+                .distinctBy { MagentaNames.key(it.name) }
+                .also { footballChannels = it }
+        } else footballChannels
+        val footballKeys = if (full) football.map { MagentaNames.key(it.name) }
+        else covered.filter { MagentaNames.isFootballChannel(it) }
         val index = if (want.keys.isEmpty() && footballKeys.isEmpty()) emptyMap() else guide.guideIndex() ?: return false
         val now = System.currentTimeMillis()
         val plan = MagentaEpgRules.plan(
