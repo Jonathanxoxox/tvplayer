@@ -68,54 +68,6 @@ class MagentaGuide(private val http: OkHttpClient) {
     }
 
     /**
-     * Today's picks on [channels] from [fromMs] to [toMs]: MagentaTV's tips and highlights, on the channels
-     * in [docsOn] (arte) their documentaries, and on those in [filmsOn] (Sky Cinema …) their films. One call
-     * per channel, [PICKS_PARALLEL] at a time on low-priority threads ([pickDispatcher]), so the box's first
-     * seconds and the picture stay smooth while they come in. Null when the guide cannot be asked at all (no
-     * network, no guest session, not one channel answered); a channel that fails alone is left out.
-     */
-    suspend fun picks(
-        channels: List<tv.own.owntv.core.database.entity.ChannelEntity>,
-        docsOn: Set<Long>,
-        fromMs: Long,
-        toMs: Long,
-        filmsOn: Set<Long> = emptySet(),
-    ): List<GuidePick>? {
-        // The session and the guide's channel list once, under the lock; the channels' calls after it in
-        // parallel, without holding the lock (a picture asked for meanwhile does not wait behind them).
-        val ids = withContext(Dispatchers.IO) {
-            runCatching { lock.withLock { channels.distinctBy { it.id }.map { ch -> ch to channelId(ch.name) } } }.getOrNull()
-        } ?: return null
-        if (channels.isNotEmpty() && this.channels.isEmpty()) return null
-        val asked = ids.mapNotNull { (ch, id) -> id?.let { ch to it } }
-        if (asked.isEmpty()) return emptyList()
-        val lists = coroutineScope {
-            asked.map { (ch, id) ->
-                async(pickDispatcher) {
-                    // Given up (Home asked for other channels): the calls not yet begun are not made.
-                    ensureActive()
-                    runCatching { channelPicks(ch, id, fromMs, toMs, docs = ch.id in docsOn, films = ch.id in filmsOn) }.getOrNull()
-                }
-            }.awaitAll()
-        }
-        if (lists.all { it == null }) return null
-        return lists.flatMap { it.orEmpty() }
-    }
-
-    /** [channel]'s picks (see [picks]), null when the guide did not answer for it. */
-    private fun channelPicks(
-        channel: tv.own.owntv.core.database.entity.ChannelEntity,
-        id: String,
-        fromMs: Long,
-        toMs: Long,
-        docs: Boolean,
-        films: Boolean,
-    ): List<GuidePick>? {
-        val list = playbillList(id, fromMs, toMs) ?: return null
-        return MagentaNames.picks(list, channel, docs = docs, films = films)
-    }
-
-    /**
      * The raw `playbilllist` of guide channel [id] from [fromMs] to [toMs], null when the guide did not
      * answer. Season, episode and year are asked for too; should the guide ever refuse them, it is asked
      * again with the fields it has always answered, and from then on only with those.
@@ -139,7 +91,7 @@ class MagentaGuide(private val http: OkHttpClient) {
 
     /**
      * The guide's channels, key (see [MagentaNames.key]) → guide channel id, for the stored guide
-     * ([MagentaEpg]). Fills the channel list under the lock like [picks]; null when the guide cannot be asked.
+     * ([MagentaEpg]). Fills the channel list under the lock; null when the guide cannot be asked.
      */
     suspend fun guideIndex(): Map<String, String>? = withContext(Dispatchers.IO) {
         runCatching {
@@ -623,8 +575,19 @@ internal object MagentaNames {
         channel: tv.own.owntv.core.database.entity.ChannelEntity,
         docs: Boolean,
         films: Boolean = false,
-    ): List<GuidePick> {
-        val out = ArrayList<GuidePick>()
+    ): List<GuidePick> = picksOf(list, key(channel.name), docs, films).map { it.toPick(channel) }
+
+    /**
+     * [picks] without a channel, for the channel with guide key [channelKey]: what the Spotlight keeps per key
+     * ([SpotlightPicksStore.PickData]), so a list can be read before Home has said which channel entities it shows.
+     */
+    fun picksOf(
+        list: JSONArray,
+        channelKey: String,
+        docs: Boolean,
+        films: Boolean = false,
+    ): List<SpotlightPicksStore.PickData> {
+        val out = ArrayList<SpotlightPicksStore.PickData>()
         for (i in 0 until list.length()) {
             val p = list.optJSONObject(i) ?: continue
             val start = startOf(p, "starttime") ?: continue
@@ -652,8 +615,8 @@ internal object MagentaNames {
                 p.optString("tipCategory").let { it.isBlank() || it == "null" } &&
                 NOT_FILM_WORDS.none { it in genres }
             val text = (title + " " + description.orEmpty()).lowercase()
-            out += GuidePick(
-                channel = channel,
+            out += SpotlightPicksStore.PickData(
+                channelKey = channelKey,
                 title = title,
                 startMs = start,
                 stopMs = stop,
@@ -665,7 +628,7 @@ internal object MagentaNames {
                 film = isFilm,
                 filmCandidate = candidate,
                 series = series,
-                premiere = isFilm && (PREMIERE_WORDS.any { it in text } || "premiere" in key(channel.name)),
+                premiere = isFilm && (PREMIERE_WORDS.any { it in text } || "premiere" in channelKey),
                 year = p.optString("producedate").take(4).toIntOrNull()?.takeIf { it in 1900..2100 },
                 // "Thriller" rather than "Spielfilm": the kind of film, when the guide says more than that it is one.
                 genre = genreList.firstOrNull { g -> filmWords.none { it == g.lowercase() } } ?: genreList.firstOrNull(),

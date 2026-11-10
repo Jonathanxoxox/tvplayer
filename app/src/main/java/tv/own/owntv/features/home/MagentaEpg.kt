@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+import org.json.JSONArray
 import tv.own.owntv.core.customize.SectionCustomizations
 import tv.own.owntv.core.database.dao.ChannelDao
 import tv.own.owntv.core.database.dao.EpgDao
@@ -54,10 +55,14 @@ import java.util.concurrent.ConcurrentHashMap
  *   waking from standby when the last one is that old. A different set of channels from Home makes a round due
  *   for the new keys alone while the last full one is still fresh. The window is [BACK_MS] back to [AHEAD_MS]
  *   ahead: today and tomorrow, so a box that was off overnight (or for a day) still has its guide in the database
- *   the moment it starts, before any network. The channels are fetched and written [WRITE_BATCH] at a time (one delete and one upsert per batch:
+ *   the moment it starts, before any network. [BACK_MS] is three hours (rows are kept four hours back): a film
+ *   that started two hours ago is still in the list, which the Spotlight's "on now" needs. The channels are fetched and written [WRITE_BATCH] at a time (one delete and one upsert per batch:
  *   every write to the table re-triggers the app's guide observers), and each batch is covered at once, so Home
  *   fills after the first batch. Covered keys that are no longer on Home are dropped and their rows deleted. A
- *   failed round keeps what is stored and is tried again after a doubling wait, like [SpotlightPicks].
+ *   failed round keeps what is stored and is tried again after a doubling wait.
+ * - **One download for two readers**: each fetched chunk's raw lists are handed on through [onPlaybills], so the
+ *   Spotlight's picks ([SpotlightPicks]) come out of the same download instead of a second one. [refetch] makes
+ *   the next round fetch given keys again although they are covered (their pick flags changed).
  * - **Verification**: after a round, covered channels whose check is still open ask the provider directly what is
  *   on now and compare it with MagentaTV's ([MagentaMatch]). A channel the two guides disagree on is dropped from
  *   the covered set and left alone for [RECHECK_REJECTED_MS].
@@ -81,6 +86,19 @@ class MagentaEpg(
 
     /** Keys with stored rows, replaced as a whole (never changed in place), so the override reads it unlocked. */
     @Volatile private var covered: Set<String> = emptySet()
+    private val _coveredKeys = MutableStateFlow<Set<String>>(emptySet())
+    /** The covered keys as a flow, for readers that must follow changes ([covered] itself is for the override). */
+    val coveredKeys: StateFlow<Set<String>> = _coveredKeys.asStateFlow()
+
+    /**
+     * Called once per fetched chunk with the raw lists of the keys that answered (key = the channel's
+     * [MagentaNames.key]) and when they were fetched. A throwing hook does not break the round.
+     */
+    @Volatile var onPlaybills: ((lists: Map<String, JSONArray>, fetchedAt: Long) -> Unit)? = null
+
+    /** Keys the next round fetches again although covered; added to its fetch list and then cleared. */
+    private val refetchKeys: MutableSet<String> = ConcurrentHashMap.newKeySet()
+    private val refetchTick = MutableStateFlow(0)
     private var rejected: Map<String, Long> = emptyMap()
     private var verdicts: Map<String, List<MagentaMatch.Verdict>> = emptyMap()
     private var lastSyncAt = 0L
@@ -114,6 +132,7 @@ class MagentaEpg(
             planned = prefs.getString(PLANNED, null).orEmpty().split('\n').filter { it.isNotEmpty() }.toSet()
             wanted.value = Wanted(prefs.getString(PRIORITY, null).orEmpty().split('\n').filter { it.isNotEmpty() })
         }
+        _coveredKeys.value = covered
         _status.value = Status(lastSyncAt, covered.size, rejected.size, false)
         GuideKeys.override = { ch -> keyFor(ch) }
         scope.launch { keepFresh() }
@@ -132,6 +151,16 @@ class MagentaEpg(
             runCatching { prefs.edit().putString(PRIORITY, next.keys.joinToString("\n")).apply() }
         }
         wanted.value = next
+    }
+
+    /**
+     * Makes a round due that fetches exactly [keys] again, covered or not (their pick flags changed, so the lists
+     * must be read again with the new flags). Keys MagentaTV does not carry are skipped by the round.
+     */
+    fun refetch(keys: Collection<String>) {
+        if (keys.isEmpty()) return
+        refetchKeys.addAll(keys)
+        refetchTick.update { it + 1 }
     }
 
     /** The key to read [ch]'s guide under, null when MagentaTV's rows do not cover it. O(1) after the first call. */
@@ -156,7 +185,8 @@ class MagentaEpg(
             val age = System.currentTimeMillis() - lastSyncAt
             val every = if (covered.isEmpty()) EMPTY_RECHECK_MS else SYNC_EVERY_MS
             val full = force || age >= every
-            val partial = !full && want.keys.toSet() != planned
+            val tick = refetchTick.value
+            val partial = !full && (want.keys.toSet() != planned || refetchKeys.isNotEmpty())
             if (!full && !partial) {
                 if (!verifyTried && (want.channels.isNotEmpty() || footballChannels.isNotEmpty()) && covered.isNotEmpty()) {
                     connectivity.value.isOnline.first { it }
@@ -167,7 +197,8 @@ class MagentaEpg(
                 }
                 // Current: wait until due, or until the box wakes or Home asks for others.
                 withTimeoutOrNull(every - age) {
-                    combine(LauncherSystem.wake, wanted) { w, x -> w to x }.first { it != (wake to want) }
+                    combine(LauncherSystem.wake, wanted, refetchTick) { w, x, t -> Triple(w, x, t) }
+                        .first { it != Triple(wake, want, tick) }
                 }
                 continue
             }
@@ -222,27 +253,32 @@ class MagentaEpg(
             rejected = rejected - plan.forgotten
             persist()
         }
+        // Keys asked for again (their pick flags changed); handed over to this round and forgotten.
+        val again = refetchKeys.toList().also { refetchKeys.removeAll(it.toSet()) }.filter { it in plan.keys && it !in plan.fetch }
         var answered = 0
-        for (chunk in plan.fetch.chunked(WRITE_BATCH)) {
+        for (chunk in (plan.fetch + again).chunked(WRITE_BATCH)) {
             kotlinx.coroutines.currentCoroutineContext().ensureActive()
             val lists = guide.playbills(chunk.map { index.getValue(it) }, now - BACK_MS, now + AHEAD_MS)
             val rows = ArrayList<EpgProgrammeEntity>()
             val written = ArrayList<String>()
+            val answeredLists = HashMap<String, JSONArray>()
             for (key in chunk) {
                 val list = lists[index.getValue(key)] ?: continue
                 answered++
+                answeredLists[key] = list
                 val own = MagentaEpgRules.rows(key, MagentaNames.programmes(list))
                 if (own.isEmpty()) continue
                 rows += own
                 written += key
             }
+            if (answeredLists.isNotEmpty()) runCatching { onPlaybills?.invoke(answeredLists, now) }
             if (written.isEmpty()) continue
             // One delete and one upsert for the whole batch, never one per channel.
             epgDao.value.deleteProgrammesForChannels(SOURCE_ID, written.map { KEY_PREFIX + it })
             epgDao.value.upsertProgrammes(rows)
             setCovered(covered + written)
         }
-        if (plan.fetch.isNotEmpty() && answered == 0) return false
+        if ((plan.fetch.isNotEmpty() || again.isNotEmpty()) && answered == 0) return false
         epgDao.value.pruneOutsideWindow(SOURCE_ID, now - PRUNE_BACK_MS, now + PRUNE_AHEAD_MS)
         // Channels that left Home: no longer covered, their rows gone.
         val drop = covered - plan.keys.toSet()
@@ -302,6 +338,7 @@ class MagentaEpg(
     private fun setCovered(next: Set<String>) {
         if (next == covered) return
         covered = next
+        _coveredKeys.value = next
         memo.clear()
         liveEpgReader.value.clearCache()
         persist()
@@ -338,7 +375,7 @@ class MagentaEpg(
         private const val PRIORITY = "priority"
         private const val PLANNED = "planned"
 
-        const val BACK_MS = 60 * 60_000L
+        const val BACK_MS = 3 * 60 * 60_000L
         const val AHEAD_MS = 48 * 60 * 60_000L
         const val SYNC_EVERY_MS = 6 * 60 * 60_000L
         const val MAX_CHANNELS = 100
@@ -349,7 +386,7 @@ class MagentaEpg(
         const val RECHECK_REJECTED_MS = 7 * 24 * 60 * 60_000L
 
         /** Rows older / further ahead than this are pruned at the end of a round. */
-        private const val PRUNE_BACK_MS = 3 * 60 * 60_000L
+        private const val PRUNE_BACK_MS = 4 * 60 * 60_000L
         private const val PRUNE_AHEAD_MS = 60 * 60 * 60_000L
         /** With nothing covered (no channel in common, say) a round is tried again after this, not in a loop. */
         private const val EMPTY_RECHECK_MS = 60 * 60_000L

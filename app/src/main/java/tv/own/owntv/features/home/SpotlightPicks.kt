@@ -7,41 +7,45 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
 import tv.own.owntv.core.database.entity.ChannelEntity
-import tv.own.owntv.core.network.ConnectivityObserver
 import tv.own.owntv.launcher.apps.LauncherSystem
 import java.io.File
 
 /**
- * Today's picks from MagentaTV's guide for the Spotlight ([MagentaGuide.picks]), kept for the whole app instead
- * of for one Home screen (Jonathan, 7 Nov 2026: after the box starts, the Spotlight takes long to be current).
+ * Today's picks from MagentaTV's guide for the Spotlight, kept for the whole app instead of for one Home screen
+ * (Jonathan, 7 Nov 2026: after the box starts, the Spotlight takes long to be current).
  *
+ * Since 10 Nov 2026 this class asks nobody: the programme lists [MagentaEpg] downloads for the stored guide are
+ * handed over through [MagentaEpg.onPlaybills] ([offer]) and read for picks here, so the box downloads each
+ * list once instead of twice (the picks used to ask the guide again every half hour).
+ *
+ * - **Per guide key**, not per database channel id: ids change when the playlist is synced again. [resolve] puts
+ *   Home's channel for the key back in, and only for keys [MagentaEpg] still covers (a channel whose MagentaTV
+ *   guide was rejected as disagreeing with the provider shows no MagentaTV picks either).
  * - **Kept on the device** ([FILE]): a start shows the last picks still to come at once, before anything is
- *   asked. Programmes do not move, so a list from this afternoon is right in the evening; one from yesterday
- *   has nothing left to show and simply shows nothing.
- * - **Asked once the start has settled** ([tv.own.owntv.StartupGate]) and the network is there, never during
- *   the first picture. Not again while the kept picks are younger than [REFRESH_MS] by the wall clock.
- * - **Asked again on waking from standby** when the kept picks are older than [WAKE_STALE_MS]: a coroutine's
- *   wait stands still in standby, so after a night the half-hourly round would still be hours away.
- * - A failed round (the network says it is up, the guide does not answer yet) is tried again after [RETRY_MS],
- *   doubling up to [REFRESH_MS]. Without a network nothing is tried: the round waits for it to come back.
+ *   fetched. Programmes do not move, so a list from this afternoon is right in the evening; one from yesterday
+ *   has nothing left to show and simply shows nothing. The documentary/film flags each key was read with are
+ *   kept beside the picks, so a round after a cold start, before Home has sent its request, reads with the last
+ *   known flags.
+ * - **Flags that changed** (arte became a documentary channel, a film channel was added): the keys concerned are
+ *   fetched again ([MagentaEpg.refetch]), as are covered keys nothing is kept for (first start after an update).
  *
- * [state] carries what Home needs to show the Spotlight without it jumping: whether the kept picks are read
- * ([State.ready]), and which wake has had its refresh ([State.wakeServed]).
+ * [state] carries what Home needs to show the Spotlight without it jumping: whether the kept picks are read and
+ * Home has sent its request ([State.ready]), and [State.wakeServed], which now simply follows
+ * [LauncherSystem.wake] (there is no refresh of its own to wait for on waking any more).
  */
 class SpotlightPicks(
-    private val magenta: MagentaGuide,
-    private val connectivity: ConnectivityObserver,
+    private val magentaEpg: MagentaEpg,
     context: Context,
 ) {
     /** What Home asks for: the channels, arte among them for documentaries, the film channels for films. */
@@ -51,53 +55,35 @@ class SpotlightPicks(
         val picks: List<GuidePick> = emptyList(),
         /** The kept picks are read and Home has said which channels it shows: [picks] is what there is for now. */
         val ready: Boolean = false,
-        /** The last [LauncherSystem.wake] whose refresh is done (or was not needed). */
+        /** The last [LauncherSystem.wake]; nothing is refreshed on waking, so it is always served. */
         val wakeServed: Long = 0L,
     )
 
-    private data class Inner(
-        val read: Boolean = false,
-        val kept: SpotlightPicksStore.Kept? = null,
-        val wakeServed: Long = 0L,
-    )
+    private data class Inner(val read: Boolean = false, val kept: SpotlightPicksStore.Kept? = null)
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val file = File(context.applicationContext.filesDir, FILE)
     private val requests = MutableStateFlow<Request?>(null)
-    private val inner = MutableStateFlow(Inner(wakeServed = LauncherSystem.wake.value))
-    /** The wake that wants a refresh; differs from [Inner.wakeServed] until it has had it. */
-    private val nudges = MutableStateFlow(LauncherSystem.wake.value)
+    private val inner = MutableStateFlow(Inner())
+    private val saveLock = Mutex()
 
-    val state: StateFlow<State> = combine(requests, inner) { r, i ->
+    val state: StateFlow<State> = combine(requests, inner, magentaEpg.coveredKeys, LauncherSystem.wake) { r, i, covered, wake ->
         State(
-            picks = SpotlightPicksStore.resolve(r, i.kept, System.currentTimeMillis()),
+            picks = SpotlightPicksStore.resolve(r, i.kept, covered, System.currentTimeMillis()),
             ready = r != null && i.read,
-            wakeServed = i.wakeServed,
+            wakeServed = wake,
         )
     }.stateIn(scope, SharingStarted.Eagerly, State(wakeServed = LauncherSystem.wake.value))
 
     init {
+        magentaEpg.onPlaybills = ::offer
         scope.launch {
             val kept = withContext(Dispatchers.IO) { runCatching { file.takeIf { it.exists() }?.readText() }.getOrNull() }
                 ?.let(SpotlightPicksStore::decode)
             if (kept != null) tv.own.owntv.perf.StartLog.stampOnce("spotlight-kept")
+            // Lists offered before the file was read win: they are newer.
             inner.update { it.copy(read = true, kept = it.kept ?: kept) }
-            requests.collectLatest { r -> if (r != null) keepFresh(r) }
-        }
-        scope.launch {
-            LauncherSystem.wake.collect { w ->
-                if (w == 0L || w == inner.value.wakeServed) return@collect
-                val r = requests.value
-                val k = inner.value.kept
-                val stale = k == null || System.currentTimeMillis() - k.at >= WAKE_STALE_MS
-                if (r != null && r.channels.isNotEmpty() && stale) {
-                    nudges.value = w
-                } else {
-                    // Served first, so the round's loop never sees this wake as one still owed a refresh.
-                    inner.update { it.copy(wakeServed = w) }
-                    nudges.value = w
-                }
-            }
+            requests.filterNotNull().collect { r -> onRequest(r) }
         }
     }
 
@@ -106,40 +92,43 @@ class SpotlightPicks(
         requests.value = request
     }
 
-    /** Keeps [r]'s picks current, for as long as it is what Home asks for. */
-    private suspend fun keepFresh(r: Request) {
+    /** Stores [r]'s flags and has [MagentaEpg] fetch again the covered keys they changed or nothing is kept for. */
+    private fun onRequest(r: Request) {
         if (r.channels.isEmpty()) return
-        val asked = SpotlightPicksStore.asked(r)
-        var retry = 0
-        while (true) {
-            val i = inner.value
-            val nudge = nudges.value
-            val wakeDue = nudge != i.wakeServed
-            val k = i.kept?.takeIf { it.asked.containsAll(asked) }
-            val age = k?.let { System.currentTimeMillis() - it.at } ?: Long.MAX_VALUE
-            if (age < REFRESH_MS && !wakeDue) {
-                // Current: wait until it is due, or until the box wakes and wants it sooner.
-                withTimeoutOrNull(REFRESH_MS - age) { nudges.first { it != nudge } }
-                continue
-            }
-            // Never during the box's first seconds; and only with a network to ask over (no CPU spent waiting).
-            tv.own.owntv.StartupGate.awaitSettled()
-            connectivity.isOnline.first { it }
-            val now = System.currentTimeMillis()
-            val fresh = magenta.picks(r.channels, r.docsOn, now - BACK_MS, now + AHEAD_MS, r.filmsOn)
-            if (fresh != null) {
-                val kept = SpotlightPicksStore.Kept(now, asked, fresh.map { SpotlightPicksStore.PickData.of(it) })
-                inner.update { it.copy(kept = kept, wakeServed = nudge) }
-                tv.own.owntv.perf.StartLog.stampOnce("spotlight-fresh")
-                withContext(Dispatchers.IO) { runCatching { save(kept) } }
-                retry = 0
-                continue
-            }
-            // Nothing came back: whoever waits for this round waits no longer; again after a while, or on a wake.
-            inner.update { it.copy(wakeServed = nudge) }
-            val wait = (RETRY_MS shl retry).coerceAtMost(REFRESH_MS)
-            retry = (retry + 1).coerceAtMost(RETRY_STEPS)
-            withTimeoutOrNull(wait) { nudges.first { it != nudge } }
+        val covered = magentaEpg.coveredKeys.value
+        val before = inner.value.kept
+        val again = SpotlightPicksStore.refetchKeys(before, r, covered)
+        val flags = SpotlightPicksStore.flagsOf(r)
+        if (before == null || SpotlightPicksStore.flagsDiffer(before, flags)) {
+            inner.update { it.copy(kept = SpotlightPicksStore.withFlags(it.kept, flags)) }
+            saveLater()
+        }
+        if (again.isNotEmpty()) magentaEpg.refetch(again)
+    }
+
+    /**
+     * [MagentaEpg]'s lists for [lists]' keys: read for picks with the kept flags and put in place of those keys'
+     * picks. Called from the sync's coroutine, once per chunk; cheap (a chunk is a few dozen lists).
+     */
+    private fun offer(lists: Map<String, JSONArray>, fetchedAt: Long) {
+        val flags = inner.value.kept
+        // Only the keys Home shows (the stored guide also holds football channels, which have no place here); a
+        // key Home asks for later was never kept and is fetched again then ([onRequest]).
+        val shown = requests.value?.channels?.map { MagentaNames.key(it.name) }?.toSet()
+        val parsed = lists.filterKeys { shown == null || it in shown }.mapValues { (key, list) ->
+            MagentaNames.picksOf(list, key, docs = flags != null && key in flags.docKeys, films = flags != null && key in flags.filmKeys)
+                // Late tonight at the most, as the picks have always been.
+                .filter { it.startMs < fetchedAt + AHEAD_MS }
+        }
+        if (parsed.isEmpty()) return
+        inner.update { it.copy(kept = SpotlightPicksStore.merge(it.kept, parsed, fetchedAt, System.currentTimeMillis())) }
+        tv.own.owntv.perf.StartLog.stampOnce("spotlight-fresh")
+        saveLater()
+    }
+
+    private fun saveLater() {
+        scope.launch(Dispatchers.IO) {
+            saveLock.withLock { inner.value.kept?.let { runCatching { save(it) } } }
         }
     }
 
@@ -152,29 +141,33 @@ class SpotlightPicks(
 
     private companion object {
         const val FILE = "spotlight_picks.json"
-        /** A round every half hour while Mayo TV runs, as before. */
-        const val REFRESH_MS = 30 * 60_000L
-        /** Woken from standby with picks older than this: asked again at once. */
-        const val WAKE_STALE_MS = 10 * 60_000L
-        const val RETRY_MS = 10_000L
-        /** 10, 20, 40 s, … about 21 min, then every half hour. */
-        const val RETRY_STEPS = 8
-        /** From a little back (programmes on now) to late tonight. */
-        const val BACK_MS = 3 * 60 * 60_000L
+        /** Programmes starting later than this after the fetch are not picks yet ("late tonight"). */
         const val AHEAD_MS = 12 * 60 * 60_000L
     }
 }
 
 /** The kept picks: what is written to the device, and how it is read back against Home's channels. */
 internal object SpotlightPicksStore {
-    private const val VERSION = 1
+    private const val VERSION = 2
 
-    /** A round's picks, [at] when asked (wall clock), [asked] the channels it asked ([asked] of its request). */
-    data class Kept(val at: Long, val asked: Set<String>, val picks: List<PickData>)
+    /**
+     * The picks of the guide keys in [keys] (those whose list was read, also those without a pick), fetched at
+     * [at]; [docKeys] and [filmKeys] are the keys read with documentaries / films counted.
+     */
+    data class Kept(
+        val at: Long,
+        val keys: Set<String>,
+        val docKeys: Set<String>,
+        val filmKeys: Set<String>,
+        val picks: List<PickData>,
+    )
 
-    /** A [GuidePick] without its channel, which is found again by [channelId] among Home's channels. */
+    /** Which keys count documentaries and films. */
+    data class Flags(val docKeys: Set<String>, val filmKeys: Set<String>)
+
+    /** A [GuidePick] without its channel, which is found again by [channelKey] among Home's channels. */
     data class PickData(
-        val channelId: Long,
+        val channelKey: String,
         val title: String,
         val startMs: Long,
         val stopMs: Long,
@@ -189,8 +182,8 @@ internal object SpotlightPicksStore {
         val premiere: Boolean,
         val year: Int?,
         val genre: String?,
-        val cast: List<String>,
-        val director: String?,
+        val cast: List<String> = emptyList(),
+        val director: String? = null,
     ) {
         fun toPick(channel: ChannelEntity) = GuidePick(
             channel, title, startMs, stopMs, highlight, tip, doc, picture, description,
@@ -199,53 +192,97 @@ internal object SpotlightPicksStore {
         )
 
         companion object {
-            fun of(p: GuidePick) = PickData(
-                p.channel.id, p.title, p.startMs, p.stopMs, p.highlight, p.tip, p.doc, p.picture, p.description,
+            fun of(p: GuidePick, key: String = MagentaNames.key(p.channel.name)) = PickData(
+                key, p.title, p.startMs, p.stopMs, p.highlight, p.tip, p.doc, p.picture, p.description,
                 p.film, p.filmCandidate, p.series, p.premiere, p.year, p.genre, p.cast, p.director,
             )
         }
     }
 
-    /**
-     * What a request asks of each channel: its id, and whether its documentaries and films count. A kept round
-     * serves a request whose channels it all asked the same way.
-     */
-    fun asked(r: SpotlightPicks.Request): Set<String> =
-        r.channels.map { "${it.id}:${if (it.id in r.docsOn) 1 else 0}${if (it.id in r.filmsOn) 1 else 0}" }.toSet()
+    private fun keyOf(c: ChannelEntity) = MagentaNames.key(c.name)
 
-    /** [kept]'s picks on [r]'s channels that have not ended by [now]. */
-    fun resolve(r: SpotlightPicks.Request?, kept: Kept?, now: Long): List<GuidePick> {
-        if (r == null || kept == null) return emptyList()
-        val byId = r.channels.associateBy { it.id }
-        return kept.picks.mapNotNull { d -> if (d.stopMs <= now) null else byId[d.channelId]?.let(d::toPick) }
+    /** [r]'s channels' flags per guide key: arte for documentaries, the film channels for films. */
+    fun flagsOf(r: SpotlightPicks.Request): Flags = Flags(
+        docKeys = r.channels.filter { it.id in r.docsOn }.map(::keyOf).filter { it.isNotEmpty() }.toSet(),
+        filmKeys = r.channels.filter { it.id in r.filmsOn }.map(::keyOf).filter { it.isNotEmpty() }.toSet(),
+    )
+
+    /**
+     * The covered keys of [r] that must be fetched again: those [kept] has nothing for (never read: the first
+     * start after an update, or the list came too early), and those it read with other flags than [r] asks.
+     */
+    fun refetchKeys(kept: Kept?, r: SpotlightPicks.Request, covered: Set<String>): Set<String> {
+        val flags = flagsOf(r)
+        val keys = r.channels.map(::keyOf).filter { it.isNotEmpty() && it in covered }.toSet()
+        if (kept == null) return keys
+        return keys.filterTo(HashSet()) { k ->
+            k !in kept.keys || (k in kept.docKeys) != (k in flags.docKeys) || (k in kept.filmKeys) != (k in flags.filmKeys)
+        }
     }
+
+    /** Whether [flags] would change what [kept] remembers about the keys [flags] speaks of. */
+    fun flagsDiffer(kept: Kept, flags: Flags): Boolean = withFlags(kept, flags) != kept
+
+    /**
+     * [kept] with [flags] taken over for the keys Home's request knows (the flags of other keys stay); a key
+     * without a flag in [flags] and not in [Kept.keys] is simply not flagged.
+     */
+    fun withFlags(kept: Kept?, flags: Flags): Kept {
+        val k = kept ?: Kept(0L, emptySet(), emptySet(), emptySet(), emptyList())
+        return k.copy(docKeys = flags.docKeys, filmKeys = flags.filmKeys)
+    }
+
+    /**
+     * [kept] with the picks of exactly the keys of [offered] replaced (a key's list may be empty), the other keys
+     * left as they are, and picks whose programmes have all ended by [now] dropped.
+     */
+    fun merge(kept: Kept?, offered: Map<String, List<PickData>>, at: Long, now: Long): Kept {
+        val k = kept ?: Kept(at, emptySet(), emptySet(), emptySet(), emptyList())
+        val picks = (k.picks.filter { it.channelKey !in offered } + offered.values.flatten()).filter { it.stopMs > now }
+        return k.copy(at = at, keys = k.keys + offered.keys, picks = picks)
+    }
+
+    /** [kept]'s picks on [r]'s channels for keys in [covered] that have not ended by [now]. */
+    fun resolve(r: SpotlightPicks.Request?, kept: Kept?, covered: Set<String>, now: Long): List<GuidePick> {
+        if (r == null || kept == null) return emptyList()
+        val byKey = HashMap<String, ChannelEntity>()
+        for (c in r.channels) { val k = keyOf(c); if (k.isNotEmpty()) byKey.putIfAbsent(k, c) }
+        return kept.picks.mapNotNull { d ->
+            if (d.stopMs <= now || d.channelKey !in covered) null else byKey[d.channelKey]?.let(d::toPick)
+        }
+    }
+
+    private fun JSONObject.putStrings(name: String, v: Set<String>) = put(name, JSONArray(v.toList()))
+    private fun JSONObject.strings(name: String): Set<String> =
+        getJSONArray(name).let { a -> (0 until a.length()).map { a.getString(it) }.toSet() }
 
     fun encode(k: Kept): String {
         val picks = JSONArray()
         for (p in k.picks) {
             picks.put(
                 JSONObject()
-                    .put("c", p.channelId).put("t", p.title).put("s", p.startMs).put("e", p.stopMs)
+                    .put("c", p.channelKey).put("t", p.title).put("s", p.startMs).put("e", p.stopMs)
                     .put("h", p.highlight).put("tip", p.tip).put("doc", p.doc)
                     .putOpt("pic", p.picture).putOpt("d", p.description)
                     .put("f", p.film).put("fc", p.filmCandidate).put("ser", p.series).put("pr", p.premiere)
                     .putOpt("y", p.year).putOpt("g", p.genre).put("cast", JSONArray(p.cast)).putOpt("dir", p.director),
             )
         }
-        return JSONObject().put("v", VERSION).put("at", k.at).put("asked", JSONArray(k.asked.toList())).put("picks", picks).toString()
+        return JSONObject().put("v", VERSION).put("at", k.at)
+            .putStrings("keys", k.keys).putStrings("docs", k.docKeys).putStrings("films", k.filmKeys)
+            .put("picks", picks).toString()
     }
 
-    /** Null for anything unreadable or from another version: then nothing is kept, and the guide is asked. */
+    /** Null for anything unreadable or from another version: then nothing is kept, and the lists are fetched again. */
     fun decode(text: String): Kept? = runCatching {
         val o = JSONObject(text)
         if (o.optInt("v") != VERSION) return@runCatching null
-        val asked = o.getJSONArray("asked").let { a -> (0 until a.length()).map { a.getString(it) }.toSet() }
         val list = o.getJSONArray("picks")
         val picks = (0 until list.length()).map { i ->
             val p = list.getJSONObject(i)
             val cast = p.optJSONArray("cast")?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty()
             PickData(
-                channelId = p.getLong("c"),
+                channelKey = p.getString("c"),
                 title = p.getString("t"),
                 startMs = p.getLong("s"),
                 stopMs = p.getLong("e"),
@@ -264,6 +301,6 @@ internal object SpotlightPicksStore {
                 director = p.optString("dir").ifEmpty { null }.takeIf { p.has("dir") },
             )
         }
-        Kept(o.getLong("at"), asked, picks)
+        Kept(o.getLong("at"), o.strings("keys"), o.strings("docs"), o.strings("films"), picks)
     }.getOrNull()
 }
