@@ -68,49 +68,11 @@ class MagentaGuide(private val http: OkHttpClient) {
     }
 
     /**
-     * Today's picks on [channels] from [fromMs] to [toMs]: MagentaTV's tips and highlights, on the channels
-     * in [docsOn] (arte) their documentaries, and on those in [filmsOn] (Sky Cinema …) their films. One call
-     * per channel, [PICKS_PARALLEL] at a time on low-priority threads ([pickDispatcher]), so the box's first
-     * seconds and the picture stay smooth while they come in. Null when the guide cannot be asked at all (no
-     * network, no guest session, not one channel answered); a channel that fails alone is left out.
+     * The raw `playbilllist` of guide channel [id] from [fromMs] to [toMs], null when the guide did not
+     * answer. Season, episode and year are asked for too; should the guide ever refuse them, it is asked
+     * again with the fields it has always answered, and from then on only with those.
      */
-    suspend fun picks(
-        channels: List<tv.own.owntv.core.database.entity.ChannelEntity>,
-        docsOn: Set<Long>,
-        fromMs: Long,
-        toMs: Long,
-        filmsOn: Set<Long> = emptySet(),
-    ): List<GuidePick>? {
-        // The session and the guide's channel list once, under the lock; the channels' calls after it in
-        // parallel, without holding the lock (a picture asked for meanwhile does not wait behind them).
-        val ids = withContext(Dispatchers.IO) {
-            runCatching { lock.withLock { channels.distinctBy { it.id }.map { ch -> ch to channelId(ch.name) } } }.getOrNull()
-        } ?: return null
-        if (channels.isNotEmpty() && this.channels.isEmpty()) return null
-        val asked = ids.mapNotNull { (ch, id) -> id?.let { ch to it } }
-        if (asked.isEmpty()) return emptyList()
-        val lists = coroutineScope {
-            asked.map { (ch, id) ->
-                async(pickDispatcher) {
-                    // Given up (Home asked for other channels): the calls not yet begun are not made.
-                    ensureActive()
-                    runCatching { channelPicks(ch, id, fromMs, toMs, docs = ch.id in docsOn, films = ch.id in filmsOn) }.getOrNull()
-                }
-            }.awaitAll()
-        }
-        if (lists.all { it == null }) return null
-        return lists.flatMap { it.orEmpty() }
-    }
-
-    /** [channel]'s picks (see [picks]), null when the guide did not answer for it. */
-    private fun channelPicks(
-        channel: tv.own.owntv.core.database.entity.ChannelEntity,
-        id: String,
-        fromMs: Long,
-        toMs: Long,
-        docs: Boolean,
-        films: Boolean,
-    ): List<GuidePick>? {
+    private fun playbillList(id: String, fromMs: Long, toMs: Long): JSONArray? {
         fun ask(fields: String): JSONArray? {
             val body = JSONObject()
                 .put("count", -1)
@@ -123,12 +85,37 @@ class MagentaGuide(private val http: OkHttpClient) {
                 .put("endtime", utc(toMs))
             return post("PlayBillList", body)?.takeIf { it.optString("retcode", "0") == "0" }?.optJSONArray("playbilllist")
         }
-        // Season, episode and year are asked for too; should the guide ever refuse them, it is asked
-        // again with the fields it has always answered, and from then on only with those.
-        val list = (if (extraFields) ask(PICK_FIELDS + PICK_EXTRA_FIELDS) else null)
+        return (if (extraFields) ask(PICK_FIELDS + PICK_EXTRA_FIELDS) else null)
             ?: ask(PICK_FIELDS)?.also { if (extraFields) extraFields = false }
-            ?: return null
-        return MagentaNames.picks(list, channel, docs = docs, films = films)
+    }
+
+    /**
+     * The guide's channels, key (see [MagentaNames.key]) → guide channel id, for the stored guide
+     * ([MagentaEpg]). Fills the channel list under the lock; null when the guide cannot be asked.
+     */
+    suspend fun guideIndex(): Map<String, String>? = withContext(Dispatchers.IO) {
+        runCatching {
+            lock.withLock { channelId("") } // fills the channel list
+            channels.takeIf { it.isNotEmpty() }
+        }.getOrNull()
+    }
+
+    /**
+     * The raw programme lists of [guideChannelIds] from [fromMs] to [toMs], one call each, [PICKS_PARALLEL] at a
+     * time on the low-priority [pickDispatcher]; the calls not yet begun are not made once the caller gives up.
+     * A null value: that channel did not answer.
+     */
+    suspend fun playbills(guideChannelIds: List<String>, fromMs: Long, toMs: Long): Map<String, JSONArray?> {
+        val ids = guideChannelIds.distinct()
+        val lists = coroutineScope {
+            ids.map { id ->
+                async(pickDispatcher) {
+                    ensureActive()
+                    runCatching { playbillList(id, fromMs, toMs) }.getOrNull()
+                }
+            }.awaitAll()
+        }
+        return ids.zip(lists).toMap()
     }
 
     /**
@@ -423,6 +410,12 @@ internal object MagentaNames {
             .map { it.value }
     }
 
+    /**
+     * The football rights holders' channels, by [key]: Sky Sport (its Bundesliga, Top Event and the rest), any
+     * "Bundesliga" channel, and DAZN. Not Sport1, Eurosport or Sky Cinema.
+     */
+    fun isFootballChannel(key: String): Boolean = "sky sport" in key || "bundesliga" in key || key.startsWith("dazn")
+
     /** Lower case, umlauts folded, so "Mönchengladbach" and "M'gladbach" meet on "gladbach". */
     fun fold(s: String): String = java.text.Normalizer.normalize(
         s.lowercase(Locale.ROOT).replace("ß", "ss"),
@@ -582,8 +575,19 @@ internal object MagentaNames {
         channel: tv.own.owntv.core.database.entity.ChannelEntity,
         docs: Boolean,
         films: Boolean = false,
-    ): List<GuidePick> {
-        val out = ArrayList<GuidePick>()
+    ): List<GuidePick> = picksOf(list, key(channel.name), docs, films).map { it.toPick(channel) }
+
+    /**
+     * [picks] without a channel, for the channel with guide key [channelKey]: what the Spotlight keeps per key
+     * ([SpotlightPicksStore.PickData]), so a list can be read before Home has said which channel entities it shows.
+     */
+    fun picksOf(
+        list: JSONArray,
+        channelKey: String,
+        docs: Boolean,
+        films: Boolean = false,
+    ): List<SpotlightPicksStore.PickData> {
+        val out = ArrayList<SpotlightPicksStore.PickData>()
         for (i in 0 until list.length()) {
             val p = list.optJSONObject(i) ?: continue
             val start = startOf(p, "starttime") ?: continue
@@ -611,8 +615,8 @@ internal object MagentaNames {
                 p.optString("tipCategory").let { it.isBlank() || it == "null" } &&
                 NOT_FILM_WORDS.none { it in genres }
             val text = (title + " " + description.orEmpty()).lowercase()
-            out += GuidePick(
-                channel = channel,
+            out += SpotlightPicksStore.PickData(
+                channelKey = channelKey,
                 title = title,
                 startMs = start,
                 stopMs = stop,
@@ -624,13 +628,52 @@ internal object MagentaNames {
                 film = isFilm,
                 filmCandidate = candidate,
                 series = series,
-                premiere = isFilm && (PREMIERE_WORDS.any { it in text } || "premiere" in key(channel.name)),
+                premiere = isFilm && (PREMIERE_WORDS.any { it in text } || "premiere" in channelKey),
                 year = p.optString("producedate").take(4).toIntOrNull()?.takeIf { it in 1900..2100 },
                 // "Thriller" rather than "Spielfilm": the kind of film, when the guide says more than that it is one.
                 genre = genreList.firstOrNull { g -> filmWords.none { it == g.lowercase() } } ?: genreList.firstOrNull(),
             )
         }
         return out
+    }
+
+    /**
+     * A channel's whole programme list for the stored guide: entries without a title or ending no later than
+     * they start are skipped, the rest sorted by start and one per start (the guide repeats an entry now and
+     * then; the first wins, and the table's key is channel + start).
+     */
+    fun programmes(list: JSONArray): List<MagentaProgramme> {
+        val out = ArrayList<MagentaProgramme>(list.length())
+        for (i in 0 until list.length()) {
+            val p = list.optJSONObject(i) ?: continue
+            val title = p.optString("name").trim()
+            if (title.isEmpty() || title == "null") continue
+            val start = startOf(p, "starttime") ?: continue
+            val stop = startOf(p, "endtime") ?: continue
+            if (stop <= start) continue
+            out += MagentaProgramme(
+                title = title,
+                startMs = start,
+                stopMs = stop,
+                description = p.optString("introduce").trim().takeIf { it.isNotEmpty() && it != "null" },
+                genres = p.optString("genres").split(',', '/', '|').map { it.trim() }.filter { it.isNotEmpty() && it != "null" },
+                year = p.optString("producedate").take(4).toIntOrNull()?.takeIf { it in 1900..2100 },
+                episode = episodeText(p.optString("seasonNO"), p.optString("sitcomNO")),
+            )
+        }
+        return out.sortedBy { it.startMs }.distinctBy { it.startMs }
+    }
+
+    /** "S2 E5" as the core's XMLTV parser writes it; "E5" without a season, null when neither is a positive number. */
+    fun episodeText(season: String?, episode: String?): String? {
+        val s = season?.trim()?.toIntOrNull()?.takeIf { it > 0 }
+        val e = episode?.trim()?.toIntOrNull()?.takeIf { it > 0 }
+        return when {
+            s != null && e != null -> "S$s E$e"
+            e != null -> "E$e"
+            s != null -> "S$s"
+            else -> null
+        }
     }
 
     /** An episode: the guide numbers it (season or episode), files it under a series genre, or its title says so. */
@@ -671,6 +714,17 @@ internal object MagentaNames {
     /** How the guide names documentary genres ("Dokumentation", "Doku-Reihe", "Reportage"). */
     private val DOC_WORDS = listOf("doku", "reportage")
 }
+
+/** One programme of MagentaTV's guide, as the stored guide ([MagentaEpg]) keeps it. */
+data class MagentaProgramme(
+    val title: String,
+    val startMs: Long,
+    val stopMs: Long,
+    val description: String?,
+    val genres: List<String>,
+    val year: Int?,
+    val episode: String?,
+)
 
 /** What a match broadcast's listing adds: its matchday ("9. Spieltag") and the guide's line on it. */
 data class MatchNotes(val round: String?, val line: String?)
