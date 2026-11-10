@@ -24,6 +24,44 @@ class MagentaNamesTest {
         assertEquals(mapOf("das erste" to "1", "zdf" to "3"), MagentaNames.index(list))
     }
 
+    @Test
+    fun `the index prefers plain or HD over SD over UHD whatever the order`() {
+        val list = JSONArray("""[{"contentId":"1","name":"ProSieben UHD"},{"contentId":"2","name":"ProSieben HD"},{"contentId":"3","name":"ProSieben"},{"contentId":"4","name":"ProSieben MAXX"}]""")
+        assertEquals(mapOf("prosieben" to "2", "prosieben maxx" to "4"), MagentaNames.index(list))
+        val sdFirst = JSONArray("""[{"contentId":"1","name":"VOX SD"},{"contentId":"2","name":"VOX 4K"},{"contentId":"3","name":"VOX HD"}]""")
+        assertEquals(mapOf("vox" to "3"), MagentaNames.index(sdFirst))
+        val sdUhd = JSONArray("""[{"contentId":"1","name":"VOX UHD"},{"contentId":"2","name":"VOX SD"}]""")
+        assertEquals(mapOf("vox" to "2"), MagentaNames.index(sdUhd))
+        assertEquals(mapOf("kabel eins" to "5"), MagentaNames.index(JSONArray("""[{"contentId":"5","name":"kabel eins SD"}]""")))
+    }
+
+    @Test
+    fun `the quality rank reads the raw name`() {
+        assertEquals(0, MagentaNames.qualityRank("ProSieben"))
+        assertEquals(0, MagentaNames.qualityRank("ProSieben HD"))
+        assertEquals(1, MagentaNames.qualityRank("ProSieben SD"))
+        assertEquals(2, MagentaNames.qualityRank("ProSieben UHD"))
+        assertEquals(2, MagentaNames.qualityRank("ProSieben 4K"))
+    }
+
+    @Test
+    fun `a time zone suffix moves the instant, none or +00 is UTC`() {
+        val base = utc(20, 15) + 3 * 24 * 3_600_000L // 2026-11-07
+        assertEquals(base, MagentaNames.parseTime("2026-11-07 20:15:00 UTC+00:00"))
+        assertEquals(base, MagentaNames.parseTime("2026-11-07 20:15:00"))
+        assertEquals(base - 3_600_000L, MagentaNames.parseTime("2026-11-07 20:15:00 UTC+01:00"))
+        assertEquals(base - 3_600_000L, MagentaNames.parseTime("2026-11-07 20:15:00 +01:00"))
+        assertEquals(base + 150 * 60_000L, MagentaNames.parseTime("2026-11-07 20:15:00 UTC-02:30"))
+        assertNull(MagentaNames.parseTime("garbage"))
+    }
+
+    @Test
+    fun `a listing with an offset is read at its true time`() {
+        val list = JSONArray("""[{"starttime":"2026-11-04 20:15:00 UTC+01:00","name":"X","pictures":[{"imageType":"17","href":"http://a/x.jpg"}]}]""")
+        assertEquals("https://a/x.jpg", MagentaNames.pictureFor(list, utc(19, 15)))
+        assertNull(MagentaNames.pictureFor(list, utc(20, 15)))
+    }
+
     private fun utc(h: Int, m: Int): Long =
         Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { clear(); set(2026, 10, 4, h, m) }.timeInMillis
 
