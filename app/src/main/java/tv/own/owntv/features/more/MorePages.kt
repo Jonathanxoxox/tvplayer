@@ -703,10 +703,24 @@ private fun StartLogPanel(modifier: Modifier = Modifier) {
 @Composable
 private fun EpgStatsRows() {
     val lines by GuideStats.lines.collectAsStateWithLifecycle()
+    val magenta by koinInject<tv.own.owntv.features.home.MagentaEpg>().status.collectAsStateWithLifecycle()
+    val clock = remember { java.text.SimpleDateFormat("HH:mm", java.util.Locale.GERMANY) }
     Text(
         stringResource(R.string.tvplayer_epglog_title),
         style = stageText(18, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
         modifier = Modifier.padding(top = 14.mpx),
+    )
+    // MagentaTV's guide as the stored EPG: when it last ran, and how many channels it covers.
+    Text(
+        stringResource(
+            R.string.tvplayer_epglog_magenta,
+            if (magenta.lastSyncAt > 0L) clock.format(java.util.Date(magenta.lastSyncAt)) else stringResource(R.string.tvplayer_epglog_magenta_never),
+            magenta.covered,
+            magenta.rejected,
+            if (magenta.running) stringResource(R.string.tvplayer_epglog_magenta_running) else "",
+        ),
+        style = stageText(16, 600), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(top = 2.mpx),
     )
     if (lines.isEmpty()) {
         Text(
@@ -716,7 +730,6 @@ private fun EpgStatsRows() {
         )
         return
     }
-    val clock = remember { java.text.SimpleDateFormat("HH:mm", java.util.Locale.GERMANY) }
     for (l in lines) {
         val text = l.lastFailureAt?.let { at ->
             stringResource(

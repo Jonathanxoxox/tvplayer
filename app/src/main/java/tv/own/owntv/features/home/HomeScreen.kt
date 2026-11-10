@@ -274,7 +274,14 @@ fun HomeScreen(
     val picksRequest = remember(spotlightLayout, state.isLoading, filmChannels == null, guideChannels, docsOn, filmsOn) {
         if (!spotlightLayout || state.isLoading || filmChannels == null) null else SpotlightPicks.Request(guideChannels, docsOn, filmsOn)
     }
-    LaunchedEffect(picksRequest) { picksRequest?.let(spotlightPicks::want) }
+    // The stored guide (MagentaTV's) fetches these channels' programmes first.
+    val magentaEpg = koinInject<MagentaEpg>()
+    LaunchedEffect(picksRequest) {
+        picksRequest?.let {
+            spotlightPicks.want(it)
+            magentaEpg.prioritise(guideChannels)
+        }
+    }
     val picksState by spotlightPicks.state.collectAsStateWithLifecycle()
     val picks = if (spotlightLayout) picksState.picks else emptyList()
     val spotlightSources = remember(launcherConfig.spotlightOrder, launcherConfig.spotlightOff) {

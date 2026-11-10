@@ -21,6 +21,9 @@
     <string name="tvplayer_epglog_none" translatable="false">Noch nichts abgefragt</string>
     <string name="tvplayer_epglog_line" translatable="false">%1$s – Anfragen %2$d (ok %3$d, leer %4$d, Fehler %5$d), Speicher %6$d, Ø %7$d ms, max. %8$d ms</string>
     <string name="tvplayer_epglog_line_failed" translatable="false">%1$s – Anfragen %2$d (ok %3$d, leer %4$d, Fehler %5$d), Speicher %6$d, Ø %7$d ms, max. %8$d ms, letzter Fehler %9$s</string>
+    <string name="tvplayer_epglog_magenta" translatable="false">MagentaTV-Guide – Abgleich %1$s, Sender %2$d, abgelehnt %3$d%4$s</string>
+    <string name="tvplayer_epglog_magenta_never" translatable="false">–</string>
+    <string name="tvplayer_epglog_magenta_running" translatable="false">, läuft</string>
     <string name="tvplayer_update_allow_install" translatable="false">Erlaube Mayo TV im geöffneten Fenster, Apps zu installieren, und drücke dann Zurück. Das Update startet danach von selbst.</string>
     <string name="tvplayer_no_guide" translatable="false">Keine Programminfo</string>
     <string name="tvplayer_next_at" translatable="false">Danach %1$s</string>
