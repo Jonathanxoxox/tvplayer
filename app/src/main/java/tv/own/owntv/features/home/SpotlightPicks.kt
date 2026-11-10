@@ -117,8 +117,6 @@ class SpotlightPicks(
         val shown = requests.value?.channels?.map { MagentaNames.key(it.name) }?.toSet()
         val parsed = lists.filterKeys { shown == null || it in shown }.mapValues { (key, list) ->
             MagentaNames.picksOf(list, key, docs = flags != null && key in flags.docKeys, films = flags != null && key in flags.filmKeys)
-                // Late tonight at the most, as the picks have always been.
-                .filter { it.startMs < fetchedAt + AHEAD_MS }
         }
         if (parsed.isEmpty()) return
         inner.update { it.copy(kept = SpotlightPicksStore.merge(it.kept, parsed, fetchedAt, System.currentTimeMillis())) }
@@ -141,8 +139,6 @@ class SpotlightPicks(
 
     private companion object {
         const val FILE = "spotlight_picks.json"
-        /** Programmes starting later than this after the fetch are not picks yet ("late tonight"). */
-        const val AHEAD_MS = 12 * 60 * 60_000L
     }
 }
 
@@ -248,9 +244,16 @@ internal object SpotlightPicksStore {
         val byKey = HashMap<String, ChannelEntity>()
         for (c in r.channels) { val k = keyOf(c); if (k.isNotEmpty()) byKey.putIfAbsent(k, c) }
         return kept.picks.mapNotNull { d ->
-            if (d.stopMs <= now || d.channelKey !in covered) null else byKey[d.channelKey]?.let(d::toPick)
+            if (d.stopMs <= now || d.startMs >= now + AHEAD_MS || d.channelKey !in covered) null else byKey[d.channelKey]?.let(d::toPick)
         }
     }
+
+    /**
+     * Picks starting later than this from now are not shown yet ("late tonight", as the picks have always been).
+     * Counted from now, not from the fetch: the lists come every six hours and reach two days ahead, and a film at
+     * 20:15 must be a pick in the morning whenever its list was fetched.
+     */
+    const val AHEAD_MS = 12 * 60 * 60_000L
 
     private fun JSONObject.putStrings(name: String, v: Set<String>) = put(name, JSONArray(v.toList()))
     private fun JSONObject.strings(name: String): Set<String> =

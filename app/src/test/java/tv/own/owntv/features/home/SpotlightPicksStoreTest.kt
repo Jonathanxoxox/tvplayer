@@ -61,6 +61,10 @@ class SpotlightPicksStoreTest {
         // A channel no longer on Home: its picks stay out.
         assertEquals(listOf(doc), SpotlightPicksStore.resolve(request(ch2), kept(), covered, now = 1_500L))
         assertTrue(SpotlightPicksStore.resolve(null, kept(), covered, now = 0L).isEmpty())
+        // Not a pick yet while it starts twelve hours or more from now; one millisecond nearer and it is.
+        val early = film.startMs - SpotlightPicksStore.AHEAD_MS
+        assertTrue(film !in SpotlightPicksStore.resolve(r, kept(), covered, now = early))
+        assertTrue(film in SpotlightPicksStore.resolve(r, kept(), covered, now = early + 1))
     }
 
     @Test
