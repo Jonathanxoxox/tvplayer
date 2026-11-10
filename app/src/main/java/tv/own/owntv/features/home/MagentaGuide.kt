@@ -460,7 +460,7 @@ internal object MagentaNames {
             val title = fold(p.optString("name"))
             val words = title.split(Regex("[^a-z0-9]+")).filter { it.isNotEmpty() }.toSet()
             if (!teamMatches(home, title, words) || !teamMatches(away, title, words)) continue
-            val start = runCatching { utcFormat.get()!!.parse(p.optString("starttime").take(19))?.time }.getOrNull() ?: continue
+            val start = parseTime(p.optString("starttime")) ?: continue
             if (start < kickoffMs - MatchPictures.BEFORE_MS || start > kickoffMs + MatchPictures.AFTER_MS) continue
             // Not the match itself: a conference's picture is its own show's ("Live PL: Goal Rush, CRY - LIV,
             // Premier League Konferenz" gave Crystal Palace v Liverpool Goal Rush's, 7 Nov 2026).
@@ -484,14 +484,36 @@ internal object MagentaNames {
     fun key(name: String): String =
         ProgrammeTitles.key(name).split(' ').filter { it.isNotEmpty() && it !in noise }.joinToString(" ")
 
-    /** The guide's channel list → key → channel id; the first of two with the same key wins. */
+    /**
+     * How much a guide channel's raw [name] is preferred when several share one [key]: 0 for plain or HD
+     * (also FHD), 1 for SD, 2 for UHD/4K (a stream few boxes want as the default). Lower wins.
+     */
+    fun qualityRank(name: String): Int {
+        val words = ProgrammeTitles.key(name).split(' ')
+        return when {
+            "uhd" in words || "4k" in words -> 2
+            "sd" in words && "hd" !in words && "fhd" !in words -> 1
+            else -> 0
+        }
+    }
+
+    /**
+     * The guide's channel list → key → channel id. Several guide channels can share a key once quality
+     * words are dropped ("ProSieben", "ProSieben HD", "ProSieben UHD"); the best [qualityRank] wins and,
+     * within the same rank, the first in list order, so the pick does not depend on the list's order alone.
+     */
     fun index(list: JSONArray): Map<String, String> {
         val out = LinkedHashMap<String, String>()
+        val ranks = HashMap<String, Int>()
         for (i in 0 until list.length()) {
             val c = list.optJSONObject(i) ?: continue
             val id = c.optString("contentId")
-            val k = key(c.optString("name"))
-            if (id.isNotBlank() && k.isNotEmpty() && k !in out) out[k] = id
+            val name = c.optString("name")
+            val k = key(name)
+            if (id.isBlank() || k.isEmpty()) continue
+            val rank = qualityRank(name)
+            val have = ranks[k]
+            if (have == null || rank < have) { out[k] = id; ranks[k] = rank }
         }
         return out
     }
@@ -505,7 +527,7 @@ internal object MagentaNames {
         var bestGap = Long.MAX_VALUE
         for (i in 0 until playbills.length()) {
             val p = playbills.optJSONObject(i) ?: continue
-            val start = runCatching { utcFormat.get()!!.parse(p.optString("starttime").take(19))?.time }.getOrNull() ?: continue
+            val start = parseTime(p.optString("starttime")) ?: continue
             val gap = kotlin.math.abs(start - startMs)
             if (gap < bestGap) { best = p; bestGap = gap }
         }
@@ -521,8 +543,22 @@ internal object MagentaNames {
         return pick?.optString("href")?.ifBlank { null }?.replaceFirst("http://", "https://")
     }
 
-    private fun startOf(p: JSONObject, field: String): Long? =
-        runCatching { utcFormat.get()!!.parse(p.optString(field).take(19))?.time }.getOrNull()
+    private fun startOf(p: JSONObject, field: String): Long? = parseTime(p.optString(field))
+
+    private val zoneSuffix = Regex("^\\s*(?:UTC)?\\s*([+-])(\\d{1,2}):?(\\d{2})\\s*$")
+
+    /**
+     * A guide time such as "2026-11-07 20:15:00 UTC+01:00" as a UTC instant. The first 19 characters are
+     * the wall-clock time; the suffix ("UTC+hh:mm", "+hh:mm" or none, meaning UTC) says how far that clock
+     * is from UTC, so it is taken off again.
+     */
+    fun parseTime(s: String): Long? {
+        val local = runCatching { utcFormat.get()!!.parse(s.take(19))?.time }.getOrNull() ?: return null
+        val m = zoneSuffix.find(s.drop(19)) ?: return local
+        val minutes = m.groupValues[2].toInt() * 60 + m.groupValues[3].toInt()
+        val sign = if (m.groupValues[1] == "-") -1 else 1
+        return local - sign * minutes * 60_000L
+    }
 
     /**
      * The guide's programmes on [channel] worth a Spotlight place: those MagentaTV marks as "highlight" or
