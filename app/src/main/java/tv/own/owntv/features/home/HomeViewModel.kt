@@ -139,8 +139,12 @@ private const val PROVIDER_EPG_PARALLEL = 6
 
 /** How many recently watched live channels the Spotlight looks at for habits. */
 private const val WATCHED_FOR_SPOTLIGHT = 40
-/** How often ended programmes in the category row are replaced by what is on now. */
-private const val ON_NOW_REFRESH_MS = 5 * 60_000L
+/**
+ * How often ended programmes in the category row are replaced by what is on now. Every minute is cheap: only
+ * programmes that have ended are asked for again, and most channels answer from the stored guide ([MagentaEpg])
+ * in the database, not from the provider.
+ */
+private const val ON_NOW_REFRESH_MS = 60_000L
 
 class HomeViewModel(
     private val feed: HomeFeedReader,
@@ -163,6 +167,7 @@ class HomeViewModel(
     private val catalog: HomeCatalog,
     private val liveEpg: tv.own.owntv.core.live.LiveEpgReader,
     private val connectivity: tv.own.owntv.core.network.ConnectivityObserver,
+    private val magentaEpg: MagentaEpg,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -217,6 +222,23 @@ class HomeViewModel(
                 .drop(1)
                 .collect { online -> if (online) fillCatalogOnNow() }
         }
+        // Woken from standby: the five-minute round below stood still while the box slept, so in the morning the row
+        // and the Spotlight still had last night's programmes (7 Nov 2026). Those that ended are asked again at once,
+        // as soon as the network is back; the ones still running cost nothing.
+        viewModelScope.launch {
+            tv.own.owntv.launcher.apps.LauncherSystem.wake
+                .drop(1)
+                .collectLatest { w ->
+                    if (w == 0L) return@collectLatest
+                    connectivity.isOnline.first { it }
+                    fillCatalogOnNow()
+                }
+        }
+        // MagentaTV's guide just covered more channels: their rows are in the database now, so the row's cards fill at
+        // once instead of waiting for the next round (the start no longer asks the provider per channel).
+        viewModelScope.launch {
+            magentaEpg.coveredKeys.drop(1).collect { fillCatalogOnNow() }
+        }
         // A programme that has ended is replaced by the one after it (09:59 still showed the 05:30–09:00
         // morning show). Only ended ones are asked again, a few channels per round.
         viewModelScope.launch {
@@ -226,6 +248,8 @@ class HomeViewModel(
             }
         }
     }
+
+    private var settledFill: kotlinx.coroutines.Job? = null
 
     /** Hides [channel] from Home's category row; Live TV still shows it. */
     fun hideFromHome(channel: ChannelEntity) {
@@ -530,13 +554,23 @@ class HomeViewModel(
         val cards = tv.own.owntv.core.model.HomeLiveRowMode.CARDS
         val recentNow = when {
             // The category row is always cards, each with what is on now.
-            catalogRow != null -> onNowFor(profileId, catalogRow.channels, providerFallback = true)
+            // Stored guide only: asking the provider per channel (six at a time) in the middle of the start is
+            // what made it slow. Channels the database cannot answer are asked after the start has settled.
+            catalogRow != null -> onNowFor(profileId, catalogRow.channels, providerFallback = false)
             data.config.recentLiveMode == cards -> onNowFor(profileId, data.recentLive)
             else -> emptyMap()
         }
         val favoriteNow = if (data.config.favoriteLiveMode == cards) onNowFor(profileId, data.favoriteLive) else emptyMap()
         if (recentNow.isNotEmpty() || favoriteNow.isNotEmpty()) {
             _uiState.value = _uiState.value.copy(recentOnNow = recentNow, favoriteOnNow = favoriteNow)
+        }
+        if (catalogRow != null) {
+            // Off the start path: what the database did not answer is asked of the provider once the start is over.
+            settledFill?.cancel()
+            settledFill = viewModelScope.launch {
+                tv.own.owntv.StartupGate.awaitSettled()
+                fillCatalogOnNow()
+            }
         }
         // After the first paint: the live channels last watched, for the Spotlight's "often on at this time".
         val watched = runCatching {

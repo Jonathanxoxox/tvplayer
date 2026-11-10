@@ -78,6 +78,31 @@ class ProgrammeArt(private val provider: MetadataProvider, private val magenta: 
     /** What TMDB knows of the film called [title], as far as it is known now, without asking: null when none, or not yet asked. */
     fun peekFilm(title: String): FilmInfo? = films[ProgrammeTitles.key(title)]?.takeUnless { it === FilmInfo.NONE }
 
+    /**
+     * What is kept of the film called [title], in memory or on the device, without asking TMDB: null when none,
+     * or not yet asked. Reads the device's store (off the main thread): the Spotlight ranks its films with the
+     * ratings it already knows at once after a start, not one by one (Jonathan, 7 Nov 2026).
+     */
+    suspend fun storedFilm(title: String): FilmInfo? {
+        val key = ProgrammeTitles.key(title)
+        if (key.isBlank()) return null
+        films[key]?.let { return it.takeUnless { f -> f === FilmInfo.NONE } }
+        return withContext(Dispatchers.IO) { kept(key) }?.takeUnless { it === FilmInfo.NONE }
+    }
+
+    /** The film under [key] from memory, else from the device while still current (then also in memory); null when not kept. */
+    private fun kept(key: String): FilmInfo? {
+        films[key]?.let { return it }
+        val stored = prefs.getString(FILM + key, null) ?: return null
+        val at = stored.substringBefore(SEP).toLongOrNull() ?: 0L
+        val value = FilmInfo.decode(stored.substringAfter(SEP, ""))
+        // Kept before films had their director: asked again once.
+        val current = value === FilmInfo.NONE || FilmInfo.hasDirectorField(stored.substringAfter(SEP, ""))
+        if (!current || System.currentTimeMillis() - at >= if (value === FilmInfo.NONE) NONE_TTL_MS else FILM_TTL_MS) return null
+        films[key] = value
+        return value
+    }
+
     /** Whether [title] has been asked about already (with or without a film found). */
     fun filmKnown(title: String): Boolean = films.containsKey(ProgrammeTitles.key(title))
 
@@ -90,18 +115,8 @@ class ProgrammeArt(private val provider: MetadataProvider, private val magenta: 
     suspend fun film(title: String, year: Int?): FilmInfo? {
         val key = ProgrammeTitles.key(title)
         if (key.isBlank()) return null
-        films[key]?.let { return it.takeUnless { f -> f === FilmInfo.NONE } }
+        kept(key)?.let { return it.takeUnless { f -> f === FilmInfo.NONE } }
         val now = System.currentTimeMillis()
-        prefs.getString(FILM + key, null)?.let { stored ->
-            val at = stored.substringBefore(SEP).toLongOrNull() ?: 0L
-            val value = FilmInfo.decode(stored.substringAfter(SEP, ""))
-            // Kept before films had their director: asked again once.
-            val current = value === FilmInfo.NONE || FilmInfo.hasDirectorField(stored.substringAfter(SEP, ""))
-            if (current && now - at < if (value === FilmInfo.NONE) NONE_TTL_MS else FILM_TTL_MS) {
-                films[key] = value
-                return value.takeUnless { it === FilmInfo.NONE }
-            }
-        }
         val found = withContext(Dispatchers.IO) {
             runCatching {
                 // Unanswered (no network, no key): nothing is kept, and it is asked again next time.

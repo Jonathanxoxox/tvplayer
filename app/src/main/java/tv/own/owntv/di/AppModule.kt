@@ -3,6 +3,7 @@ package tv.own.owntv.di
 import tv.own.owntv.features.sports.SportsPlayback
 import tv.own.owntv.features.sports.SportsSettingsViewModel
 import tv.own.owntv.features.sports.SportsViewModel
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModelOf
@@ -19,9 +20,11 @@ import tv.own.owntv.core.live.GuideReader
 import tv.own.owntv.core.live.LiveEpgReader
 import tv.own.owntv.features.home.FilmLibrary
 import tv.own.owntv.features.home.HomeCatalog
+import tv.own.owntv.features.home.MagentaEpg
 import tv.own.owntv.features.home.MagentaGuide
 import tv.own.owntv.features.sports.SportPosters
 import tv.own.owntv.features.home.ProgrammeArt
+import tv.own.owntv.features.home.SpotlightPicks
 import tv.own.owntv.features.home.HomeViewModel
 import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MovieViewModel
@@ -128,6 +131,24 @@ val appModule = module {
     singleOf(::WatchProviders)
     // Pictures for TV programmes (Spotlight, Stage), from TMDB by title.
     singleOf(::MagentaGuide)
+    // The Spotlight's picks, read from the stored guide's own downloads and kept on the device.
+    singleOf(::SpotlightPicks)
+    // MagentaTV's guide as the stored EPG. Created at start (startKoin) so GuideKeys.override is installed before
+    // the first guide read; its dependencies are lazy, so creating it opens no database and starts no work (the
+    // sync waits for StartupGate).
+    single(createdAtStart = true) {
+        MagentaEpg(
+            context = androidContext(),
+            magenta = inject(),
+            epgDao = inject(),
+            liveEpgReader = inject(),
+            settings = inject(),
+            sourceDao = inject(),
+            channelDao = inject(),
+            customize = inject(),
+            connectivity = inject(),
+        )
+    }
     singleOf(::SportPosters)
     singleOf(::ProgrammeArt)
     // The TMDB catalogs of Movies and Series, matched to the playlist once a day.
