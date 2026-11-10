@@ -108,6 +108,11 @@ internal fun HomeStage(
     spotlight: Boolean = false,
     /** Spotlight: what it shows while focus is not in the strip ([SpotlightHighlights]), best first. */
     highlights: List<Highlight> = emptyList(),
+    /**
+     * Spotlight: the current minute (epoch minutes). Only a reason to recompose: the stage reads the clock while
+     * composing, so without it a programme that has ended would stay ("noch 0 Min.") until some other input changes.
+     */
+    minute: Long = 0L,
     onOpenMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = {},
     onResume: (tv.own.owntv.core.home.HeroItem) -> Unit = {},
     /** The films' TMDB ratings by [GuidePick.key], shown on their highlight; empty when ratings are off. */
@@ -331,7 +336,7 @@ internal fun HomeStage(
         delay(ART_DWELL_MS)
         value = art.backdrop(p, picChannel.name)?.let(ArtState::Picture) ?: ArtState.None
     }
-    val now = System.currentTimeMillis()
+    val now = clockAt(minute)
     // Spotlight: how far the stage's top is below the screen's, in px. Its picture reaches up that far, behind the
     // app buttons and the clock (Jonathan, 7 Nov 2026: "the Spotlight up to the top edge, very faint up there").
     // Read only in layout, so scrolling moves the picture without recomposing the stage.
@@ -682,3 +687,6 @@ private object StageOnce {
         return true
     }
 }
+
+/** The wall clock, never before the start of [minute]; reading [minute] is what makes a new minute recompose the caller. */
+private fun clockAt(minute: Long): Long = maxOf(System.currentTimeMillis(), minute * 60_000L)
