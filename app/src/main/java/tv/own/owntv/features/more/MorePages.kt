@@ -72,6 +72,7 @@ import tv.own.owntv.features.shell.components.playbackDisplayName
 import tv.own.owntv.features.update.UpdateDialog
 import tv.own.owntv.perf.DexMetadataHook
 import tv.own.owntv.perf.StartLog
+import tv.own.owntv.core.live.GuideStats
 import tv.own.owntv.player.PlaybackErrorLog
 import tv.own.owntv.player.displayText
 import tv.own.owntv.ui.components.BrandMark
@@ -677,6 +678,7 @@ private fun StartLogPanel(modifier: Modifier = Modifier) {
                 modifier = Modifier.padding(top = 2.mpx),
             )
         }
+        EpgStatsRows()
         // Three columns: the slow-frame stamps make the timeline longer than two fit on the page.
         val third = (entries.size + 2) / 3
         Row(Modifier.padding(top = 12.mpx), horizontalArrangement = Arrangement.spacedBy(30.mpx)) {
@@ -691,6 +693,42 @@ private fun StartLogPanel(modifier: Modifier = Modifier) {
                 }
             }
         }
+    }
+}
+
+/**
+ * The guide's network sources since the app started, one row each, under the start log: so a photo of the
+ * TV shows which source is slow or failing. Plain text like the rest of the panel, so nothing new takes focus.
+ */
+@Composable
+private fun EpgStatsRows() {
+    val lines by GuideStats.lines.collectAsStateWithLifecycle()
+    Text(
+        stringResource(R.string.tvplayer_epglog_title),
+        style = stageText(18, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.padding(top = 14.mpx),
+    )
+    if (lines.isEmpty()) {
+        Text(
+            stringResource(R.string.tvplayer_epglog_none),
+            style = stageText(16, 600), color = StageColors.Muted, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.mpx),
+        )
+        return
+    }
+    val clock = remember { java.text.SimpleDateFormat("HH:mm", java.util.Locale.GERMANY) }
+    for (l in lines) {
+        val text = l.lastFailureAt?.let { at ->
+            stringResource(
+                R.string.tvplayer_epglog_line_failed,
+                l.source, l.requests, l.ok, l.empty, l.failed, l.served, l.avgMs, l.maxMs, clock.format(java.util.Date(at)),
+            )
+        } ?: stringResource(R.string.tvplayer_epglog_line, l.source, l.requests, l.ok, l.empty, l.failed, l.served, l.avgMs, l.maxMs)
+        Text(
+            text,
+            style = stageText(16, 600), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.mpx),
+        )
     }
 }
 

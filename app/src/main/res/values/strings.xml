@@ -17,6 +17,10 @@
     <string name="tvplayer_startlog_jank_pending" translatable="false">Ruckler: noch nicht gemessen (10 s nach dem Start)</string>
     <string name="tvplayer_startlog_area" translatable="false">%1$s – ruckelnd %2$d/%3$d, längstes Bild %4$d ms</string>
     <string name="tvplayer_startlog_entry" translatable="false">%1$s @ %2$d ms (+%3$d)</string>
+    <string name="tvplayer_epglog_title" translatable="false">EPG-Quellen seit dem Start</string>
+    <string name="tvplayer_epglog_none" translatable="false">Noch nichts abgefragt</string>
+    <string name="tvplayer_epglog_line" translatable="false">%1$s – Anfragen %2$d (ok %3$d, leer %4$d, Fehler %5$d), Speicher %6$d, Ø %7$d ms, max. %8$d ms</string>
+    <string name="tvplayer_epglog_line_failed" translatable="false">%1$s – Anfragen %2$d (ok %3$d, leer %4$d, Fehler %5$d), Speicher %6$d, Ø %7$d ms, max. %8$d ms, letzter Fehler %9$s</string>
     <string name="tvplayer_update_allow_install" translatable="false">Erlaube Mayo TV im geöffneten Fenster, Apps zu installieren, und drücke dann Zurück. Das Update startet danach von selbst.</string>
     <string name="tvplayer_no_guide" translatable="false">Keine Programminfo</string>
     <string name="tvplayer_next_at" translatable="false">Danach %1$s</string>

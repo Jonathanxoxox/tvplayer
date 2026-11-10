@@ -15,6 +15,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import tv.own.owntv.core.live.GuideStats
 import java.text.SimpleDateFormat
 import java.util.Locale
 import java.util.TimeZone
@@ -307,6 +308,17 @@ class MagentaGuide(private val http: OkHttpClient) {
      * several threads at once: the picks' calls run in parallel ([picks]), the session is shared ([session]).
      */
     private fun post(path: String, body: JSONObject, retry: Boolean = true): JSONObject? {
+        val startedAt = System.nanoTime()
+        var outcome = GuideStats.Outcome.FAILED
+        try {
+            return postUncounted(path, body, retry).also { if (it != null) outcome = GuideStats.Outcome.OK }
+        } finally {
+            // Every HTTP call lands in the on-device EPG report (More > About > Start log), thrown or not.
+            GuideStats.record(GuideStats.SOURCE_MAGENTA, (System.nanoTime() - startedAt) / 1_000_000, outcome)
+        }
+    }
+
+    private fun postUncounted(path: String, body: JSONObject, retry: Boolean): JSONObject? {
         val (t, c) = session() ?: return null
         val request = Request.Builder()
             .url(BASE + path)
@@ -319,7 +331,7 @@ class MagentaGuide(private val http: OkHttpClient) {
         // A session the guide no longer knows: sign in again once (once for all the calls that found it refused).
         if (o.optString("retcode", "0") != "0" && retry) {
             session(refused = t) ?: return null
-            return post(path, body, retry = false)
+            return postUncounted(path, body, retry = false)
         }
         return o
     }

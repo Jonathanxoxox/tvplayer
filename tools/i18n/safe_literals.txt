@@ -392,6 +392,7 @@
 2	technical	app/src/main/java/tv/own/owntv/features/more/MorePages.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/more/MorePages.kt	$it
 1	technical	app/src/main/java/tv/own/owntv/features/more/MorePages.kt	%d:%02d
+1	technical	app/src/main/java/tv/own/owntv/features/more/MorePages.kt	HH:mm
 1	technical	app/src/main/java/tv/own/owntv/features/more/MorePages.kt	dMMM
 2	technical	app/src/main/java/tv/own/owntv/features/more/MoreScreen.kt	DEV
 2	technical	app/src/main/java/tv/own/owntv/features/more/MoreScreen.kt	Developer
