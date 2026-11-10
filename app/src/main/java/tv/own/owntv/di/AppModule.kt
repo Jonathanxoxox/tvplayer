@@ -131,7 +131,7 @@ val appModule = module {
     singleOf(::WatchProviders)
     // Pictures for TV programmes (Spotlight, Stage), from TMDB by title.
     singleOf(::MagentaGuide)
-    // The Spotlight's picks from that guide, kept on the device and current across starts and standby.
+    // The Spotlight's picks, read from the stored guide's own downloads and kept on the device.
     singleOf(::SpotlightPicks)
     // MagentaTV's guide as the stored EPG. Created at start (startKoin) so GuideKeys.override is installed before
     // the first guide read; its dependencies are lazy, so creating it opens no database and starts no work (the

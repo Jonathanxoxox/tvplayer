@@ -67,6 +67,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import kotlinx.coroutines.flow.first
@@ -330,9 +331,23 @@ fun HomeScreen(
     }
     // Ranked again on waking from standby too: the time has moved on, and what has ended goes.
     val wake by tv.own.owntv.launcher.apps.LauncherSystem.wake.collectAsStateWithLifecycle()
+    // The minute the Spotlight is ranked and shown for: a programme that has ended goes, and "noch 12 Min." counts
+    // down, without waiting for some other input to change. Wakes once a minute, on the minute, and only while
+    // the app is on screen (a stopped app does not tick); only with the Spotlight layout.
+    val lifecycle = androidx.lifecycle.compose.LocalLifecycleOwner.current.lifecycle
+    val minute by androidx.compose.runtime.produceState(System.currentTimeMillis() / MINUTE_MS, spotlightLayout, lifecycle) {
+        if (!spotlightLayout) return@produceState
+        lifecycle.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            while (true) {
+                val now = System.currentTimeMillis()
+                value = now / MINUTE_MS
+                kotlinx.coroutines.delay(MINUTE_MS - now % MINUTE_MS)
+            }
+        }
+    }
     val spotlightHighlights = remember(
         spotlightLayout, spotlightSources, spotlightMatches, state.catalog, state.recentOnNow, state.spotlightWatched, state.heroItems, guidePicks,
-        launcherConfig.spotlightMax, launcherConfig.spotlightHideSeries, filmRatings, wake,
+        launcherConfig.spotlightMax, launcherConfig.spotlightHideSeries, filmRatings, wake, minute,
     ) {
         if (!spotlightLayout) emptyList()
         else SpotlightHighlights.rank(
@@ -733,6 +748,7 @@ fun HomeScreen(
                             modifier = rowModifier,
                             spotlight = spotlightLayout,
                             highlights = stageHighlights,
+                            minute = minute,
                             ratings = if (launcherConfig.spotlightRatings) filmRatings else emptyMap(),
                             autoAdvanceSecs = launcherConfig.spotlightAutoSecs,
                             onDemand = onDemand,
@@ -1766,6 +1782,7 @@ private fun AllRowsHiddenState(
 private const val ARTE_KEY = "arte"
 /** TMDB's answers on tonight's films are handed to the Spotlight together, at most this often. */
 private const val FILM_BATCH_MS = 2_000L
+private const val MINUTE_MS = 60_000L
 
 /** What TMDB knows of the films, by [GuidePick.key]; [keys] are the picks it was read for (null: none yet). */
 @androidx.compose.runtime.Immutable
