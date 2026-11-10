@@ -40,15 +40,17 @@ internal object MagentaMatch {
     }
 
     /**
-     * MATCH only once at least [MIN_SEEN] observations exist and at most a quarter are MISMATCH; MISMATCH
-     * when more than half are; else UNKNOWN. UNKNOWN observations are ignored.
+     * A verdict only once at least [MIN_SEEN] observations exist: MATCH when at most a quarter are MISMATCH,
+     * MISMATCH when more than half are; else UNKNOWN. UNKNOWN observations are ignored. One disagreement alone
+     * decides nothing: at a programme change the two guides are often a few minutes apart.
      */
     fun overall(observations: List<Verdict>): Verdict {
         val seen = observations.filter { it != Verdict.UNKNOWN }
         val bad = seen.count { it == Verdict.MISMATCH }
         return when {
-            seen.isNotEmpty() && bad * 2 > seen.size -> Verdict.MISMATCH
-            seen.size >= MIN_SEEN && bad * 4 <= seen.size -> Verdict.MATCH
+            seen.size < MIN_SEEN -> Verdict.UNKNOWN
+            bad * 2 > seen.size -> Verdict.MISMATCH
+            bad * 4 <= seen.size -> Verdict.MATCH
             else -> Verdict.UNKNOWN
         }
     }

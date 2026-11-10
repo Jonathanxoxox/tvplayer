@@ -64,6 +64,8 @@ class MagentaMatchTest {
         assertEquals(Verdict.MATCH, MagentaMatch.overall(listOf(m, m, m, x)))
         assertEquals(Verdict.UNKNOWN, MagentaMatch.overall(listOf(m, m, x)))
         assertEquals(Verdict.UNKNOWN, MagentaMatch.overall(listOf(m, x)))
+        assertEquals(Verdict.UNKNOWN, MagentaMatch.overall(listOf(x)))
+        assertEquals(Verdict.UNKNOWN, MagentaMatch.overall(listOf(x, x)))
         assertEquals(Verdict.MISMATCH, MagentaMatch.overall(listOf(x, x, m)))
         assertEquals(Verdict.MISMATCH, MagentaMatch.overall(listOf(x, x, x, u)))
     }
