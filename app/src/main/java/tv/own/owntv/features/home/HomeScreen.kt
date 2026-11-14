@@ -358,11 +358,17 @@ fun HomeScreen(
     }
     // The Spotlight waits a moment before it shows its highlights and Home lands on it (7 Nov 2026), so they do not
     // swap under the viewer as the parts come in: at the start until the kept picks and ratings are read (a few
-    // milliseconds, at most [SpotlightHold.START_MS]); on waking from standby until the guide is asked again, while
-    // the television is still lighting up (at most [SpotlightHold.WAKE_MS]). It costs nothing to wait.
+    // milliseconds, at most [SpotlightHold.START_MS]); on waking from standby until the scores of the followed leagues
+    // have been asked again, while the television is still lighting up (at most [SpotlightHold.WAKE_MS]): what was
+    // live last night is not shown as live this morning, and a match on now lands first (14 Nov 2026). It costs
+    // nothing to wait.
+    val sportsCheckedAt = if (spotlightLayout) sportsVm.sportsCheckedAt.collectAsStateWithLifecycle().value else 0L
+    val followsSports = spotlightLayout && sportsVm.followsSports.collectAsStateWithLifecycle().value
+    // When this wake was first seen here, on the wall clock the scoreboard's answer is stamped with.
+    val wakeSeenAt = remember(wake) { System.currentTimeMillis() }
     val holdKey: Any? = when {
         !spotlightLayout -> null
-        wake != 0L && wake != picksState.wakeServed -> wake
+        wake != 0L && (wake != picksState.wakeServed || (followsSports && sportsCheckedAt < wakeSeenAt)) -> wake
         !SpotlightHold.startReleased && (!picksState.ready || !filmInfosRead) -> SpotlightHold.START
         else -> null
     }
@@ -1795,8 +1801,8 @@ private data class FilmInfos(val keys: List<String>? = null, val infos: Map<Stri
 internal object SpotlightHold {
     /** At the start: the kept picks and ratings are read in milliseconds; this is only the limit. */
     const val START_MS = 1_500L
-    /** On waking from standby: the guide is asked again while the television lights up. */
-    const val WAKE_MS = 3_000L
+    /** On waking from standby: the scores are asked again while the television lights up (the Wi-Fi may take a few seconds). */
+    const val WAKE_MS = 4_000L
     /** The start's wait, as a key beside the wakes' (their elapsedRealtime). */
     const val START = "start"
     @Volatile var startReleased = false
