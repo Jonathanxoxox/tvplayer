@@ -73,6 +73,8 @@ internal fun HighlightInfo(
     tier: HighlightTier? = null,
     /** A match's text, which [descriptionOf] cannot know: matchday, venue, table ([sportText]). */
     sportText: String? = null,
+    /** A match's score ("2 – 0") when its picture is shown, which has no score of its own: beside the minute. */
+    sportScore: String? = null,
 ) {
     val accent = stageAccent.accent
     val onDemandButton = remember { FocusRequester() }
@@ -84,7 +86,11 @@ internal fun HighlightInfo(
         Text(titleOf(hl), style = stageText(64, 800), color = StageColors.Text, maxLines = 2, overflow = TextOverflow.Ellipsis)
         FilmFacts(hl, rating)
         FilmCast(hl)
-        lineOf(hl, now)?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        val line = lineOf(hl, now)
+        if (sportScore != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.mpx)) {
+            Text(sportScore, style = stageText(44, 800), color = StageColors.Text, maxLines = 1)
+            line?.let { Text(it, style = stageText(22, 700), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        } else line?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
         // that has one, not only the guide's picks).
         // The room left, at most eight lines: a long title, cast and director never push the buttons out.

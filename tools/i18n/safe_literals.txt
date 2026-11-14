@@ -139,6 +139,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeScreen.kt	★
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeSlots.kt	$anchor$SEP$key
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeSlots.kt	^
+1	technical	app/src/main/java/tv/own/owntv/features/home/HomeStage.kt	${tv.own.owntv.features.sports.scoreText(m.sport, home.score)} – ${tv.own.owntv.features.sports.scoreText(m.sport, away.score)}
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeStage.kt	focus
 1	technical	app/src/main/java/tv/own/owntv/features/home/HomeStage.kt	wake
 1	locale	app/src/main/java/tv/own/owntv/features/home/HomeViewModel.kt	EN
