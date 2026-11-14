@@ -187,16 +187,42 @@ class SportsViewModel(
     /**
      * The Spotlight's matches: the same followed ones as [homeRow], in the same order, but also when none is
      * near yet, so a match tonight is a highlight in the afternoon (Jonathan, 6 Nov 2026: HSV was missing).
+     *
+     * A live match only while a fetch has confirmed it in the last minutes ([SportsHomeRow.confirmed]); judged again
+     * each minute and on waking, so a match whose updates stopped leaves the Spotlight by itself (14 Nov 2026: after
+     * a night in standby the TV came on to last night's match, "live" at 45'+2'). Nothing is kept from before the
+     * screen last stopped watching (the cached list expires at once), so a wake starts from what is known now. The
+     * start's pause is only for the app's first seconds; on waking the scores are asked for at once.
      */
     val spotlightRow: StateFlow<List<Match>> = flow {
-        delay(HOME_ROW_DELAY_MS)
+        if (!tv.own.owntv.StartupGate.isSettled) delay(HOME_ROW_DELAY_MS)
         emitAll(
-            combine(repository.observe(Demand.HomeRow), config) { b, c ->
-                SportsHomeRow.followed(b, c, c.leagues.toSet(), System.currentTimeMillis())
+            combine(repository.observe(Demand.HomeRow), config, minuteTicks(), tv.own.owntv.launcher.apps.LauncherSystem.wake) { b, c, _, _ ->
+                val now = System.currentTimeMillis()
+                SportsHomeRow.confirmed(b, SportsHomeRow.followed(b, c, c.leagues.toSet(), now), now)
                     .sortedWith(compareBy<Match>({ c.rankOf(it.sport, it.feed).first }, { c.rankOf(it.sport, it.feed).second }, { !it.isLive }, { it.startMs }))
-            },
+            }.distinctUntilChanged(),
         )
-    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+    }.flowOn(Dispatchers.Default).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, replayExpirationMillis = 0), emptyList())
+
+    /**
+     * When a scoreboard last answered (wall clock, 0 before the first): Home waits a moment after a wake until the
+     * scores have been asked again, so the Spotlight lands on what is live now.
+     */
+    val sportsCheckedAt: StateFlow<Long> = repository.board.map { it.checkedAt ?: 0L }.distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0L)
+
+    /** Whether the profile follows any league or team: without, there are no scores to wait for. */
+    val followsSports: StateFlow<Boolean> = config.map { it.leagues.isNotEmpty() || it.teams.isNotEmpty() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** A tick now and at the start of every minute, for judgements that change with the time alone. */
+    private fun minuteTicks() = flow {
+        while (true) {
+            emit(Unit)
+            delay(MINUTE_MS - System.currentTimeMillis() % MINUTE_MS)
+        }
+    }
 
     // --- The match page ------------------------------------------------------------------------------
 
@@ -427,6 +453,7 @@ class SportsViewModel(
 
     companion object {
         private const val HOME_ROW_DELAY_MS = 3_000L
+        private const val MINUTE_MS = 60_000L
         private const val GUIDE_WAIT_MS = 8_000L
 
         fun reminderKey(startMs: Long, title: String) = "$startMs|$title"
