@@ -88,7 +88,7 @@ internal fun HighlightInfo(
         FilmCast(hl)
         val line = lineOf(hl, now)
         if (sportScore != null) Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(18.mpx)) {
-            Text(sportScore, style = stageText(44, 800), color = StageColors.Text, maxLines = 1)
+            Text(sportScore, style = stageText(44, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             line?.let { Text(it, style = stageText(22, 700), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         } else line?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
