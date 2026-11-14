@@ -113,6 +113,8 @@ internal fun HomeStage(
      * composing, so without it a programme that has ended would stay ("noch 0 Min.") until some other input changes.
      */
     minute: Long = 0L,
+    /** Sports › spoiler-free: a match's score is not shown, in the Spotlight as on the sports page. */
+    spoilerFree: Boolean = false,
     onOpenMatch: (tv.own.owntv.core.sports.model.Match) -> Unit = {},
     onResume: (tv.own.owntv.core.home.HeroItem) -> Unit = {},
     /** The films' TMDB ratings by [GuidePick.key], shown on their highlight; empty when ratings are off. */
@@ -276,17 +278,30 @@ internal fun HomeStage(
     }
     // A pick from the guide brings its own picture.
     val pickArt = (hl as? Highlight.Pick)?.pick
-    // A match: its programme's picture from the guide's sports channels, when one shows it.
+    // A match: the same poster as its tile on the sports page ([SportPosters]: MagentaTV's programme picture, else
+    // TheSportsDB's picture of the match), so the Spotlight shows the sharp matchday picture rather than the crests
+    // drawn large (Jonathan, 14 Nov 2026: "the tiles on the sports page look better"). The guide's sports channels
+    // are still asked for the matchday and venue line, and for a picture when the poster has none.
     val magenta = org.koin.compose.koinInject<MagentaGuide>()
+    val posters = org.koin.compose.koinInject<tv.own.owntv.features.sports.SportPosters>()
     val sportMatch = (hl as? Highlight.Sport)?.match
     var sportNotes by remember(sportMatch?.key) { mutableStateOf<MatchNotes?>(null) }
-    val sportArt by androidx.compose.runtime.produceState<String?>(null, sportMatch?.key) {
-        value = null
-        val m = sportMatch ?: return@produceState
+    val sportArt by androidx.compose.runtime.produceState(sportMatch?.let { posters.peek(it)?.ifEmpty { null } }, sportMatch?.key) {
+        val m = sportMatch ?: run { value = null; return@produceState }
         fun names(c: tv.own.owntv.core.sports.model.Competitor?) =
             listOfNotNull(c?.team?.name, c?.team?.shortName, c?.team?.abbreviation).filter { it.isNotBlank() }
-        value = magenta.matchPicture(m.key, names(m.home), names(m.away), m.startMs)
+        val poster = posters.posterFor(m)
+        if (poster != null) value = poster
+        val guide = magenta.matchPicture(m.key, names(m.home), names(m.away), m.startMs)
+        if (poster == null) value = guide
         sportNotes = magenta.matchNotes(m.key)
+    }
+    // Over a picture the score is not drawn under the crests, so the text side shows it (as the tile does).
+    val sportScore = sportMatch?.takeIf { sportArt != null && !spoilerFree }?.let { m ->
+        val home = m.home
+        val away = m.away
+        if (m.state == tv.own.owntv.core.sports.model.MatchState.PRE || home == null || away == null) null
+        else "${tv.own.owntv.features.sports.scoreText(m.sport, home.score)} – ${tv.own.owntv.features.sports.scoreText(m.sport, away.score)}"
     }
     // The table, for the match's text: the board's, as the sports page has it.
     val sportsRepo = org.koin.compose.koinInject<tv.own.owntv.core.sports.SportsRepository>()
@@ -367,7 +382,7 @@ internal fun HomeStage(
             // A match with a picture shows it full width like any highlight; without one, its crests (below).
             is Highlight.Sport -> sportArt?.let { url ->
                 SpotlightArt(state = ArtState.Picture(url), channel = picChannel, logo = {}, corner = {})
-            } ?: SportColorsBackdrop(hl.match)
+            } ?: SportColorsBackdrop(hl.match, showScore = !spoilerFree)
             is Highlight.Resume -> HighlightPicture(hl)
             else -> SpotlightArt(
                 state = artState,
@@ -432,6 +447,7 @@ internal fun HomeStage(
                     secondIcon = if (hl is Highlight.Sport) OwnTVIcon.SPORTS else OwnTVIcon.MOVIES,
                     tier = if (badges) HighlightTier.of(hl, (hl as? Highlight.Pick)?.let { ratings[it.key] }) else null,
                     sportText = sportMatch?.let { sportText(it, sportNotes, sportTable) },
+                    sportScore = sportScore,
                     onOpen = {
                         // A channel's programme, on now or later: the first OK plays the channel in the picture
                         // here, as the strip does; the second takes it full screen.

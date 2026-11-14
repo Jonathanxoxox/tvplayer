@@ -755,6 +755,7 @@ fun HomeScreen(
                             spotlight = spotlightLayout,
                             highlights = stageHighlights,
                             minute = minute,
+                            spoilerFree = spotlightLayout && sportsVm.sportsConfig.collectAsStateWithLifecycle().value.spoilerFree,
                             ratings = if (launcherConfig.spotlightRatings) filmRatings else emptyMap(),
                             autoAdvanceSecs = launcherConfig.spotlightAutoSecs,
                             onDemand = onDemand,
