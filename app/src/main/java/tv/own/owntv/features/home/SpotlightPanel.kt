@@ -473,7 +473,10 @@ private fun lineOf(hl: Highlight, now: Long): String? = when (hl) {
     is Highlight.Pick -> if (hl.pick.startMs <= now) {
         stringResource(R.string.home_stage_time_span, clock(hl.pick.startMs), clock(hl.pick.stopMs))
     } else {
-        stringResource(R.string.home_stage_time_span, clock(hl.pick.startMs), clock(hl.pick.stopMs))
+        // Still to come: from when to when, and how long until it starts (Jonathan, 15 Nov 2026).
+        stringResource(R.string.home_stage_time_span, clock(hl.pick.startMs), clock(hl.pick.stopMs)) +
+            stringResource(R.string.content_epg_bits_separator) +
+            stringResource(R.string.tvplayer_starts_in, durationText(((hl.pick.startMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L))
     }
     is Highlight.Resume -> (hl.item as? HeroItem.SeriesHero)?.let {
         stringResource(R.string.content_season_episode, it.episode.seasonNumber, it.episode.episodeNumber)
