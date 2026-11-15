@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -91,6 +92,14 @@ internal fun HighlightInfo(
             Text(sportScore, style = stageText(44, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             line?.let { Text(it, style = stageText(22, 700), color = accent, maxLines = 1, overflow = TextOverflow.Ellipsis) }
         } else line?.let { Text(it, style = stageText(19, 600), color = StageColors.Dim, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+        // A programme on now: how far it has run as a bar, as the channel strip shows it (Jonathan, 15 Nov 2026: easier
+        // to read at a glance than "noch 1 Std. 22 Min.").
+        onNowSpan(hl, now)?.let { (start, stop) ->
+            Box(Modifier.width(520.mpx).height(6.mpx).clip(RoundedCornerShape(3.mpx)).background(StageColors.ControlFill)) {
+                val done = ((now - start).toFloat() / (stop - start).coerceAtLeast(1L)).coerceIn(0f, 1f)
+                Box(Modifier.fillMaxSize().fillMaxWidth(done).background(accent))
+            }
+        }
         // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
         // that has one, not only the guide's picks).
         // The room left, at most eight lines: a long title, cast and director never push the buttons out.
@@ -459,15 +468,27 @@ private fun lineOf(hl: Highlight, now: Long): String? = when (hl) {
     // Before kick-off neither a minute ("0'") nor a status: the label above already says when.
     is Highlight.Sport -> if (hl.match.state == tv.own.owntv.core.sports.model.MatchState.PRE) null
         else hl.match.clock?.display ?: hl.match.statusText.ifBlank { null }
-    is Highlight.Live -> hl.programme?.let { timeLeftText(((it.stopMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L) }
-    // On now: how long it still runs; later: from when to when.
+    // On now: from when to when, with a bar of how far it has run ([OnNowProgress]); later: from when to when.
+    is Highlight.Live -> hl.programme?.let { stringResource(R.string.home_stage_time_span, clock(it.startMs), clock(it.stopMs)) }
     is Highlight.Pick -> if (hl.pick.startMs <= now) {
-        timeLeftText(((hl.pick.stopMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L)
-    } else {
         stringResource(R.string.home_stage_time_span, clock(hl.pick.startMs), clock(hl.pick.stopMs))
+    } else {
+        // Still to come: from when to when, and how long until it starts (Jonathan, 15 Nov 2026).
+        stringResource(R.string.home_stage_time_span, clock(hl.pick.startMs), clock(hl.pick.stopMs)) +
+            stringResource(R.string.content_epg_bits_separator) +
+            stringResource(R.string.tvplayer_starts_in, durationText(((hl.pick.startMs - now).coerceAtLeast(0L) + 59_999L) / 60_000L))
     }
     is Highlight.Resume -> (hl.item as? HeroItem.SeriesHero)?.let {
         stringResource(R.string.content_season_episode, it.episode.seasonNumber, it.episode.episodeNumber)
     }
 }
 
+/** Start and end of [hl]'s programme while it is on at [now]; null for anything else. */
+private fun onNowSpan(hl: Highlight, now: Long): Pair<Long, Long>? {
+    val (start, stop) = when (hl) {
+        is Highlight.Live -> hl.programme?.let { it.startMs to it.stopMs } ?: return null
+        is Highlight.Pick -> hl.pick.startMs to hl.pick.stopMs
+        else -> return null
+    }
+    return (start to stop).takeIf { start <= now && now < stop }
+}
