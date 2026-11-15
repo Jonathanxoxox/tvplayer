@@ -500,7 +500,11 @@ fun HomeScreen(
         }
         // The row's place among everything Home lists (app buttons, Apps row, other apps' rows).
         // No row to return to: the very top, app buttons included.
-        val targetIndex = targetRow?.let { lazyKeys.indexOf(it.name) }?.takeIf { it >= 0 } ?: 0
+        // The first row comes back to the page's resting place, the very top with the app buttons over it: scrolled to
+        // the row itself, the buttons slid out, and focus coming back into the row slid the page down again — a jump on
+        // every return from full screen to the Spotlight (Jonathan, 15 Nov 2026).
+        val targetIndex = targetRow?.takeIf { it != renderRows.firstOrNull() }
+            ?.let { lazyKeys.indexOf(it.name) }?.takeIf { it >= 0 } ?: 0
         runCatching { listState.scrollToItem(targetIndex.coerceAtLeast(0)) }
 
         // Only pull focus INTO the Home content when returning from the player (restoreFocus). On a cold
