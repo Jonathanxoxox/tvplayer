@@ -271,7 +271,7 @@ private fun VodHeroText(info: VodTitleInfo, compact: Boolean, modifier: Modifier
         info.plot?.takeIf { it.isNotBlank() }?.let {
             Text(
                 it, style = stageText(19.5f, 400).copy(lineHeight = (19.5f * 1.55f).mpxSp), color = StageColors.Body,
-                maxLines = 2, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 860.mpx),
+                maxLines = 5, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 860.mpx),
             )
         }
         if ((info.cast.isNotEmpty() || info.directors.isNotEmpty()) && !compact) {

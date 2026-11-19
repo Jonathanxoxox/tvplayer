@@ -141,8 +141,8 @@ internal class SearchPagingSource<T : Any>(
 }
 
 /**
- * The catalogs a section shows, newest data first. The streaming services ("Auch im Abo bei") first, then "Weiterschauen", "Gerade angesagt", "Neu in
- * deiner Playlist", "Für dich", "Bestbewertet", genres and collections.
+ * The catalogs a section shows, newest data first: "Weiterschauen", "Gerade angesagt", "Neu in deiner
+ * Playlist", "Für dich", "Bestbewertet", then the streaming services, genres and collections.
  * Empty catalogs drop out; a TMDB catalog needs [MIN_TMDB] titles to stay.
  */
 internal fun vodCatalogs(
@@ -176,9 +176,9 @@ internal fun vodCatalogs(
                 if (b.forYou.size >= MIN_TMDB) add(VodCatalog("for_you", discover, context.getString(R.string.vod_catalog_for_you), b.forYou))
                 addAll(b.tmdb.filter { it.id != VodCatalogSource.ID_TRENDING })
             }
-                // "Auch im Abo bei" leads the column: the provider's own categories are poor, the
-                // streaming services are what people look for first (Jonathan, 19 Nov 2026).
-                .sortedBy { it.group != VodCatalog.Group.SERVICES }
+                // Entdecken first, then "Auch im Abo bei": the provider's own categories are poor, the
+                // streaming services are what people look for next (Jonathan, 19 Nov 2026).
+                .sortedBy { GROUP_ORDER.indexOf(it.group) }
         }
     }
     .flowOn(Dispatchers.Default)
@@ -191,6 +191,10 @@ private data class BuiltCatalogs(
 )
 
 private const val MIN_TMDB = 2
+
+private val GROUP_ORDER = listOf(
+    VodCatalog.Group.DISCOVER, VodCatalog.Group.SERVICES, VodCatalog.Group.GENRES, VodCatalog.Group.COLLECTIONS,
+)
 
 /**
  * "Für dich": the genres of what this profile watched last, weighted by how often they come up, and
