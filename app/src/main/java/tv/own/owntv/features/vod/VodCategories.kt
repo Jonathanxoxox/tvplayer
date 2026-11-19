@@ -268,7 +268,11 @@ internal class VodCategories(
         scope.launch {
             val first = kotlinx.coroutines.withTimeoutOrNull(OPEN_WAIT_MS) {
                 railItems.first { list -> list.any { VodCatalogKeys.isCatalog(it.key) } }
-            }?.firstOrNull { VodCatalogKeys.isCatalog(it.key) } ?: return@launch
+            }?.let { list ->
+                // The services now lead the column; Movies still opens on Weiterschauen / Gerade angesagt.
+                list.firstOrNull { VodCatalogKeys.groupOf(it.key) == VodCatalog.Group.DISCOVER }
+                    ?: list.firstOrNull { VodCatalogKeys.isCatalog(it.key) }
+            } ?: return@launch
             if (selected.value == LiveKey.All && lockedKey == null) selected.value = first.key
         }
     }

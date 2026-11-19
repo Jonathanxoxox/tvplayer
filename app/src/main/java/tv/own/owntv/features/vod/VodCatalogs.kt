@@ -141,9 +141,9 @@ internal class SearchPagingSource<T : Any>(
 }
 
 /**
- * The catalogs a section shows, newest data first: "Weiterschauen" from the profile's progress,
- * "Gerade angesagt", "Neu in deiner Playlist", "Für dich", "Bestbewertet", then genres, collections
- * and streaming services. Empty catalogs drop out; a TMDB catalog needs [MIN_TMDB] titles to stay.
+ * The catalogs a section shows, newest data first. The streaming services ("Auch im Abo bei") first, then "Weiterschauen", "Gerade angesagt", "Neu in
+ * deiner Playlist", "Für dich", "Bestbewertet", genres and collections.
+ * Empty catalogs drop out; a TMDB catalog needs [MIN_TMDB] titles to stay.
  */
 internal fun vodCatalogs(
     scope: CoroutineScope,
@@ -176,6 +176,9 @@ internal fun vodCatalogs(
                 if (b.forYou.size >= MIN_TMDB) add(VodCatalog("for_you", discover, context.getString(R.string.vod_catalog_for_you), b.forYou))
                 addAll(b.tmdb.filter { it.id != VodCatalogSource.ID_TRENDING })
             }
+                // "Auch im Abo bei" leads the column: the provider's own categories are poor, the
+                // streaming services are what people look for first (Jonathan, 19 Nov 2026).
+                .sortedBy { it.group != VodCatalog.Group.SERVICES }
         }
     }
     .flowOn(Dispatchers.Default)
