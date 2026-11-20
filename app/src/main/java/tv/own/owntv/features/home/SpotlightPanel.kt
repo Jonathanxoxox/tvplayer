@@ -214,13 +214,26 @@ internal fun SportColorsBackdrop(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(14.mpx),
                 ) {
-                    AsyncImage(model = team.logoUrl, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(crestSize))
+                    AsyncImage(model = if (crestSize > 120.mpx) largeCrest(team.logoUrl) else team.logoUrl, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(crestSize))
                     if (live) Text(c.score?.text.orEmpty(), style = stageText(54, 800), color = StageColors.Text, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                 }
             }
         }
     }
 }
+
+/**
+ * A crest big enough for the Spotlight: the core asks ESPN's image service for 96 px, the size of the sports lists,
+ * which drawn at 240 was blurred (Jonathan, 20 Nov 2026). The same picture at [LARGE_CREST_PX]; other addresses as
+ * they are.
+ */
+internal fun largeCrest(url: String?): String? =
+    url?.takeIf { "espncdn.com/combiner/" in it }
+        ?.replace(Regex("([?&])w=\\d+"), "$1w=$LARGE_CREST_PX")
+        ?.replace(Regex("([?&])h=\\d+"), "$1h=$LARGE_CREST_PX")
+        ?: url
+
+private const val LARGE_CREST_PX = 320
 
 /** The two clubs' colours for [SportColorsBackdrop]: usable on screen, and told apart from each other. */
 internal object ClubColors {
@@ -263,7 +276,7 @@ internal fun HighlightPicture(hl: Highlight) {
         ) {
             listOfNotNull(hl.match.home, hl.match.away).forEach { c ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(14.mpx)) {
-                    AsyncImage(model = c.team.logoUrl, contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(180.mpx))
+                    AsyncImage(model = largeCrest(c.team.logoUrl), contentDescription = null, contentScale = ContentScale.Fit, modifier = Modifier.size(180.mpx))
                     // Before kick-off there is no score: "0 0" read as a match already on.
                     if (hl.match.state != tv.own.owntv.core.sports.model.MatchState.PRE) {
                         Text(c.score?.text.orEmpty(), style = stageText(54, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
