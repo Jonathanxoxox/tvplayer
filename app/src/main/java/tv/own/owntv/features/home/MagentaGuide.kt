@@ -101,6 +101,41 @@ class MagentaGuide(private val http: OkHttpClient) {
     }
 
     /**
+     * Every guide channel's programmes from [fromMs] to [toMs] in one sweep: asked without a channel id, the guide
+     * answers for all of them (about 190 channels and 3,000 programmes for twelve hours, some 1 MB), in pages of
+     * [SWEEP_PAGE]. For Search, which looks through it on the box: the guide's own search is closed to guests
+     * (every search call answers 403). Pairs of the channel's key ([MagentaNames.key]) and its playbill; null
+     * when the guide could not be asked.
+     */
+    suspend fun sweep(fromMs: Long, toMs: Long): List<Pair<String, JSONObject>>? = withContext(Dispatchers.IO) {
+        val index = guideIndex() ?: return@withContext null
+        val keyOfId = HashMap<String, String>(index.size)
+        index.forEach { (k, id) -> keyOfId[id] = k }
+        val out = ArrayList<Pair<String, JSONObject>>()
+        for (page in 0 until SWEEP_PAGES) {
+            ensureActive()
+            val body = JSONObject()
+                .put("count", SWEEP_PAGE)
+                .put("offset", page * SWEEP_PAGE)
+                .put("isFillProgram", 0)
+                .put("type", 2)
+                .put("begintime", utc(fromMs))
+                .put("endtime", utc(toMs))
+                .put("properties", JSONArray().put(JSONObject().put("include", SWEEP_FIELDS).put("name", "playbill")))
+            val list = runCatching { post("PlayBillList", body) }.getOrNull()
+                ?.takeIf { it.optString("retcode", "0") == "0" }?.optJSONArray("playbilllist")
+                ?: return@withContext if (page == 0) null else out
+            for (i in 0 until list.length()) {
+                val p = list.optJSONObject(i) ?: continue
+                val k = keyOfId[p.optString("channelid")] ?: continue
+                out += k to p
+            }
+            if (list.length() < SWEEP_PAGE) break
+        }
+        out
+    }
+
+    /**
      * The raw programme lists of [guideChannelIds] from [fromMs] to [toMs], one call each, [PICKS_PARALLEL] at a
      * time on the low-priority [pickDispatcher]; the calls not yet begun are not made once the caller gives up.
      * A null value: that channel did not answer.
@@ -372,6 +407,10 @@ class MagentaGuide(private val http: OkHttpClient) {
         const val BOARD_AHEAD_MS = 36 * 60 * 60_000L
         /** The guide's start times differ from the provider's by a few minutes now and then. */
         const val WINDOW_MS = 20 * 60_000L
+        const val SWEEP_PAGE = 500
+        /** Twelve hours are some seven pages; the cap only stops a guide that never says it is done. */
+        const val SWEEP_PAGES = 16
+        const val SWEEP_FIELDS = "name,starttime,endtime,channelid,introduce,genres"
         const val PICK_FIELDS = "name,starttime,endtime,tipType,tipCategory,genres,pictures,introduce"
         /** What tells a film from an episode, and its year. */
         const val PICK_EXTRA_FIELDS = ",seasonNO,sitcomNO,seriesID,producedate"

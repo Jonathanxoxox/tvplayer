@@ -30,8 +30,13 @@ import java.net.URLEncoder
 import java.util.concurrent.TimeUnit
 
 /** What a described search ("Stonermovie", "was Gruseliges") found in the playlist, best fit first. */
-data class MoodResults(val movies: List<MovieEntity> = emptyList(), val series: List<SeriesEntity> = emptyList()) {
-    val isEmpty: Boolean get() = movies.isEmpty() && series.isEmpty()
+data class MoodResults(
+    val movies: List<MovieEntity> = emptyList(),
+    val series: List<SeriesEntity> = emptyList(),
+    /** Programmes on TV in the next hours that fit the wish ([LiveGuideSearch.byWish]). */
+    val programmes: List<tv.own.owntv.core.content.ProgrammeSearchResult> = emptyList(),
+) {
+    val isEmpty: Boolean get() = movies.isEmpty() && series.isEmpty() && programmes.isEmpty()
 }
 
 /**

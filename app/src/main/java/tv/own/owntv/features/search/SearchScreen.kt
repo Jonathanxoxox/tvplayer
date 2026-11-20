@@ -139,8 +139,9 @@ private sealed interface Entry {
     data class Series(val series: SeriesEntity, val tag: String = "s") : Entry { override val key = "$tag${series.id}" }
     /** A line that is not a result, such as "Jev is looking…". */
     data class Note(val text: String, override val key: String) : Entry
-    data class Programme(val found: ProgrammeSearchResult) : Entry {
-        override val key = "p${found.programme.id}-${found.channel.id}"
+    data class Programme(val found: ProgrammeSearchResult, val tag: String = "p") : Entry {
+        // With the start: programmes read from MagentaTV's guide have no row id.
+        override val key = "$tag${found.programme.id}-${found.channel.id}-${found.programme.startMs}"
     }
     data class AllChannels(val count: Int) : Entry { override val key = "all-channels" }
 }
@@ -203,10 +204,17 @@ fun SearchScreen(
     // under the cursor never jump for a query that turns out to be a name).
     val wantsMovies = kinds.isEmpty() || SearchKind.MOVIES in kinds
     val wantsSeries = kinds.isEmpty() || SearchKind.SERIES in kinds
+    val wantsTv = kinds.isEmpty() || SearchKind.TV_SHOWS in kinds
     val moodFound = (mood as? MoodState.Found)?.takeIf { searching && it.query == query.trim() }?.results
-        ?.let { MoodResults(if (wantsMovies) it.movies else emptyList(), if (wantsSeries) it.series else emptyList()) }
+        ?.let {
+            MoodResults(
+                if (wantsMovies) it.movies else emptyList(),
+                if (wantsSeries) it.series else emptyList(),
+                if (wantsTv) it.programmes else emptyList(),
+            )
+        }
         ?: MoodResults()
-    val moodSearching = searching && (wantsMovies || wantsSeries) && (mood as? MoodState.Searching)?.query == query.trim()
+    val moodSearching = searching && (wantsMovies || wantsSeries || wantsTv) && (mood as? MoodState.Searching)?.query == query.trim()
     // An actor or director ("Tom Cruise"): their films and series in the playlist, under the description finds.
     val peopleFound = people?.takeIf { searching && it.first == query.trim() }?.second
         ?.let { MoodResults(if (wantsMovies) it.movies else emptyList(), if (wantsSeries) it.series else emptyList()) }
@@ -305,7 +313,7 @@ fun SearchScreen(
         val titleModifier = Modifier.padding(start = fx(84), top = 52.mpx).width(fx(826))
         if (showingResults) {
             val total = shown.channels.size + shown.movies.size + shown.series.size + shown.programmes.size +
-                moodFound.movies.size + moodFound.series.size + peopleFound.movies.size + peopleFound.series.size
+                moodFound.movies.size + moodFound.series.size + moodFound.programmes.size + peopleFound.movies.size + peopleFound.series.size
             VodHeader(
                 section = stringResource(R.string.search_title),
                 category = if (searching) stringResource(R.string.search_query_quoted, query.trim()) else intent?.displayLabel().orEmpty(),
@@ -359,6 +367,7 @@ fun SearchScreen(
                                     (people?.takeIf { it.first == query.trim() }?.second?.movies?.size ?: 0)
                                 SearchKind.SERIES -> ((mood as? MoodState.Found)?.takeIf { it.query == query.trim() }?.results?.series?.size ?: 0) +
                                     (people?.takeIf { it.first == query.trim() }?.second?.series?.size ?: 0)
+                                SearchKind.TV_SHOWS -> (mood as? MoodState.Found)?.takeIf { it.query == query.trim() }?.results?.programmes?.size ?: 0
                                 else -> 0
                             },
                         ),
@@ -588,8 +597,10 @@ private fun moodEntries(found: MoodResults, query: String): List<Entry> {
     return remember(found, label, sep) {
         if (found.isEmpty) emptyList()
         else buildList {
-            val n = found.movies.size + found.series.size
+            val n = found.movies.size + found.series.size + found.programmes.size
             add(Entry.Heading(label.uppercase(java.util.Locale.getDefault()) + sep + n.toString(), "h-mood"))
+            // On TV now or soon first: what fits the wish and can be watched at once.
+            found.programmes.forEach { add(Entry.Programme(it, tag = "jp")) }
             found.movies.forEach { add(Entry.Movie(it, tag = "jm")) }
             found.series.forEach { add(Entry.Series(it, tag = "js")) }
         }
