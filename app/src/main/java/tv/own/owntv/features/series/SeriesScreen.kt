@@ -343,6 +343,18 @@ private fun SeriesGrid(
     var railPaneFocused by remember { mutableStateOf(false) }
     // CH± in the categories moves the highlight only; OK picks.
     var catFocusIndex by remember { mutableStateOf<Int?>(null) }
+    // A category the cursor rests on opens beside the column, as Live TV's groups do (Jonathan, 20 Nov 2026);
+    // the short dwell keeps a quick run down the column from loading every category on the way.
+    LaunchedEffect(catFocusIndex, railPaneFocused) {
+        val idx = catFocusIndex ?: return@LaunchedEffect
+        if (!railPaneFocused) return@LaunchedEffect
+        delay(CATEGORY_DWELL_MS)
+        val item = railItems.getOrNull(idx) ?: return@LaunchedEffect
+        if (item.key != selectedKey) {
+            shown.picked(series.itemSnapshotList)
+            vm.select(item.key)
+        }
+    }
     // Tiles the provider gave no artwork for: ask for the TMDB poster already cached from an earlier
     // focus, so the placeholder is only shown when nothing at all is known (mirrors Movies).
     val cachedPosters by vm.cachedPosters.collectAsStateWithLifecycle()
@@ -2004,3 +2016,6 @@ private fun episodeLine(aired: String?, durationSecs: Int?, secondsLeft: Int?, w
     secondsLeft?.let { stringResource(R.string.home_time_left, vodRuntime(it)) },
     if (watched) stringResource(R.string.content_episode_watched) else null,
 ).joinToString(" · ")
+
+/** How long the cursor rests on a category before its titles open beside the column. */
+private const val CATEGORY_DWELL_MS = 400L
