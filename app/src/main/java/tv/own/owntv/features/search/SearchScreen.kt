@@ -225,6 +225,7 @@ fun SearchScreen(
     // The preview plays only while the user is on a channel row (or its schedule), never just because
     // a channel is the first result under the field.
     var listHasFocus by remember { mutableStateOf(false) }
+    var fieldHasFocus by remember { mutableStateOf(false) }
     var scheduleHasFocus by remember { mutableStateOf(false) }
     val activeChannel = active?.channel()?.takeIf { showingResults && (listHasFocus || scheduleHasFocus) }
     val previewOn = previewEnabled && livePreviewSetting
@@ -246,13 +247,20 @@ fun SearchScreen(
     val formatTime = rememberSystemTimeFormatter()
     LaunchedEffect(channelRows.map { it.id }) { liveVm.ensureNowPlaying(channelRows) }
 
-    // Back clears an active query/intent (returning to the launcher) before leaving the screen.
-    BackHandler(enabled = returnToHomeOnBack || query.isNotBlank() || intent != null) {
-        vm.setQuery("")
-        vm.setIntent(null)
-        vm.clearKinds()
-        if (returnToHomeOnBack) onReturnToHome()
-        else runCatching { fieldFocus.requestFocus() }
+    // Back from the results or filters goes up to the field, the search kept; Back from the field goes on to the
+    // menu like on every page (Jonathan, 20 Nov 2026: Back after a search seemed blocked, as each press first
+    // cleared the search and landed on the field again). A curated list (intent) closes back to the launcher.
+    // Reached from Home's trending search, Back returns there.
+    BackHandler(enabled = returnToHomeOnBack || ((query.isNotBlank() || intent != null) && !fieldHasFocus)) {
+        if (returnToHomeOnBack) {
+            vm.setQuery("")
+            vm.setIntent(null)
+            vm.clearKinds()
+            onReturnToHome()
+        } else {
+            if (intent != null) vm.setIntent(null)
+            runCatching { fieldFocus.requestFocus() }
+        }
     }
 
     val listState = rememberLazyListState()
@@ -325,6 +333,7 @@ fun SearchScreen(
                 .padding(start = listX, top = 118.mpx)
                 .width(listW)
                 .focusRequester(fieldFocus)
+                .onFocusChanged { fieldHasFocus = it.hasFocus }
                 // ▼ lands on a filter button that is on, not whichever one is nearest below.
                 .focusProperties { down = if (searching) filterEntry else if (!showingResults) jumpFocus else FocusRequester.Default },
         )

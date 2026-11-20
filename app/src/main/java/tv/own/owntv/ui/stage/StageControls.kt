@@ -59,6 +59,8 @@ import tv.own.owntv.ui.components.rememberVoiceSearch
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.LocalStagePalette
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import tv.own.owntv.ui.theme.mpx
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
@@ -121,6 +123,22 @@ fun StageSearchField(
             runCatching { bringIntoView.bringIntoView() }
         } else {
             imeWatcher?.onImeDismissed()
+        }
+    }
+    // The keyboard closed by itself (its own Back or Done): typing is over, the field is a button again, so the
+    // next ◀ or Back moves on instead of going to the text cursor first (Jonathan, 20 Nov 2026: after a search
+    // neither ◀ nor Back reached the menu). Only once the keyboard was seen, as some boxes never report it.
+    @OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+    val imeShown = WindowInsets.isImeVisible
+    var imeSeen by remember { mutableStateOf(false) }
+    LaunchedEffect(editing, imeShown) {
+        if (!editing) { imeSeen = false; return@LaunchedEffect }
+        if (imeShown) {
+            imeSeen = true
+        } else if (imeSeen) {
+            kotlinx.coroutines.delay(IME_CLOSE_SETTLE_MS)
+            editing = false
+            runCatching { pillFocus.requestFocus() }
         }
     }
     LaunchedEffect(editing, imeMetrics.keyboardTopPx, imeMetrics.visible) {
@@ -229,6 +247,9 @@ fun StageSearchField(
     }
     }
 }
+
+/** How long a closed keyboard must stay closed before typing counts as over (a keyboard switching layouts blinks). */
+private const val IME_CLOSE_SETTLE_MS = 150L
 
 /** Whether the pages show their remote-key hints ([StageKeyHints]). */
 private const val ShowKeyHints = false
