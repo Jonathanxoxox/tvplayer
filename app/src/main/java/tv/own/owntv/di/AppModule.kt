@@ -30,6 +30,7 @@ import tv.own.owntv.features.live.LiveViewModel
 import tv.own.owntv.features.movies.MovieViewModel
 import tv.own.owntv.features.profiles.ProfileGateSessionViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
+import tv.own.owntv.features.search.LiveGuideSearch
 import tv.own.owntv.features.search.MoodSearch
 import tv.own.owntv.features.search.VoiceQuery
 import tv.own.owntv.features.voice.ScribeRealtime
@@ -124,6 +125,7 @@ val appModule = module {
     viewModelOf(::SeriesViewModel)
     // Search by description (Jev + TMDB); off without a TypeSafe key.
     singleOf(::MoodSearch)
+    singleOf(::LiveGuideSearch)
     // What a spoken search meant (Jev picks among the recogniser's guesses and playlist names).
     singleOf(::VoiceQuery)
     // Speech to text for the mic button (ElevenLabs Scribe); off without a key.

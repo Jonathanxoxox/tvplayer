@@ -39,5 +39,29 @@
       "true": "Its genres and story clearly match the mood, theme or sub-genre in the wish",
       "false": "It only shares a broad genre with the wish, or does not match it"
     }
+  },
+  "tv_describes": {
+    "type": "noul",
+    "instructions": "`wish` was typed into the search of a TV app. Does `wish` describe what kind of TV programme the person wants to watch (a type of programme, genre, subject, mood or occasion, e.g. an animal documentary, a blockbuster, football, something funny), rather than naming one specific title, channel, person or team?",
+    "criteria": {
+      "true": "A description of the kind of programme to watch, in any language",
+      "false": "The name of one specific programme, series, film, channel, person, team or event, or a fragment of such a name"
+    }
+  },
+  "tv_genre": {
+    "type": "noul",
+    "instructions": "Is the TV guide genre `genres[{index}]` a genre of the programmes that `wish` asks for, so that browsing programmes of this genre is a good start?",
+    "criteria": {
+      "true": "The wish names this genre or a sub-genre of it, or clearly implies it (e.g. an animal documentary implies documentary and nature genres; a blockbuster implies feature film genres such as action, adventure, thriller)",
+      "false": "The genre is unrelated or only loosely possible"
+    }
+  },
+  "tv_fit": {
+    "type": "noul",
+    "instructions": "Is `programmes[{index}]` (title, guide genres and description) the kind of TV programme that `wish` asks for?",
+    "criteria": {
+      "true": "Its genres and description clearly match what the wish describes",
+      "false": "It only shares a broad genre with the wish, or does not match it"
+    }
   }
 }

@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.mapLatest
@@ -56,6 +57,7 @@ class SearchViewModel(
     private val metadata: MetadataRepository,
     private val moodSearch: MoodSearch,
     private val voiceQuery: VoiceQuery,
+    private val liveGuide: LiveGuideSearch,
 ) : ViewModel() {
 
     // Observe the active profile's sources reactively so adding/removing a playlist refreshes Search
@@ -64,6 +66,9 @@ class SearchViewModel(
     private val ctx: StateFlow<ActiveProfileSources> = activeProfileSources(settings, sourceDao)
         .distinctUntilChanged()
         .stateIn(viewModelScope, SharingStarted.Eagerly, ActiveProfileSources(-1L, emptyList()))
+
+    // The guide's sweep is read while the first letters are typed, so the first results do not wait for it.
+    init { viewModelScope.launch { runCatching { liveGuide.warm() } } }
 
     private val _query = MutableStateFlow("")
     val query: StateFlow<String> = _query.asStateFlow()
@@ -100,10 +105,26 @@ class SearchViewModel(
     val mood: StateFlow<MoodState> = combine(_query.map { it.trim() }.debounce(800).distinctUntilChanged(), ctx) { q, c -> q to c }
         .transformLatest { (q, c) ->
             if (!moodSearch.available || q.length < MoodSearch.MIN_LENGTH || c.profileId < 0) { emit(MoodState.Off); return@transformLatest }
-            moodSearch.cached(q)?.let { emit(if (it.isEmpty) MoodState.Off else MoodState.Found(q, it)); return@transformLatest }
+            val cachedVod = moodSearch.cached(q)
+            val cachedTv = synchronized(wishCache) { wishCache[q.lowercase()] }
+            if (cachedVod != null && cachedTv != null) {
+                val both = cachedVod.copy(programmes = cachedTv)
+                emit(if (both.isEmpty) MoodState.Off else MoodState.Found(q, both))
+                return@transformLatest
+            }
             emit(MoodState.Searching(q))
-            val found = moodSearch.search(q, c)
-            emit(if (found == null || found.isEmpty) MoodState.Off else MoodState.Found(q, found))
+            // Films and series from the playlist, and what fits on TV in the next hours, at once.
+            val found = kotlinx.coroutines.coroutineScope {
+                val vod = async { cachedVod ?: moodSearch.search(q, c) }
+                val tv = async {
+                    cachedTv ?: currentProfileId()
+                        ?.let { pid -> runCatching { liveGuide.byWish(q, pid, c) }.getOrNull() }
+                        .orEmpty()
+                        .also { synchronized(wishCache) { wishCache[q.lowercase()] = it } }
+                }
+                (vod.await() ?: MoodResults()).copy(programmes = tv.await())
+            }
+            emit(if (found.isEmpty) MoodState.Off else MoodState.Found(q, found))
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MoodState.Off)
 
@@ -149,7 +170,23 @@ class SearchViewModel(
 
     private suspend fun search(q: String, c: ActiveProfileSources): SearchResults {
         val pid = currentProfileId() ?: return SearchResults()
-        return searchReader.search(pid, c, q)
+        val stored = searchReader.search(pid, c, q)
+        if (c.liveSourceIds.isEmpty()) return stored
+        // MagentaTV's whole guide too (see [LiveGuideSearch]): titles first, then what the genres and descriptions
+        // name ("Fußball"). The stored guide's finds stay; a programme found twice is listed once.
+        val guide = runCatching { liveGuide.byTitle(q, pid, c) + liveGuide.byText(q, pid, c) }.getOrDefault(emptyList())
+        if (guide.isEmpty()) return stored
+        val now = System.currentTimeMillis()
+        val titleKey = { r: tv.own.owntv.core.content.ProgrammeSearchResult -> r.channel.id to r.programme.startMs }
+        val merged = (stored.programmes + guide).distinctBy(titleKey)
+        val (byTitle, byText) = merged.partition { tv.own.owntv.features.home.MagentaNames.fold(q) in tv.own.owntv.features.home.MagentaNames.fold(it.programme.title) }
+        val order = compareBy<tv.own.owntv.core.content.ProgrammeSearchResult>({ it.programme.startMs > now }, { it.programme.startMs })
+        return stored.copy(programmes = (byTitle.sortedWith(order) + byText.sortedWith(order)).take(PROGRAMME_LIMIT))
+    }
+
+    /** What the guide had for a described wish, per wish, for a few back-and-forths. */
+    private val wishCache = object : LinkedHashMap<String, List<tv.own.owntv.core.content.ProgrammeSearchResult>>(16, 0.75f, true) {
+        override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, List<tv.own.owntv.core.content.ProgrammeSearchResult>>?) = size > 20
     }
 
     // --- Stage page ---
@@ -215,3 +252,6 @@ sealed interface MoodState {
     data class Searching(val query: String) : MoodState
     data class Found(val query: String, val results: MoodResults) : MoodState
 }
+
+/** How many programmes "Im TV" lists. */
+private const val PROGRAMME_LIMIT = 40
