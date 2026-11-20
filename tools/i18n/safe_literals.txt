@@ -265,6 +265,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	raw
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	reality
 2	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	reportage
+2	json	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	resolution
 2	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	retcode
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	returnSatChannel
 1	technical	app/src/main/java/tv/own/owntv/features/home/MagentaGuide.kt	rtl

@@ -540,12 +540,25 @@ internal object MagentaNames {
         return pictureOf(best)
     }
 
-    /** A programme's 16:9 picture (type 17), else its wide banner (18), else any; over https. */
+    /**
+     * A programme's widest 16:9 picture (type 17 or 18), over https; none under [MIN_PICTURE_WIDTH]. Some
+     * programmes carry only a 320 × 240 placeholder, and a 17 at 1280 beside an 18 at 1920: taken as they
+     * came, those were the Spotlight's blurry pictures (Jonathan, 20 Nov 2026). With none, TMDB is asked.
+     */
     private fun pictureOf(p: JSONObject): String? {
         val pics = p.optJSONArray("pictures") ?: return null
-        val all = (0 until pics.length()).mapNotNull { pics.optJSONObject(it) }
-        val pick = listOf("17", "18").firstNotNullOfOrNull { t -> all.firstOrNull { it.optString("imageType") == t } } ?: all.firstOrNull()
+        val pick = (0 until pics.length()).mapNotNull { pics.optJSONObject(it) }
+            .filter { it.optString("imageType") in WIDE_TYPES }
+            .map { it to widthOf(it) }
+            .filter { (_, w) -> w == null || w >= MIN_PICTURE_WIDTH }
+            .maxByOrNull { (_, w) -> w ?: MIN_PICTURE_WIDTH }?.first
         return pick?.optString("href")?.ifBlank { null }?.replaceFirst("http://", "https://")
+    }
+
+    /** The picture's width from its "resolution" ([w, h] or "w x h"), null when it does not say. */
+    private fun widthOf(pic: JSONObject): Int? {
+        pic.optJSONArray("resolution")?.let { return it.optString(0).trim().toIntOrNull() }
+        return pic.optString("resolution").split('x', 'X', '*', ',').firstOrNull()?.trim()?.toIntOrNull()
     }
 
     private fun startOf(p: JSONObject, field: String): Long? = parseTime(p.optString(field))
@@ -730,4 +743,6 @@ data class MagentaProgramme(
 data class MatchNotes(val round: String?, val line: String?)
 
 /** A match broadcast's listing: when, what, its picture and the guide's line on it. */
+private val WIDE_TYPES = setOf("17", "18")
+private const val MIN_PICTURE_WIDTH = 1280
 private const val MATCH_FIELDS = "starttime,name,pictures,introduce"
