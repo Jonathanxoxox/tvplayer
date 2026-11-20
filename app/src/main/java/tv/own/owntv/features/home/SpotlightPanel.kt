@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -97,7 +98,8 @@ internal fun HighlightInfo(
         onNowSpan(hl, now)?.let { (start, stop) ->
             Box(Modifier.width(520.mpx).height(6.mpx).clip(RoundedCornerShape(3.mpx)).background(StageColors.ControlFill)) {
                 val done = ((now - start).toFloat() / (stop - start).coerceAtLeast(1L)).coerceIn(0f, 1f)
-                Box(Modifier.fillMaxSize().fillMaxWidth(done).background(accent))
+                // Height first: after fillMaxSize the width is already fixed, and the bar was always full.
+                Box(Modifier.fillMaxHeight().fillMaxWidth(done).background(accent))
             }
         }
         // What it is about: two lines, as the streaming apps show it (Jonathan, 6 Nov 2026: on every highlight
