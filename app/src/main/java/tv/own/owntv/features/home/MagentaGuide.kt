@@ -463,6 +463,17 @@ internal object MagentaNames {
 
     /** A team's long name parts (4+ letters) to find inside a title, and its short codes as whole words. */
     /** Whether [title] names the team called [names]: an event list's own team name, for example. */
+    /**
+     * ESPN names clubs in English, MagentaTV's guide in German: "Cologne" is "Köln" there, and "Bayern – Cologne"
+     * never found "FC Bayern München - 1. FC Köln" (Jonathan, 20 Nov 2026). English city name → the German one, folded.
+     */
+    private val EXONYMS = mapOf(
+        "cologne" to "koln", "munich" to "munchen", "nuremberg" to "nurnberg", "hanover" to "hannover",
+        "milan" to "mailand", "rome" to "rom", "naples" to "neapel", "lisbon" to "lissabon",
+        "copenhagen" to "kopenhagen", "prague" to "prag", "vienna" to "wien", "warsaw" to "warschau",
+        "belgrade" to "belgrad", "brussels" to "brussel", "moscow" to "moskau", "athens" to "athen",
+    )
+
     fun namesTeam(names: List<String>, title: String): Boolean {
         val t = fold(title)
         return teamMatches(names, t, t.split(Regex("[^a-z0-9]+")).filter { it.isNotEmpty() }.toSet())
@@ -470,6 +481,7 @@ internal object MagentaNames {
 
     private fun teamMatches(names: List<String>, title: String, words: Set<String>): Boolean {
         val parts = names.flatMap { fold(it).split(' ', '-', '.', '\'', '/').filter { p -> p.length >= 4 } }
+            .flatMap { listOfNotNull(it, EXONYMS[it]) }
         val codes = names.map { fold(it).trim() }.filter { it.length in 2..4 && ' ' !in it }
         return parts.any { it in title } || codes.any { it in words }
     }
