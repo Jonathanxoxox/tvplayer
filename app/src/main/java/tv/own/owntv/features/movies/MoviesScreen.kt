@@ -291,6 +291,18 @@ fun MoviesScreen(
     var railPaneFocused by remember { mutableStateOf(false) }
     // CH± in the categories moves the highlight only; OK picks.
     var catFocusIndex by remember { mutableStateOf<Int?>(null) }
+    // A category the cursor rests on opens beside the column, as Live TV's groups do (Jonathan, 20 Nov 2026);
+    // the short dwell keeps a quick run down the column from loading every category on the way.
+    LaunchedEffect(catFocusIndex, railPaneFocused) {
+        val idx = catFocusIndex ?: return@LaunchedEffect
+        if (!railPaneFocused) return@LaunchedEffect
+        delay(CATEGORY_DWELL_MS)
+        val item = railItems.getOrNull(idx) ?: return@LaunchedEffect
+        if (item.key != selectedKey) {
+            shown.picked(movies.itemSnapshotList)
+            vm.select(item.key)
+        }
+    }
     // Tiles the provider gave no artwork for: ask for the TMDB poster already cached from an earlier
     // focus, so the placeholder is only shown when nothing at all is known. peek() reads the loaded
     // page without triggering a fetch.
@@ -1254,3 +1266,6 @@ internal fun movieTitleInfo(
         directors = tv.own.owntv.core.metadata.MetadataCast.directors(meta?.castJson),
     )
 }
+
+/** How long the cursor rests on a category before its titles open beside the column. */
+private const val CATEGORY_DWELL_MS = 400L
