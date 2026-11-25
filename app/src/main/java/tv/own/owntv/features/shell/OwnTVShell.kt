@@ -1256,6 +1256,9 @@ fun OwnTVShell(
         Column(
             modifier = Modifier.fillMaxSize()
                 .graphicsLayer { alpha = if (browseHidden) 0f else 1f }
+                // Unseen behind full screen, it takes no focus: a page kept there (the guide, a match page, Home)
+                // that asked for it took it from the player, and the remote seemed dead until Back.
+                .focusProperties { onEnter = { if (browseHidden) cancelFocusChange() } }
                 // One group with a restorer: leaving for full screen and coming back lands on the
                 // exact control that was focused, without every screen having to remember its own.
                 .focusRestorer()

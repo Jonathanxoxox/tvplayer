@@ -263,7 +263,12 @@ fun PlayerHud(
     val subCount by player.subCount.collectAsStateWithLifecycle()
     val zoomMode by player.zoomMode.collectAsStateWithLifecycle()
     val speed by player.speed.collectAsStateWithLifecycle()
-    val isLive = player.isLiveContent
+    // Read again while the HUD is up: mpv learns a stream is live only once it has loaded it, and a plain read kept
+    // the last item's answer (a film's "not live"), so OK opened a panel that could not take the focus and ▲▼ did
+    // not zap until Back (Jonathan, 25 Nov 2026: the remote "stopped working" after a zap onto mpv).
+    val isLive by androidx.compose.runtime.produceState(player.isLiveContent, player) {
+        while (true) { value = player.isLiveContent; delay(LIVE_POLL_MS) }
+    }
     val switchedToExo = stringResource(R.string.player_switch_exo)
     val switchedToMpv = stringResource(R.string.player_switch_mpv)
     val tuneNotFound = stringResource(R.string.player_channel_not_found)
@@ -490,7 +495,14 @@ fun PlayerHud(
         if (showPanel && !inert && dialog == HudDialog.NONE && !showOptions) { delay(8000); showPanel = false }
     }
     LaunchedEffect(showPanel) {
-        if (showPanel) { withFrameNanos { }; runCatching { panelFocus.requestFocus() } }
+        if (!showPanel) return@LaunchedEffect
+        withFrameNanos { }
+        // A panel that is not drawn (nothing to show for this stream) cannot take the focus: closed again, so
+        // the catch-all takes it back instead of the keys going nowhere.
+        if (!runCatching { panelFocus.requestFocus() }.getOrDefault(false)) {
+            withFrameNanos { }
+            if (!runCatching { panelFocus.requestFocus() }.getOrDefault(false)) showPanel = false
+        }
     }
 
     // Only for the "report this stream" button, whose readout is now gathered off the main thread.
@@ -533,7 +545,7 @@ fun PlayerHud(
         // The film's card holds as long as the live panel: it has choices to walk along.
         if (controlsVisible && !forceShow && !inert) { delay(if (vodPanel) 8000 else 4500); controlsVisible = false }
     }
-    LaunchedEffect(controlsVisible, error, dialog, inert, showNextCard, showOptions, showPanel) {
+    LaunchedEffect(controlsVisible, error, dialog, inert, showNextCard, showOptions, showPanel, player) {
         // Never steal focus while a dialog is open (its rows own it) or while a shell overlay is up
         // (inert — the overlay owns the D-pad); when either closes this re-runs and hands focus back.
         if (dialog != HudDialog.NONE || inert || showOptions || showPanel) return@LaunchedEffect
@@ -1303,3 +1315,6 @@ private fun HudControlPanel(
         CardMenu(start, emptyList(), focus, onActivity, divider = tools.size)
     }
 }
+
+/** How often the HUD reads again whether the stream is live (see isLive). */
+private const val LIVE_POLL_MS = 300L
