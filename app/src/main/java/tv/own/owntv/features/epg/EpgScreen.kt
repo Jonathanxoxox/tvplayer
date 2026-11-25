@@ -377,6 +377,12 @@ fun EpgScreen(
     // Back to the grid at the row focus was on (after a menu, the sheet, a jump).
     fun focusGrid(row: Int = focusedRow) {
         val i = row.coerceIn(0, (state.channels.size - 1).coerceAtLeast(0))
+        // Behind full screen the guide only gets its row in view: taking the focus there moved it from the player
+        // onto an unseen row, and the remote seemed dead until Back (Jonathan, 25 Nov 2026).
+        if (behindFullscreen) {
+            scope.launch { runCatching { rowListState.scrollToItem((i - 2).coerceAtLeast(0)) } }
+            return
+        }
         scope.launch {
             val visible = rowListState.layoutInfo.visibleItemsInfo.any { it.index == i }
             // Two rows of the channels before it stay in view, so a jump never opens on a lone row at the top.
@@ -442,6 +448,17 @@ fun EpgScreen(
         val pending = restoreTo == id && idx >= 0 && state.channels.getOrNull(idx)?.id == id
         if (pending) restoreTo = null
         if (gridHasFocus || pending) focusGrid(idx)
+    }
+
+    // Back from full screen: the row got ready behind the picture without the focus (see [focusGrid]), so it takes
+    // the focus now, unless the shell's restorer already put it in the grid.
+    var wasBehind by remember { mutableStateOf(behindFullscreen) }
+    LaunchedEffect(behindFullscreen) {
+        if (wasBehind && !behindFullscreen) {
+            withFrameNanos { }
+            if (!gridHasFocus) focusGrid(focusedRow)
+        }
+        wasBehind = behindFullscreen
     }
 
     // A favourite taken out of Favoriten with the red key: its row goes, and the one that moves up into its place
