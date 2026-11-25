@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_ready_title">Alles bereit</string>
+    <string name="onboarding_ready_sub">Mayo TV ist bereit. Alles, was du hier eingestellt hast, kannst du jederzeit in den Einstellungen ändern.</string>
+</resources>

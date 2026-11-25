@@ -21,7 +21,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.annotation.StringRes
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -42,17 +46,56 @@ import tv.own.owntv.ui.stage.stageBackground
 import tv.own.owntv.ui.stage.stageGlass
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
+import tv.own.owntv.ui.theme.ownTvTween
 import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
-/** One footer button of a wizard step: its label and what OK on it does. */
-internal class WizardAction(val label: String, val onClick: () -> Unit, val focus: FocusRequester? = null, val enabled: Boolean = true)
+/** One footer button of a wizard step or onboarding chapter: its label and what OK on it does. */
+class WizardAction(val label: String, val onClick: () -> Unit, val focus: FocusRequester? = null, val enabled: Boolean = true)
 
 /** The five steps the dots show: which one a page belongs to. */
 internal enum class WizardStep { LANGUAGE, DISPLAY, PROFILE, PLAYLIST, READY }
 
 /**
- * Every setup step's frame: the Stage background, the OwnTV lockup top left, the step
+ * Every stop of the first-run journey as the progress indicator shows it: the inherited wizard's
+ * steps, then the chapters that run once the profile exists. Order is display order.
+ */
+enum class JourneyStep(@StringRes val labelRes: Int) {
+    LANGUAGE(R.string.settings_language),
+    DISPLAY(R.string.setup_step_display),
+    PROFILE(R.string.settings_group_profile),
+    PLAYLIST(R.string.setup_step_playlist),
+    APPEARANCE(R.string.onboarding_step_appearance),
+    HOME_SCREEN(R.string.onboarding_step_home_screen),
+    FOOTBALL(R.string.onboarding_step_football),
+    EXTRAS(R.string.onboarding_step_extras),
+    READY(R.string.setup_step_ready),
+    ;
+
+    companion object {
+        /** The dots of the profile-only wizard ("Add profile", recovery): its own five steps. */
+        val WIZARD_ONLY = listOf(LANGUAGE, DISPLAY, PROFILE, PLAYLIST, READY)
+    }
+}
+
+/**
+ * True inside the first-run journey (provided by the onboarding flow): the wizard's pages then show
+ * the whole journey's progress, and the wizard's own "All set" counts as part of the playlist step
+ * because more chapters follow.
+ */
+val LocalFirstRunJourney = staticCompositionLocalOf { false }
+
+/** A wizard step's place in the indicator, inside or outside the first-run journey. */
+private fun WizardStep.journeyStep(inJourney: Boolean): JourneyStep = when (this) {
+    WizardStep.LANGUAGE -> JourneyStep.LANGUAGE
+    WizardStep.DISPLAY -> JourneyStep.DISPLAY
+    WizardStep.PROFILE -> JourneyStep.PROFILE
+    WizardStep.PLAYLIST -> JourneyStep.PLAYLIST
+    WizardStep.READY -> if (inJourney) JourneyStep.PLAYLIST else JourneyStep.READY
+}
+
+/**
+ * Every setup step's frame: the Stage background, the Mayo TV lockup top left, the step
  * dots top right, one glass panel (1040 wide, centred, from y 170) with a 42 px title, 19 px text and the
  * step's rows or cards, then [back] bottom-left and [next] bottom-right, and the key hints at the bottom.
  * Back on the remote calls [back] (or [onBack] where the step has no Back button).
@@ -70,21 +113,48 @@ internal fun WizardFrame(
     extraLeft: List<WizardAction> = emptyList(),
     body: @Composable ColumnScope.() -> Unit = {},
 ) {
+    val inJourney = LocalFirstRunJourney.current
+    JourneyFrame(
+        step = step.journeyStep(inJourney),
+        steps = if (inJourney) JourneyStep.entries else JourneyStep.WIZARD_ONLY,
+        title = title,
+        sub = sub,
+        back = back,
+        next = next,
+        onBack = onBack,
+        width = width,
+        extraLeft = extraLeft,
+        showPosition = inJourney,
+        body = body,
+    )
+}
+
+/**
+ * The frame shared by the setup wizard and the onboarding chapters: background, lockup, the
+ * progress dots over [steps] with [step] current, the glass panel with an optional "Step n of m"
+ * line ([showPosition]), title, [sub], the body, and the footer: [back] and [extraLeft] on the left,
+ * [skip] and [next] on the right. Back on the remote calls [onBack]; null leaves Back to the system.
+ */
+@Composable
+internal fun JourneyFrame(
+    step: JourneyStep,
+    steps: List<JourneyStep>,
+    title: String,
+    sub: String?,
+    back: WizardAction?,
+    next: WizardAction?,
+    onBack: (() -> Unit)? = back?.onClick,
+    width: Dp = 1040.mpx,
+    extraLeft: List<WizardAction> = emptyList(),
+    skip: WizardAction? = null,
+    showPosition: Boolean = false,
+    body: @Composable ColumnScope.() -> Unit = {},
+) {
     if (onBack != null) BackHandler { onBack() }
     val a = stageAccent
     BoxWithConstraints(Modifier.fillMaxSize().stageBackground(a.accent)) {
-        // The OwnTV lockup: the play mark on its cream tile, the name beside it.
-        Row(
-            Modifier.padding(start = 64.mpx, top = 56.mpx),
-            horizontalArrangement = Arrangement.spacedBy(14.mpx),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(Modifier.size(44.mpx).background(LockupTile, RoundedCornerShape(12.mpx)), contentAlignment = Alignment.Center) {
-                OwnTVIcon(OwnTVIcon.PLAY, LockupMark, Modifier.size(22.mpx))
-            }
-            Text(stringResource(R.string.tvplayer_app_name), style = stageText(24, 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        StepDots(step, Modifier.align(Alignment.TopEnd).padding(end = 64.mpx, top = 66.mpx))
+        MayoLockup(Modifier.padding(start = 64.mpx, top = 56.mpx))
+        StepDots(step, steps, Modifier.align(Alignment.TopEnd).padding(end = 64.mpx, top = 66.mpx))
 
         Column(
             Modifier
@@ -97,17 +167,34 @@ internal fun WizardFrame(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 48.mpx, vertical = 44.mpx),
         ) {
+            val position = steps.indexOf(step)
+            if (showPosition && position >= 0) {
+                Text(
+                    stringResource(R.string.onboarding_step_position, position + 1, steps.size).uppercase(),
+                    style = stageText(14, 800, 0.12f.em),
+                    color = a.accent,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(bottom = 10.mpx),
+                )
+            }
             Text(title, style = stageText(42, 800, (-1f / 46f).em), color = StageColors.Text)
             if (!sub.isNullOrBlank()) {
                 Text(sub, style = stageText(19, 500).copy(lineHeight = 29.5f.mpxLine()), color = StageColors.Muted, modifier = Modifier.padding(top = 10.mpx))
             }
             Column(Modifier.padding(top = 28.mpx), verticalArrangement = Arrangement.spacedBy(6.mpx), content = body)
-            if (back != null || next != null || extraLeft.isNotEmpty()) {
+            if (back != null || next != null || skip != null || extraLeft.isNotEmpty()) {
                 Row(Modifier.fillMaxWidth().padding(top = 30.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
                     (listOfNotNull(back) + extraLeft).forEach { b ->
                         StagePill(b.label, onClick = b.onClick, enabled = b.enabled, modifier = b.focus?.let { Modifier.focusRequester(it) } ?: Modifier)
                     }
                     Spacer(Modifier.weight(1f))
+                    if (skip != null) {
+                        StagePill(
+                            skip.label, onClick = skip.onClick, enabled = skip.enabled, dimmed = true,
+                            modifier = skip.focus?.let { Modifier.focusRequester(it) } ?: Modifier,
+                        )
+                    }
                     if (next != null) {
                         StagePill(
                             next.label, onClick = next.onClick, trailingIcon = OwnTVIcon.CHEVRON, enabled = next.enabled,
@@ -128,32 +215,44 @@ internal fun WizardFrame(
     }
 }
 
-/** The dots: past steps accent, the current one a 26 px accent bar with its name, later ones white 18%. */
+/** The Mayo TV lockup: the play mark on its cream tile, the name beside it. [scale] grows it (the intro). */
 @Composable
-private fun StepDots(current: WizardStep, modifier: Modifier) {
+fun MayoLockup(modifier: Modifier = Modifier, scale: Float = 1f) {
+    Row(
+        modifier,
+        horizontalArrangement = Arrangement.spacedBy((14 * scale).mpx),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(Modifier.size((44 * scale).mpx).background(LockupTile, RoundedCornerShape((12 * scale).mpx)), contentAlignment = Alignment.Center) {
+            OwnTVIcon(OwnTVIcon.PLAY, LockupMark, Modifier.size((22 * scale).mpx))
+        }
+        Text(stringResource(R.string.tvplayer_app_name), style = stageText((24 * scale).toInt(), 800), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/**
+ * The dots: past steps accent, the current one a 26 px accent bar with its name, later ones white 18%.
+ * The bar grows into place on [ownTvTween], so moving on reads as progress without any flourish.
+ */
+@Composable
+private fun StepDots(current: JourneyStep, steps: List<JourneyStep>, modifier: Modifier) {
     val a = stageAccent
-    Row(modifier, horizontalArrangement = Arrangement.spacedBy(14.mpx), verticalAlignment = Alignment.CenterVertically) {
-        WizardStep.entries.forEach { s ->
+    val at = steps.indexOf(current)
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(if (steps.size > 6) 10.mpx else 14.mpx), verticalAlignment = Alignment.CenterVertically) {
+        steps.forEachIndexed { i, s ->
             val on = s == current
-            val reached = s.ordinal <= current.ordinal
+            val reached = i <= at
+            val barWidth by animateDpAsState(if (on) 26.mpx else 10.mpx, ownTvTween(240), label = "journeyDot")
             Row(horizontalArrangement = Arrangement.spacedBy(8.mpx), verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier
-                        .size(width = if (on) 26.mpx else 10.mpx, height = 10.mpx)
+                        .size(width = barWidth, height = 10.mpx)
                         .background(if (reached) a.accent else StageColors.Ink.copy(alpha = 0.18f), RoundedCornerShape(5.mpx)),
                 )
                 if (on) Text(stringResource(s.labelRes), style = stageText(15, 700), color = StageColors.Text, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
-}
-
-private val WizardStep.labelRes: Int get() = when (this) {
-    WizardStep.LANGUAGE -> R.string.settings_language
-    WizardStep.DISPLAY -> R.string.setup_step_display
-    WizardStep.PROFILE -> R.string.settings_group_profile
-    WizardStep.PLAYLIST -> R.string.setup_step_playlist
-    WizardStep.READY -> R.string.setup_step_ready
 }
 
 /** One choice card of a step (`.tile2`): icon, 23 px title, 16 px line; focused = FX. */

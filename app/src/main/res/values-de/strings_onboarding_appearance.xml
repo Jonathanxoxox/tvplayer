@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_appearance_title">Wie soll Mayo TV aussehen?</string>
+    <string name="onboarding_appearance_sub">Wähle, wie deine Startseite aufgebaut ist. Alles lässt sich später unter Einstellungen › Darstellung ändern.</string>
+</resources>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="onboarding_step_appearance">Aussehen</string>
+    <string name="onboarding_step_home_screen">Startbildschirm</string>
+    <string name="onboarding_step_football">Fußball</string>
+    <string name="onboarding_step_extras">Extras</string>
+    <string name="onboarding_step_position">Schritt <xliff:g id="current" example="3">%1$d</xliff:g> von <xliff:g id="total" example="9">%2$d</xliff:g></string>
+    <string name="onboarding_action_continue">Weiter</string>
+    <string name="onboarding_action_skip">Überspringen</string>
+    <string name="onboarding_action_done">Fertig</string>
+</resources>

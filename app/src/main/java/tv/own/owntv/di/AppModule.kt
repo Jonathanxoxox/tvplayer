@@ -84,6 +84,11 @@ val appModule = module {
     }
     viewModelOf(::HomeViewModel)
     viewModelOf(::SetupViewModel)
+    // The first-run journey's persisted state (chapter to resume, completed, intro flags).
+    single { tv.own.owntv.features.onboarding.OnboardingPrefs(androidContext()) }
+    // The user's own service keys (TMDB, ElevenLabs, TypeSafe) and a check for each.
+    single { tv.own.owntv.features.keys.ApiKeys(androidContext(), get(), get()) }
+    single { tv.own.owntv.features.keys.ApiKeyValidator(get()) }
     viewModelOf(::DisplaySizeViewModel)
     // Takes a Context first; Koin resolves it from androidContext().
     //

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: optional keys of your own for posters, voice search and search by description. -->
+<resources>
+    <string name="onboarding_extras_title">Extras with your own keys</string>
+    <string name="onboarding_extras_sub">Posters, voice search and search by description use outside services that need a key of your own. All of this is optional: Mayo TV works without it.</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: favourite teams and leagues. -->
+<resources>
+    <string name="onboarding_football_title">Your football</string>
+    <string name="onboarding_football_sub">Pick the teams and leagues you follow. Mayo TV shows their matches on Home and reminds you before kick-off.</string>
+</resources>

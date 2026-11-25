@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: the brand intro before setup. -->
+<resources>
+    <!-- Translators: small hint during the opening animation; any key on the remote skips it. -->
+    <string name="onboarding_intro_skip_hint">Press OK to skip</string>
+</resources>

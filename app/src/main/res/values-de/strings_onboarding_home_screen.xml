@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_home_screen_title">Mayo TV als Startbildschirm</string>
+    <string name="onboarding_home_screen_sub">Mayo TV kann sich beim Einschalten öffnen und mit der Home-Taste zurückkommen. Empfohlen – du kannst das auch später einrichten.</string>
+</resources>

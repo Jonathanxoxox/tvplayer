@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: how Home and the app look. -->
+<resources>
+    <string name="onboarding_appearance_title">How should Mayo TV look?</string>
+    <string name="onboarding_appearance_sub">Choose how your Home screen is laid out. You can change all of this later in Settings › Appearance.</string>
+</resources>

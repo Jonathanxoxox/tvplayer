@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_extras_title">Extras mit eigenen Schlüsseln</string>
+    <string name="onboarding_extras_sub">Poster, Sprachsuche und die Suche nach Beschreibung nutzen externe Dienste, für die du einen eigenen Schlüssel brauchst. Alles ist freiwillig – Mayo TV funktioniert auch ohne.</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: the last page before the app opens. -->
+<resources>
+    <string name="onboarding_ready_title">All set</string>
+    <string name="onboarding_ready_sub">Mayo TV is ready. Everything you chose here can be changed any time in Settings.</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: Mayo TV as the TV's start screen (Home button, Home guard, power-on). -->
+<resources>
+    <string name="onboarding_home_screen_title">Mayo TV as your start screen</string>
+    <string name="onboarding_home_screen_sub">Mayo TV can open when you switch on the TV and come back whenever you press Home. Recommended, and you can also set it up later.</string>
+</resources>
