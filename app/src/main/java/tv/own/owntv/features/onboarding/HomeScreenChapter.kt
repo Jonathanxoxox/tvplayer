@@ -2,6 +2,7 @@ package tv.own.owntv.features.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -218,95 +219,107 @@ private fun GuardPage(
             else -> R.string.onboarding_home_screen_guard_sub
         },
     )
+    // The steps by hand and the hints about earlier tries fill a left column beside the status. Without
+    // them (the guard is on, or one click switches it on) the status and its action stand alone.
+    val stepsShown = !status.active && manual
+    val hintShown = !status.active && (writeFailed || attempts >= 1)
+    val twoColumns = stepsShown || hintShown
+    // The live status and the ways in.
+    val waysIn: @Composable ColumnScope.() -> Unit = {
+        StatusCard(status)
+        if (!status.active) {
+            if (status.canWrite) {
+                StagePill(
+                    stringResource(R.string.onboarding_home_screen_switch_on),
+                    onClick = {
+                        writeFailed = !LauncherSystem.switchGuardOn(context)
+                        refresh()
+                    },
+                    icon = OwnTVIcon.POWER,
+                    modifier = Modifier.focusRequester(actionFocus),
+                )
+            }
+            if (canOpen && manual) {
+                StagePill(
+                    stringResource(R.string.onboarding_home_screen_open_settings),
+                    onClick = {
+                        val opened = HomeSetupSystem.openAccessibility(context)
+                        if (opened == SettingsOpened.NONE) {
+                            openFailed = true
+                            progress.openFailed = true
+                        } else {
+                            attempts += 1
+                            progress.attempts = attempts
+                        }
+                    },
+                    icon = OwnTVIcon.SETTINGS,
+                    modifier = if (status.canWrite) Modifier else Modifier.focusRequester(actionFocus),
+                )
+            }
+            if (status.homePicker) {
+                StagePill(
+                    stringResource(R.string.onboarding_home_screen_choose_home),
+                    onClick = { HomeSetupSystem.openHomePicker(context) },
+                    icon = OwnTVIcon.HOME,
+                )
+                HintLine(stringResource(R.string.onboarding_home_screen_choose_home_line))
+            }
+            if (!status.canWrite) {
+                StagePill(
+                    stringResource(R.string.onboarding_home_screen_experts),
+                    onClick = { showExperts = !showExperts },
+                    trailingIcon = if (showExperts) OwnTVIcon.CHEVRON_UP else OwnTVIcon.CHEVRON_DOWN,
+                    dimmed = !showExperts,
+                )
+            }
+        }
+    }
     ChapterFrame(
         chapter = OnboardingChapter.HOME_SCREEN,
-        title = stringResource(R.string.onboarding_home_screen_guard_title),
+        title = stringResource(if (status.active) R.string.onboarding_home_screen_guard_title_active else R.string.onboarding_home_screen_guard_title),
         subtitle = subtitle,
         primary = ChapterAction(stringResource(R.string.onboarding_action_continue), onContinue, continueFocus),
         secondary = ChapterAction(stringResource(R.string.common_back), onBack),
         skip = if (status.active) null else ChapterAction(stringResource(R.string.onboarding_action_later), onLater),
-        width = 1180.mpx,
+        width = if (twoColumns) 1180.mpx else 1040.mpx,
     ) {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(40.mpx)) {
-            // Left: what to do, step by step, and how it went last time.
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.mpx)) {
-                if (!status.active && manual) {
-                    val steps = buildList {
-                        if (openFailed) {
-                            add(stringResource(R.string.onboarding_home_screen_path, service))
-                        } else {
-                            add(stringResource(R.string.onboarding_home_screen_step_1))
-                            add(stringResource(R.string.onboarding_home_screen_step_2, service))
-                        }
-                        add(stringResource(R.string.onboarding_home_screen_step_3))
-                        add(stringResource(R.string.onboarding_home_screen_step_4))
-                    }
-                    steps.forEachIndexed { i, text -> NumberedStep(i + 1, text) }
-                    if (openFailed) {
-                        HintLine(stringResource(R.string.onboarding_home_screen_open_failed), warn = true)
-                    } else {
-                        // Some boxes only open their general settings: the route from there.
-                        HintLine(stringResource(R.string.onboarding_home_screen_path, service))
-                    }
-                }
-                if (!status.active) {
-                    when {
-                        writeFailed -> HintLine(stringResource(R.string.onboarding_home_screen_write_failed), warn = true)
-                        attempts >= 2 -> HintLine(stringResource(R.string.onboarding_home_screen_retry_again), warn = true)
-                        attempts == 1 -> HintLine(stringResource(R.string.onboarding_home_screen_retry_first), warn = true)
-                    }
-                }
+        if (!twoColumns) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(12.mpx)) {
+                waysIn()
                 if (status.active) LaterNote()
             }
-            // Right: the live status and the ways in.
-            Column(Modifier.width(420.mpx), verticalArrangement = Arrangement.spacedBy(12.mpx)) {
-                StatusCard(status)
-                if (!status.active) {
-                    if (status.canWrite) {
-                        StagePill(
-                            stringResource(R.string.onboarding_home_screen_switch_on),
-                            onClick = {
-                                writeFailed = !LauncherSystem.switchGuardOn(context)
-                                refresh()
-                            },
-                            icon = OwnTVIcon.POWER,
-                            modifier = Modifier.focusRequester(actionFocus),
-                        )
+        } else {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(40.mpx)) {
+                // Left: what to do, step by step, and how it went last time.
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(14.mpx)) {
+                    if (stepsShown) {
+                        val steps = buildList {
+                            if (openFailed) {
+                                add(stringResource(R.string.onboarding_home_screen_path, service))
+                            } else {
+                                add(stringResource(R.string.onboarding_home_screen_step_1))
+                                add(stringResource(R.string.onboarding_home_screen_step_2, service))
+                            }
+                            add(stringResource(R.string.onboarding_home_screen_step_3))
+                            add(stringResource(R.string.onboarding_home_screen_step_4))
+                        }
+                        steps.forEachIndexed { i, text -> NumberedStep(i + 1, text) }
+                        if (openFailed) {
+                            HintLine(stringResource(R.string.onboarding_home_screen_open_failed), warn = true)
+                        } else {
+                            // Some boxes only open their general settings: the route from there.
+                            HintLine(stringResource(R.string.onboarding_home_screen_path, service))
+                        }
                     }
-                    if (canOpen && manual) {
-                        StagePill(
-                            stringResource(R.string.onboarding_home_screen_open_settings),
-                            onClick = {
-                                val opened = HomeSetupSystem.openAccessibility(context)
-                                if (opened == SettingsOpened.NONE) {
-                                    openFailed = true
-                                    progress.openFailed = true
-                                } else {
-                                    attempts += 1
-                                    progress.attempts = attempts
-                                }
-                            },
-                            icon = OwnTVIcon.SETTINGS,
-                            modifier = if (status.canWrite) Modifier else Modifier.focusRequester(actionFocus),
-                        )
-                    }
-                    if (status.homePicker) {
-                        StagePill(
-                            stringResource(R.string.onboarding_home_screen_choose_home),
-                            onClick = { HomeSetupSystem.openHomePicker(context) },
-                            icon = OwnTVIcon.HOME,
-                        )
-                        HintLine(stringResource(R.string.onboarding_home_screen_choose_home_line))
-                    }
-                    if (!status.canWrite) {
-                        StagePill(
-                            stringResource(R.string.onboarding_home_screen_experts),
-                            onClick = { showExperts = !showExperts },
-                            trailingIcon = if (showExperts) OwnTVIcon.CHEVRON_UP else OwnTVIcon.CHEVRON_DOWN,
-                            dimmed = !showExperts,
-                        )
+                    if (hintShown) {
+                        when {
+                            writeFailed -> HintLine(stringResource(R.string.onboarding_home_screen_write_failed), warn = true)
+                            attempts >= 2 -> HintLine(stringResource(R.string.onboarding_home_screen_retry_again), warn = true)
+                            attempts == 1 -> HintLine(stringResource(R.string.onboarding_home_screen_retry_first), warn = true)
+                        }
                     }
                 }
+                Column(Modifier.width(420.mpx), verticalArrangement = Arrangement.spacedBy(12.mpx), content = waysIn)
             }
         }
         if (showExperts && !status.active && !status.canWrite) {

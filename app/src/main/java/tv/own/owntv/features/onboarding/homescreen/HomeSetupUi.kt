@@ -181,6 +181,7 @@ internal fun StatusCard(status: HomeStatus, modifier: Modifier = Modifier) {
             val line = when {
                 status.guardOn -> R.string.onboarding_home_screen_status_on_guard
                 status.defaultHome -> R.string.onboarding_home_screen_status_on_home
+                status.canWrite -> R.string.onboarding_home_screen_status_off_write
                 else -> R.string.onboarding_home_screen_status_off_line
             }
             Text(stringResource(line), style = stageText(16, 500).copy(lineHeight = 23.mpxSp), color = StageColors.Muted, modifier = Modifier.padding(top = 2.mpx))

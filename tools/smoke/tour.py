@@ -66,7 +66,7 @@ CHAPTER_PAGES = [
     (r"^Wie soll Mayo TV aussehen", "kapitel-aussehen", ["continue"]),
     (r"^Farbe und Startseite$", "kapitel-aussehen-farbe", ["continue"]),
     (r"^Mayo TV als Startbildschirm$", "kapitel-startbildschirm", ["later", "skip"]),
-    (r"^Home-Wächter einschalten$", "kapitel-startbildschirm-waechter", ["later", "skip"]),
+    (r"^(Home-Wächter einschalten|Mayo TV ist dein Startbildschirm)$", "kapitel-startbildschirm-waechter", ["later", "skip"]),
     (r"^Beim Einschalten$", "kapitel-startbildschirm-einschalten", ["later", "skip"]),
     (r"^Dein Fußball$", "kapitel-fussball", ["continue", "skip"]),
     (r"^Deine Vereine$", "kapitel-fussball-vereine", ["team", "continue", "later", "skip"]),
