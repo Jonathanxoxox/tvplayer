@@ -36,7 +36,8 @@ val OnboardingChapter.journeyStep: JourneyStep
  * right.
  *
  * Back on the remote calls [onBack], which defaults to [secondary]'s action; pass null where Back
- * must not move (the first chapter after the profile). The body is a column with 6 mpx between
+ * must not move (the first chapter after the profile): Back then sends the app to the background
+ * and the journey resumes on this chapter. The body is a column with 6 mpx between
  * rows; put [tv.own.owntv.features.settings.StageSettingRow]s, cards or a custom layout there.
  *
  * Initial focus: give exactly one control a [rememberChapterFocus] requester, usually the first row

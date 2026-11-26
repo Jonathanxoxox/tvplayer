@@ -12,6 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.koin.compose.koinInject
@@ -48,6 +51,8 @@ fun OnboardingFlow(
     // A true first run starts here; a journey already under way is left where it is.
     LaunchedEffect(Unit) { prefs.begin() }
     val chapter = OnboardingJourney.resolve(stored, hasActiveProfile).chapter
+    // Back from HOME_SCREEN returns to the page the user left APPEARANCE from (its second page).
+    var appearanceFromBack by rememberSaveable { mutableStateOf(false) }
 
     val fade = ownTvTween<Float>(CHAPTER_FADE_MS)
     val slide = ownTvTween<androidx.compose.ui.unit.IntOffset>(CHAPTER_FADE_MS)
@@ -91,12 +96,20 @@ fun OnboardingFlow(
                         modifier = Modifier.fillMaxSize(),
                     )
                     OnboardingChapter.APPEARANCE -> AppearanceChapter(
-                        onNext = { prefs.finishChapter(OnboardingChapter.APPEARANCE) },
-                        onBack = null, // never undoes the profile; Back leaves the app, the journey resumes here
+                        onNext = {
+                            appearanceFromBack = false
+                            prefs.finishChapter(OnboardingChapter.APPEARANCE)
+                        },
+                        // Never undoes the profile: the frame sends the app to the background instead.
+                        onBack = null,
+                        startOnLook = appearanceFromBack,
                     )
                     OnboardingChapter.HOME_SCREEN -> HomeScreenChapter(
                         onNext = { prefs.finishChapter(OnboardingChapter.HOME_SCREEN) },
-                        onBack = { prefs.backFrom(OnboardingChapter.HOME_SCREEN) },
+                        onBack = {
+                            appearanceFromBack = true
+                            prefs.backFrom(OnboardingChapter.HOME_SCREEN)
+                        },
                     )
                     OnboardingChapter.FOOTBALL -> FootballChapter(
                         onNext = { prefs.finishChapter(OnboardingChapter.FOOTBALL) },

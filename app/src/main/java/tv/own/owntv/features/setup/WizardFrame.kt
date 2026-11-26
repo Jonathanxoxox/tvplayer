@@ -25,18 +25,23 @@ import androidx.annotation.StringRes
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.em
 import androidx.tv.material3.Text
+import kotlinx.coroutines.launch
 import tv.own.owntv.R
+import tv.own.owntv.core.ui.findActivity
 import tv.own.owntv.ui.components.OwnTVIcon
 import tv.own.owntv.ui.stage.StageFocus
 import tv.own.owntv.ui.stage.StageKeyHints
@@ -136,7 +141,8 @@ internal fun WizardFrame(
  * The frame shared by the setup wizard and the onboarding chapters: background, lockup, the
  * progress dots over [steps] with [step] current, the glass panel with an optional "Step n of m"
  * line ([showPosition]), title, [sub], the body, and the footer: [back] and [extraLeft] on the left,
- * [skip] and [next] on the right. Back on the remote calls [onBack]; null leaves Back to the system.
+ * [skip] and [next] on the right. Back on the remote calls [onBack]; with null it sends the app to the
+ * background inside the first-run journey and is left to the system elsewhere.
  */
 @Composable
 internal fun JourneyFrame(
@@ -153,7 +159,15 @@ internal fun JourneyFrame(
     showPosition: Boolean = false,
     body: @Composable ColumnScope.() -> Unit = {},
 ) {
-    if (onBack != null) BackHandler { onBack() }
+    val inJourney = LocalFirstRunJourney.current
+    val activity = LocalContext.current.findActivity()
+    when {
+        onBack != null -> BackHandler { onBack() }
+        // Where the first-run journey has no step to go back to, Back never closes the app: on Android 11
+        // and older that would finish the activity and cancel an import running in the background. The
+        // app goes to the background instead (as Android 12 does on its own); the journey resumes here.
+        inJourney -> BackHandler { activity?.moveTaskToBack(true) }
+    }
     val a = stageAccent
     BoxWithConstraints(Modifier.fillMaxSize().stageBackground(a.accent)) {
         MayoLockup(Modifier.padding(start = 64.mpx, top = 56.mpx))
@@ -167,7 +181,6 @@ internal fun JourneyFrame(
                 .heightIn(max = maxHeight - 290.mpx)
                 .stageGlass(32.mpx)
                 .focusGroup()
-                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 48.mpx, vertical = 44.mpx),
         ) {
             val position = steps.indexOf(step)
@@ -185,9 +198,30 @@ internal fun JourneyFrame(
             if (!sub.isNullOrBlank()) {
                 Text(sub, style = stageText(19, 500).copy(lineHeight = 29.5f.mpxLine()), color = StageColors.Muted, modifier = Modifier.padding(top = 10.mpx))
             }
-            Column(Modifier.padding(top = 28.mpx), verticalArrangement = Arrangement.spacedBy(6.mpx), content = body)
+            // Only the body scrolls: on a long page (many crests, a large UI zoom) the title stays on top
+            // and the footer stays on screen at the bottom of the panel. The inner vertical padding leaves
+            // room for a focused row's scale at the scroll edges.
+            val bodyScroll = rememberScrollState()
+            val scope = rememberCoroutineScope()
+            Column(
+                Modifier
+                    .padding(top = 20.mpx)
+                    .weight(1f, fill = false)
+                    .verticalScroll(bodyScroll)
+                    .padding(vertical = 8.mpx),
+                verticalArrangement = Arrangement.spacedBy(6.mpx),
+                content = body,
+            )
             if (back != null || next != null || skip != null || extraLeft.isNotEmpty()) {
-                Row(Modifier.fillMaxWidth().padding(top = 30.mpx), horizontalArrangement = Arrangement.spacedBy(12.mpx)) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(top = 22.mpx)
+                        // Focus on the footer shows the end of the body, so text below the last focusable
+                        // row (a note, the phone panel's address) is never left out of sight.
+                        .onFocusChanged { if (it.hasFocus) scope.launch { bodyScroll.animateScrollTo(bodyScroll.maxValue) } },
+                    horizontalArrangement = Arrangement.spacedBy(12.mpx),
+                ) {
                     (listOfNotNull(back) + extraLeft).forEach { b ->
                         StagePill(b.label, onClick = b.onClick, enabled = b.enabled, modifier = b.focus?.let { Modifier.focusRequester(it) } ?: Modifier)
                     }
@@ -207,10 +241,15 @@ internal fun JourneyFrame(
                 }
             }
         }
+        val backHint = when {
+            onBack != null -> stringResource(R.string.setup_key_previous_step)
+            inJourney -> stringResource(R.string.onboarding_key_pause)
+            else -> null
+        }
         StageKeyHints(
-            listOf(
+            listOfNotNull(
                 stringResource(R.string.common_ok) to stringResource(R.string.content_key_select),
-                stringResource(R.string.common_back) to stringResource(R.string.setup_key_previous_step),
+                backHint?.let { stringResource(R.string.common_back) to it },
             ),
             Modifier.align(Alignment.BottomCenter).padding(bottom = 44.mpx),
             textSize = 15,

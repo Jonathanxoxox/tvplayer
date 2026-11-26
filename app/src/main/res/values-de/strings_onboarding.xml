@@ -9,4 +9,5 @@
     <string name="onboarding_action_skip">Überspringen</string>
     <string name="onboarding_action_later">Später</string>
     <string name="onboarding_action_go">Los geht’s</string>
+    <string name="onboarding_key_pause">Einrichtung pausieren</string>
 </resources>

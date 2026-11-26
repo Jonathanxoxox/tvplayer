@@ -17,4 +17,6 @@
     <string name="onboarding_action_later">Later</string>
     <!-- Translators: starts the setup on the welcome page and opens the app on the last page. -->
     <string name="onboarding_action_go">Let’s go</string>
+    <!-- Translators: key hint for Back where setup has no previous step; the app goes to the background and setup continues here next time. -->
+    <string name="onboarding_key_pause">Pause setup</string>
 </resources>

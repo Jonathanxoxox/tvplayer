@@ -72,14 +72,15 @@ import tv.own.owntv.ui.theme.stageText
  * ([LauncherPrefs], [SettingsRepository]), so the chapter can be left at any point and Settings shows
  * the same values. What is preselected is what the install already has, so Continue straight through
  * keeps the shipped look. Back on page 2 returns to page 1; on page 1 it goes to [onBack], which is
- * null here (the profile stays), leaving Back to the system.
+ * null here (the profile stays): the frame then sends the app to the background and the journey
+ * resumes here. [startOnLook] opens page 2 first, for the way back from the next chapter.
  */
 @Composable
-fun AppearanceChapter(onNext: () -> Unit, onBack: (() -> Unit)?) {
+fun AppearanceChapter(onNext: () -> Unit, onBack: (() -> Unit)?, startOnLook: Boolean = false) {
     val settings = koinInject<SettingsRepository>()
     val appScope = koinInject<CoroutineScope>()
     val config = rememberLauncherConfig()
-    var page by rememberSaveable { mutableIntStateOf(PAGE_LAYOUT) }
+    var page by rememberSaveable { mutableIntStateOf(if (startOnLook) PAGE_LOOK else PAGE_LAYOUT) }
     // The accent chosen on this visit. Stored at once (the page re-tints), and once more on the way out
     // so the install's one-time look defaults, applied as the profile appears, cannot win over it.
     var picked by remember { mutableStateOf<AccentChoice?>(null) }

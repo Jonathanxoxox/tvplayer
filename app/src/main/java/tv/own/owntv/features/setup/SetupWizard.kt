@@ -104,6 +104,13 @@ fun Onboarding(firstRun: Boolean, onDone: (Long?) -> Unit, onCancel: () -> Unit,
     // "Hardware settings from the other device" — asked with the sections, carried like them.
     val restoreDeviceSettings = remember { mutableStateOf(false) }
 
+    // A first-run journey that was interrupted after its profile was made carries on at the playlist step.
+    val inJourney = LocalFirstRunJourney.current
+    LaunchedEffect(firstRun, inJourney) {
+        if (firstRun && inJourney && step == Step.WELCOME && runCatching { vm.resumeInterruptedProfile() }.getOrDefault(false)) {
+            step = Step.ADD_CONTENT
+        }
+    }
     // Refresh the "existing playlists" availability whenever we land on the add-content step.
     LaunchedEffect(step) { if (step == Step.ADD_CONTENT) existing = runCatching { vm.availableExistingSources() }.getOrDefault(emptyList()) }
 
