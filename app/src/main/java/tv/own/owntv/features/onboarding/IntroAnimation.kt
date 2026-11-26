@@ -5,11 +5,13 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -279,7 +281,10 @@ fun MayoIntro(onFinished: () -> Unit, modifier: Modifier = Modifier) {
                     val t = clock
                     alpha = IntroTimeline.hint(t) * IntroTimeline.textOut(t) * exit.value
                     compositingStrategy = CompositingStrategy.ModulateAlpha
-                },
+                }
+                // A dark pill keeps the hint readable over the pitch's lit centre circle and halfway line.
+                .background(HintBackdrop, RoundedCornerShape(percent = 50))
+                .padding(horizontal = 20.mpx, vertical = 8.mpx),
         )
     }
 }
@@ -352,4 +357,5 @@ private const val BACKSTOP_SLACK_MS = SOUND_LOAD_TIMEOUT_MS + 1_200L
 
 /** Floodlit cream for the tagline; the scene is always night, whatever the theme. */
 private val Tagline = Color(0xFFF6E8CA)
-private val Hint = Color.White.copy(alpha = 0.62f)
+private val Hint = Color.White.copy(alpha = 0.72f)
+private val HintBackdrop = Color.Black.copy(alpha = 0.38f)
