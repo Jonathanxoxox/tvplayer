@@ -14,7 +14,7 @@ import tv.own.owntv.features.settings.StageSettingRow
 import tv.own.owntv.ui.components.OwnTVIcon
 
 /**
- * Playlists › Add a source: **From your phone** (fill the form on another device over the LAN)
+ * Playlists › Add a source: **With your phone** (fill the form on another device over the LAN)
  * or **Type it here** (Xtream / M3U / Stalker with the remote), each explained in the panel.
  */
 @Composable
@@ -40,7 +40,7 @@ fun AddSourceChooserScreen(
         rowsFocus = rowsFocus,
         settingsRoot = false,
     ) {
-        val phone = stringResource(R.string.setup_from_phone)
+        val phone = stringResource(R.string.onboarding_wizard_phone_title)
         StageSettingRow(
             icon = OwnTVIcon.PHONE,
             title = phone,

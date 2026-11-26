@@ -1,6 +1,63 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- First run: Mayo TV as the TV's start screen (Home button, Home guard, power-on). -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="onboarding_home_screen_title">Mayo TV as your start screen</string>
     <string name="onboarding_home_screen_sub">Mayo TV can open when you switch on the TV and come back whenever you press Home. Recommended, and you can also set it up later.</string>
+
+    <!-- The pitch: what the user gets, and what the Home guard can see. -->
+    <!-- Translators: starts the guided setup of the start screen. -->
+    <string name="onboarding_home_screen_action_set_up">Set up</string>
+    <string name="onboarding_home_screen_pitch_home_title">The Home button leads to Mayo TV</string>
+    <string name="onboarding_home_screen_pitch_home_line">Wherever you are, one press of Home and you’re back here.</string>
+    <string name="onboarding_home_screen_pitch_power_title">Straight in when you switch on</string>
+    <string name="onboarding_home_screen_pitch_power_line">The box starts into Mayo TV, or straight into live TV if you prefer.</string>
+    <string name="onboarding_home_screen_pitch_privacy_title">What the Home guard sees</string>
+    <string name="onboarding_home_screen_pitch_privacy_line">Only which app is in front. Not what’s on screen, not your key presses, and it sends nothing anywhere.</string>
+    <!-- Translators: %1$s is the name of the settings page, e.g. "Power-on & Home button". -->
+    <string name="onboarding_home_screen_later_note">You can change this any time in Settings › <xliff:g id="page" example="Power-on &amp; Home button">%1$s</xliff:g>.</string>
+
+    <!-- The guard: switching on the accessibility service in the box's own settings. -->
+    <string name="onboarding_home_screen_guard_title">Switch on the Home guard</string>
+    <string name="onboarding_home_screen_guard_sub">Android doesn’t let any app switch on its own accessibility service. You do it once in the box’s settings, in four short steps.</string>
+    <string name="onboarding_home_screen_guard_sub_write">This box lets Mayo TV switch the Home guard on by itself. One click is all it takes.</string>
+    <string name="onboarding_home_screen_guard_sub_active">Done. From now on, the Home button takes you to Mayo TV.</string>
+    <!-- Translators: the quoted words must match onboarding_home_screen_open_settings. -->
+    <string name="onboarding_home_screen_step_1">Choose “Open accessibility settings”.</string>
+    <!-- Translators: %1$s is the service's name as the TV lists it, e.g. "Mayo TV Home guard". -->
+    <string name="onboarding_home_screen_step_2">Find “<xliff:g id="service" example="Mayo TV Home guard">%1$s</xliff:g>” in the list. It is often near the bottom, sometimes under “Services” or “Downloaded services”.</string>
+    <string name="onboarding_home_screen_step_3">Switch it on and confirm. Android shows the same general warning about “full control” for every accessibility service. The guard still only sees which app is in front.</string>
+    <string name="onboarding_home_screen_step_4">Press Back until you’re here again. The status changes to “Active” by itself.</string>
+    <!-- Translators: the manual route; menu names differ between boxes, so both common names are given. %1$s is the service's name. -->
+    <string name="onboarding_home_screen_path">By hand: Settings › System (on some boxes “Device Preferences”) › Accessibility › <xliff:g id="service" example="Mayo TV Home guard">%1$s</xliff:g></string>
+    <string name="onboarding_home_screen_open_settings">Open accessibility settings</string>
+    <string name="onboarding_home_screen_switch_on">Switch on now</string>
+    <!-- Translators: opens the system's picker for the app the Home button starts. -->
+    <string name="onboarding_home_screen_choose_home">Choose Home app</string>
+    <string name="onboarding_home_screen_choose_home_line">This box also lets you pick the Home app yourself: choose Mayo TV there.</string>
+    <string name="onboarding_home_screen_status_off">Not active yet</string>
+    <string name="onboarding_home_screen_status_off_line">Checked again as soon as you’re back.</string>
+    <string name="onboarding_home_screen_status_on">Active</string>
+    <string name="onboarding_home_screen_status_on_guard">The Home button takes you to Mayo TV.</string>
+    <string name="onboarding_home_screen_status_on_home">Mayo TV is this box’s Home app.</string>
+    <string name="onboarding_home_screen_retry_first">Not switched on yet. No problem, just try again.</string>
+    <string name="onboarding_home_screen_retry_again">Not working on this box? Mayo TV works fine without the guard, and you can set it up later.</string>
+    <string name="onboarding_home_screen_open_failed">This box doesn’t let Mayo TV open its settings directly. Open them yourself with the gear icon and follow the route below.</string>
+    <string name="onboarding_home_screen_write_failed">That didn’t work. Open the accessibility settings and switch the guard on there.</string>
+    <!-- Translators: reveals a technical alternative for people who use a computer with ADB. -->
+    <string name="onboarding_home_screen_experts">For experts</string>
+    <string name="onboarding_home_screen_experts_text">With a computer and ADB you can allow Mayo TV once to switch the guard on by itself. After that, one click here is enough:</string>
+
+    <!-- Power-on: what appears when the box is switched on. -->
+    <string name="onboarding_home_screen_boot_title">When you switch on</string>
+    <string name="onboarding_home_screen_boot_sub">What should appear when you turn on the box?</string>
+    <string name="onboarding_home_screen_boot_home">Mayo TV home</string>
+    <string name="onboarding_home_screen_boot_home_line">Your home page with everything at a glance.</string>
+    <string name="onboarding_home_screen_boot_live">Live TV</string>
+    <string name="onboarding_home_screen_boot_live_line">The last channel you watched plays right away. Mayo TV then also opens with live TV otherwise.</string>
+    <string name="onboarding_home_screen_boot_off">Leave as it is</string>
+    <string name="onboarding_home_screen_boot_off_line">The box starts with its own start screen, as before.</string>
+    <string name="onboarding_home_screen_boot_off_line_guard">Mayo TV doesn’t open by itself. With the Home guard on, it still appears as soon as the box’s own start screen comes up.</string>
+    <string name="onboarding_home_screen_boot_note">Note: without the Home guard, some boxes don’t let apps start by themselves after switching on. If it doesn’t work, set up the guard later.</string>
+    <!-- Translators: spoken by screen readers for the chosen option. -->
+    <string name="onboarding_home_screen_selected">Selected</string>
 </resources>

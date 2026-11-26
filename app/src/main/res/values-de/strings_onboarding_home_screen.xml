@@ -1,5 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="onboarding_home_screen_title">Mayo TV als Startbildschirm</string>
     <string name="onboarding_home_screen_sub">Mayo TV kann sich beim Einschalten öffnen und mit der Home-Taste zurückkommen. Empfohlen – du kannst das auch später einrichten.</string>
+
+    <string name="onboarding_home_screen_action_set_up">Einrichten</string>
+    <string name="onboarding_home_screen_pitch_home_title">Die Home-Taste führt zu Mayo TV</string>
+    <string name="onboarding_home_screen_pitch_home_line">Egal, wo du gerade bist: einmal Home drücken, und du bist wieder hier.</string>
+    <string name="onboarding_home_screen_pitch_power_title">Direkt nach dem Einschalten</string>
+    <string name="onboarding_home_screen_pitch_power_line">Die Box startet in Mayo TV – oder gleich in Live-TV, wenn dir das lieber ist.</string>
+    <string name="onboarding_home_screen_pitch_privacy_title">Was der Home-Wächter sieht</string>
+    <string name="onboarding_home_screen_pitch_privacy_line">Nur, welche App gerade vorne ist. Nicht, was auf dem Bildschirm läuft, keine Tastendrücke, und er sendet nichts irgendwohin.</string>
+    <string name="onboarding_home_screen_later_note">Du kannst das jederzeit ändern unter Einstellungen › <xliff:g id="page" example="Einschalten &amp; Home-Taste">%1$s</xliff:g>.</string>
+
+    <string name="onboarding_home_screen_guard_title">Home-Wächter einschalten</string>
+    <string name="onboarding_home_screen_guard_sub">Android lässt keine App ihre Bedienungshilfe selbst einschalten. Das machst du einmal in den Einstellungen der Box – in vier kurzen Schritten.</string>
+    <string name="onboarding_home_screen_guard_sub_write">Diese Box erlaubt Mayo TV, den Home-Wächter selbst einzuschalten. Ein Klick genügt.</string>
+    <string name="onboarding_home_screen_guard_sub_active">Geschafft. Ab jetzt bringt dich die Home-Taste zu Mayo TV.</string>
+    <string name="onboarding_home_screen_step_1">Wähle „Bedienungshilfen öffnen“.</string>
+    <string name="onboarding_home_screen_step_2">Such in der Liste „<xliff:g id="service" example="Mayo TV Home-Wächter">%1$s</xliff:g>“. Er steht oft weiter unten, manchmal unter „Dienste“ oder „Heruntergeladene Dienste“.</string>
+    <string name="onboarding_home_screen_step_3">Schalte ihn ein und bestätige. Android warnt dabei bei jeder Bedienungshilfe gleich allgemein vor „voller Kontrolle“. Der Wächter sieht trotzdem nur, welche App vorne ist.</string>
+    <string name="onboarding_home_screen_step_4">Drück Zurück, bis du wieder hier bist. Der Status springt dann von selbst auf „Aktiv“.</string>
+    <string name="onboarding_home_screen_path">Von Hand: Einstellungen › System (bei manchen Boxen „Geräteeinstellungen“) › Bedienungshilfen › <xliff:g id="service" example="Mayo TV Home-Wächter">%1$s</xliff:g></string>
+    <string name="onboarding_home_screen_open_settings">Bedienungshilfen öffnen</string>
+    <string name="onboarding_home_screen_switch_on">Jetzt einschalten</string>
+    <string name="onboarding_home_screen_choose_home">Home-App wählen</string>
+    <string name="onboarding_home_screen_choose_home_line">Auf dieser Box kannst du die Home-App auch selbst wählen: Nimm dort Mayo TV.</string>
+    <string name="onboarding_home_screen_status_off">Noch nicht aktiv</string>
+    <string name="onboarding_home_screen_status_off_line">Wird geprüft, sobald du zurück bist.</string>
+    <string name="onboarding_home_screen_status_on">Aktiv</string>
+    <string name="onboarding_home_screen_status_on_guard">Die Home-Taste bringt dich zu Mayo TV.</string>
+    <string name="onboarding_home_screen_status_on_home">Mayo TV ist die Home-App dieser Box.</string>
+    <string name="onboarding_home_screen_retry_first">Noch nicht eingeschaltet. Kein Problem – versuch es einfach noch einmal.</string>
+    <string name="onboarding_home_screen_retry_again">Klappt es auf dieser Box nicht? Mayo TV funktioniert auch ohne Wächter, und du kannst ihn später einrichten.</string>
+    <string name="onboarding_home_screen_open_failed">Diese Box lässt Mayo TV ihre Einstellungen nicht direkt öffnen. Öffne sie selbst über das Zahnrad und folge dem Weg unten.</string>
+    <string name="onboarding_home_screen_write_failed">Das hat nicht geklappt. Öffne die Bedienungshilfen und schalte den Wächter dort ein.</string>
+    <string name="onboarding_home_screen_experts">Für Fortgeschrittene</string>
+    <string name="onboarding_home_screen_experts_text">Mit einem Computer und ADB kannst du Mayo TV einmalig erlauben, den Wächter selbst einzuschalten. Danach genügt hier ein Klick:</string>
+
+    <string name="onboarding_home_screen_boot_title">Beim Einschalten</string>
+    <string name="onboarding_home_screen_boot_sub">Was soll erscheinen, wenn du die Box einschaltest?</string>
+    <string name="onboarding_home_screen_boot_home">Mayo TV Startseite</string>
+    <string name="onboarding_home_screen_boot_home_line">Deine Startseite mit allem auf einen Blick.</string>
+    <string name="onboarding_home_screen_boot_live">Live-TV</string>
+    <string name="onboarding_home_screen_boot_live_line">Der zuletzt gesehene Sender läuft sofort. Mayo TV öffnet dann auch sonst mit Live-TV.</string>
+    <string name="onboarding_home_screen_boot_off">Nichts ändern</string>
+    <string name="onboarding_home_screen_boot_off_line">Die Box startet wie bisher mit ihrem eigenen Startbildschirm.</string>
+    <string name="onboarding_home_screen_boot_off_line_guard">Mayo TV öffnet sich nicht von selbst. Mit Home-Wächter erscheint es trotzdem, sobald der Startbildschirm der Box auftaucht.</string>
+    <string name="onboarding_home_screen_boot_note">Hinweis: Ohne Home-Wächter lassen manche Boxen Apps nach dem Einschalten nicht von selbst starten. Klappt es nicht, richte den Wächter später ein.</string>
+    <string name="onboarding_home_screen_selected">Ausgewählt</string>
 </resources>

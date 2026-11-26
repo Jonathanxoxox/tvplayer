@@ -97,7 +97,7 @@ private fun WizardStep.journeyStep(inJourney: Boolean): JourneyStep = when (this
 /**
  * Every setup step's frame: the Stage background, the Mayo TV lockup top left, the step
  * dots top right, one glass panel (1040 wide, centred, from y 170) with a 42 px title, 19 px text and the
- * step's rows or cards, then [back] bottom-left and [next] bottom-right, and the key hints at the bottom.
+ * step's rows or cards, then [back] bottom-left and [skip] and [next] bottom-right, and the key hints at the bottom.
  * Back on the remote calls [back] (or [onBack] where the step has no Back button).
  */
 @Composable
@@ -111,6 +111,8 @@ internal fun WizardFrame(
     width: Dp = 1040.mpx,
     /** More buttons beside Back (the display step's Reset). */
     extraLeft: List<WizardAction> = emptyList(),
+    /** A quiet "not now" on the right, before [next]. */
+    skip: WizardAction? = null,
     body: @Composable ColumnScope.() -> Unit = {},
 ) {
     val inJourney = LocalFirstRunJourney.current
@@ -124,6 +126,7 @@ internal fun WizardFrame(
         onBack = onBack,
         width = width,
         extraLeft = extraLeft,
+        skip = skip,
         showPosition = inJourney,
         body = body,
     )

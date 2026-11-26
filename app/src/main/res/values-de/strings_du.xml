@@ -111,7 +111,7 @@
     <string name="settings_tier_key">Dein TMDB-Schlüssel</string>
     <string name="setup_phone_background_description">Scanne auf einem beliebigen Gerät mit Browser im selben WLAN – Smartphone, Computer oder ein anderer Fernseher – den QR-Code (oder öffne die URL), gib diese PIN ein und schick ein Foto. Es wird sofort zum Hintergrund.</string>
     <string name="setup_profile_sub">Ein Profil hat eigene Favoriten, einen eigenen Verlauf und eine eigene Startseite. Weitere fügst du später unter Einstellungen › Profil hinzu.</string>
-    <string name="setup_restore_choice_description">Schick die Sicherung per Extern von einem beliebigen Gerät mit Browser im selben WLAN, oder wähle eine Sicherungsdatei auf diesem Gerät.</string>
+    <string name="setup_restore_choice_description">Schick die Sicherung vom Handy oder Computer im selben WLAN, oder wähl eine Sicherungsdatei auf diesem Fernseher.</string>
     <string name="setup_setup_choice_description">Fang neu an oder stell deine Profile, Wiedergabelisten und Favoriten aus einer Sicherungsdatei oder von einem anderen Gerät wieder her.</string>
     <string name="setup_welcome_sub">Dein eigener IPTV-Player. Wähle zum Start eine Sprache – du kannst sie später in den Einstellungen ändern.</string>
     <string name="sync_error_auth">Der Server hat deine Anmeldedaten abgelehnt. Prüf deinen Benutzernamen und dein Passwort.</string>

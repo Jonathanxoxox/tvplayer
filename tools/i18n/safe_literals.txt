@@ -515,6 +515,59 @@
 1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	phase
 1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	ready
 1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	setup
+1	empty	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasKeys.kt	\0
+4	empty	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	\0
+1	uri	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	/
+1	uri	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	/favicon.ico
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Bad Request
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Cache-Control: no-store
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Connection: close
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Content-Length
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Content-Length:
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Content-Type:
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Error
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	GET
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	HTTP/1.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Method Not Allowed
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Not Found
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	OK
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	POST
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Payload Too Large
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Referrer-Policy: no-referrer
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	abcdefghjkmnpqrstuvwxyz23456789
+1	log	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	mayo-extras-link
+1	mime	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	text/html; charset=utf-8
+1	mime	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	text/plain; charset=utf-8
+4	empty	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&#39;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&amp;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&gt;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&lt;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&quot;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	{{$index}}
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/eng.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/esp.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/fifa.world
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/fra.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/ger.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/ita.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/ned.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/por.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/tur.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.champions
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.euro
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.europa
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.europa.conf
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.nations
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	armed
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	attempts
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	com.android.tv.settings
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	com.android.tv.settings.accessibility.AccessibilityActivity
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	mayo_onboarding_home
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	open_failed
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	step
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupUi.kt	homeStatusFill
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupUi.kt	homeStatusPop
 5	empty	app/src/main/java/tv/own/owntv/features/profiles/ProfileComponents.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/profiles/ProfilePictureChooser.kt	bmp
 1	technical	app/src/main/java/tv/own/owntv/features/profiles/ProfilePictureChooser.kt	jpeg

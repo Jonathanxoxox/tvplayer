@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="onboarding_appearance_title">Wie soll Mayo TV aussehen?</string>
-    <string name="onboarding_appearance_sub">Wähle, wie deine Startseite aufgebaut ist. Alles lässt sich später unter Einstellungen › Darstellung ändern.</string>
+
+    <string name="onboarding_appearance_layout_sub">Such dir aus, wie deine Startseite aufgebaut ist. Ändern kannst du das jederzeit unter Einstellungen › <xliff:g id="group" example="Aussehen &amp; Startseite">%1$s</xliff:g>.</string>
+    <string name="onboarding_appearance_layout_standard_line">Zuerst die Sender, darunter deine Apps als große Kacheln.</string>
+    <string name="onboarding_appearance_layout_classic_line">Apps als Knöpfe ganz oben, ihre Kanäle gleich danach.</string>
+    <string name="onboarding_appearance_layout_stage_line">Der gewählte Sender groß, darunter eine Leiste mit Logos.</string>
+    <string name="onboarding_appearance_layout_spotlight_line">Wie Bühne, doppelt so groß und mit stummem Livebild.</string>
+
+    <string name="onboarding_appearance_look_title">Farbe und Startseite</string>
+    <string name="onboarding_appearance_look_sub">Deine Akzentfarbe zeigt, was gewählt ist und wo du gerade bist – diese Seite übernimmt sie sofort. Alles hier kannst du später unter Einstellungen › <xliff:g id="group" example="Aussehen &amp; Startseite">%1$s</xliff:g> ändern.</string>
+    <string name="onboarding_appearance_accent_mayo">Mayo-Cyan</string>
+    <string name="onboarding_appearance_apps_title">Apps auf der Startseite</string>
+    <string name="onboarding_appearance_apps_line_standard">Deine Apps als Reihe großer Kacheln unter den Sendern</string>
+    <string name="onboarding_appearance_apps_line_compact">Deine Apps als Knöpfe ganz oben auf der Startseite</string>
+    <string name="onboarding_appearance_channels_line">Weiterschauen und Tipps aus YouTube, Nuvio und anderen Apps</string>
+    <plurals name="onboarding_appearance_spotlight_auto_line">
+        <item quantity="one">Das Spotlight wechselt nach je <xliff:g id="seconds" example="1">%1$d</xliff:g> Sekunde zum nächsten Highlight</item>
+        <item quantity="other">Das Spotlight wechselt alle <xliff:g id="seconds" example="12">%1$d</xliff:g> Sekunden zum nächsten Highlight</item>
+    </plurals>
 </resources>

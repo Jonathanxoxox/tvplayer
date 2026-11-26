@@ -7,5 +7,6 @@
     <string name="onboarding_step_position">Schritt <xliff:g id="current" example="3">%1$d</xliff:g> von <xliff:g id="total" example="9">%2$d</xliff:g></string>
     <string name="onboarding_action_continue">Weiter</string>
     <string name="onboarding_action_skip">Überspringen</string>
-    <string name="onboarding_action_done">Fertig</string>
+    <string name="onboarding_action_later">Später</string>
+    <string name="onboarding_action_go">Los geht’s</string>
 </resources>

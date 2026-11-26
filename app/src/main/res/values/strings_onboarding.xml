@@ -13,6 +13,8 @@
     <string name="onboarding_action_continue">Continue</string>
     <!-- Translators: leaves out an optional setup step; it can be done later in Settings. -->
     <string name="onboarding_action_skip">Skip</string>
-    <!-- Translators: the last setup button; it opens the app. -->
-    <string name="onboarding_action_done">Done</string>
+    <!-- Translators: leaves an optional setup step for now; same meaning as Skip, used where the step is recommended. -->
+    <string name="onboarding_action_later">Later</string>
+    <!-- Translators: starts the setup on the welcome page and opens the app on the last page. -->
+    <string name="onboarding_action_go">Let’s go</string>
 </resources>

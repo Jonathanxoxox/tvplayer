@@ -1,5 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="onboarding_extras_title">Extras mit eigenen Schlüsseln</string>
     <string name="onboarding_extras_sub">Poster, Sprachsuche und die Suche nach Beschreibung nutzen externe Dienste, für die du einen eigenen Schlüssel brauchst. Alles ist freiwillig – Mayo TV funktioniert auch ohne.</string>
+
+    <string name="onboarding_extras_tmdb_title">Cover &amp; Filminfos</string>
+    <string name="onboarding_extras_tmdb_line">Poster, Handlung und Besetzung für Filme und Serien. Braucht einen kostenlosen TMDB-Schlüssel.</string>
+    <string name="onboarding_extras_elevenlabs_title">Sprachsuche</string>
+    <string name="onboarding_extras_elevenlabs_line">Sag einfach, was du suchst – auch Namen. Braucht einen eigenen ElevenLabs-Schlüssel.</string>
+    <string name="onboarding_extras_typesafe_title">Suche nach Beschreibung</string>
+    <string name="onboarding_extras_typesafe_line">Beschreib einen Film mit deinen eigenen Worten und finde ihn. Braucht einen eigenen TypeSafe-Schlüssel.</string>
+
+    <string name="onboarding_extras_state_none">Nicht eingerichtet</string>
+    <string name="onboarding_extras_state_checking">Wird geprüft …</string>
+    <string name="onboarding_extras_state_works">Funktioniert · <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g></string>
+    <string name="onboarding_extras_state_saved">Gespeichert · <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g></string>
+    <string name="onboarding_extras_state_rejected">Schlüssel abgelehnt</string>
+    <string name="onboarding_extras_state_unchecked">Gespeichert, nicht geprüft</string>
+    <string name="onboarding_extras_detail_rejected">Der Schlüssel wurde nicht gespeichert. Drück OK, um ihn neu einzugeben.</string>
+    <string name="onboarding_extras_detail_retry">Drück OK, um ihn noch mal zu prüfen.</string>
+
+    <string name="onboarding_extras_phone_heading">Am einfachsten mit dem Handy</string>
+    <string name="onboarding_extras_phone_scan">Scanne den Code, füge deine Schlüssel ein und schick sie ab. Sie erscheinen sofort hier.</string>
+    <string name="onboarding_extras_phone_or_open">oder öffne</string>
+    <string name="onboarding_extras_phone_same_wifi">Dein Handy muss im selben WLAN sein wie der Fernseher.</string>
+    <string name="onboarding_extras_phone_starting">Link wird vorbereitet …</string>
+    <string name="onboarding_extras_phone_no_network">Der Fernseher ist mit keinem Netzwerk verbunden, dein Handy erreicht ihn also nicht. Gib die Schlüssel stattdessen mit der Fernbedienung ein.</string>
+    <string name="onboarding_extras_phone_failed">Der Link für dein Handy ließ sich nicht öffnen. Versuch es noch mal oder gib die Schlüssel mit der Fernbedienung ein.</string>
+    <string name="onboarding_extras_phone_locked">Es wurden zu viele falsche Adressen probiert, deshalb wurde der Link zur Sicherheit geschlossen. Öffne einen neuen, um weiterzumachen.</string>
+    <string name="onboarding_extras_phone_new_link">Neuer Link</string>
+    <plurals name="onboarding_extras_phone_received">
+        <item quantity="one">%1$d Schlüssel vom Handy empfangen</item>
+        <item quantity="other">%1$d Schlüssel vom Handy empfangen</item>
+    </plurals>
+
+    <string name="onboarding_extras_later">Alles hier ist freiwillig. Du kannst Schlüssel jederzeit in den Einstellungen unter „<xliff:g id="page" example="Eigene Schlüssel">%1$s</xliff:g>“ hinzufügen oder ändern.</string>
+
+    <string name="onboarding_extras_field_label">Schlüssel</string>
+    <string name="onboarding_extras_field_placeholder">OK drücken und Schlüssel eintippen</string>
+    <string name="onboarding_extras_field_placeholder_replace">OK drücken, um <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g> durch einen neuen Schlüssel zu ersetzen</string>
+    <string name="onboarding_extras_field_tip">Lange Schlüssel schickst du schneller vom Handy: Scanne einfach den Code neben der Liste.</string>
+    <string name="onboarding_extras_field_empty">Gib zuerst einen Schlüssel ein.</string>
+    <string name="onboarding_extras_action_save">Prüfen und speichern</string>
+    <string name="onboarding_extras_action_recheck">Erneut prüfen</string>
+    <string name="onboarding_extras_action_remove">Entfernen</string>
+
+    <string name="onboarding_extras_web_title">Mayo TV · deine Schlüssel</string>
+    <string name="onboarding_extras_web_heading">Deine Schlüssel für Mayo TV</string>
+    <string name="onboarding_extras_web_intro">Füge einen oder mehrere Schlüssel ein und tippe auf Senden. Leere Felder ändern nichts.</string>
+    <string name="onboarding_extras_web_get_key">Schlüssel holen</string>
+    <string name="onboarding_extras_web_placeholder">Schlüssel hier einfügen</string>
+    <string name="onboarding_extras_web_send">An den Fernseher senden</string>
+    <string name="onboarding_extras_web_sent">Gesendet. Auf dem Fernseher siehst du jetzt, ob jeder Schlüssel funktioniert.</string>
+    <string name="onboarding_extras_web_error">Der Fernseher ist nicht erreichbar. Zeigt er noch die Seite „Extras“? Dann versuch es noch mal.</string>
+    <string name="onboarding_extras_web_privacy">Deine Schlüssel gehen über dein WLAN direkt an deinen Fernseher und bleiben dort.</string>
 </resources>

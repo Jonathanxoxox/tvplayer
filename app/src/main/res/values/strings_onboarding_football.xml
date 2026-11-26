@@ -1,6 +1,39 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- First run: favourite teams and leagues. -->
-<resources>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
     <string name="onboarding_football_title">Your football</string>
-    <string name="onboarding_football_sub">Pick the teams and leagues you follow. Mayo TV shows their matches on Home and reminds you before kick-off.</string>
+    <string name="onboarding_football_sub">Pick the competitions and teams you follow. Mayo TV then puts their matches first, on Home and in the channel list.</string>
+    <!-- Translators: one step of a settings path, e.g. "Settings › Sports". %1$s is the parent, %2$s the page inside it. -->
+    <string name="onboarding_football_path"><xliff:g id="parent" example="Settings">%1$s</xliff:g> › <xliff:g id="page" example="Sports">%2$s</xliff:g></string>
+
+    <!-- Page 1: competitions. -->
+    <!-- Translators: small label above the competition chips (leagues, cups, tournaments). -->
+    <string name="onboarding_football_leagues_label">Competitions</string>
+    <!-- Translators: %1$s is the settings path, e.g. "Settings › Sports". -->
+    <string name="onboarding_football_leagues_more">More leagues and other sports are waiting in <xliff:g id="path" example="Settings › Sports">%1$s</xliff:g>.</string>
+    <!-- Translators: shown when no competition is ticked; Continue then leaves the football step. %1$s is the settings path, e.g. "Settings › Sports". -->
+    <string name="onboarding_football_leagues_none">Nothing ticked: Mayo TV won’t pick out any matches for you. You can change that any time in <xliff:g id="path" example="Settings › Sports">%1$s</xliff:g>.</string>
+    <!-- Translators: button that leaves the football step and switches the football extras off. -->
+    <string name="onboarding_football_action_no_football">No football for me</string>
+
+    <!-- Page 2: teams. -->
+    <string name="onboarding_football_teams_title">Your teams</string>
+    <string name="onboarding_football_teams_sub">Tick your teams, as many as you like. Their matches always come first.</string>
+    <string name="onboarding_football_teams_search">Search for a team</string>
+    <!-- Translators: placeholder in the team search field. -->
+    <string name="onboarding_football_teams_search_hint">Name, city or short name, e.g. HSV</string>
+    <!-- Translators: %1$s is what the user typed. -->
+    <string name="onboarding_football_teams_not_found">No team called “<xliff:g id="query" example="Werder">%1$s</xliff:g>” in your competitions. Is its league ticked on the previous page?</string>
+    <string name="onboarding_football_teams_loading">Loading the teams of your competitions …</string>
+    <!-- Translators: %1$s is the settings path, e.g. "Settings › Sports › My teams". -->
+    <string name="onboarding_football_teams_failed">The team list can’t be reached right now. Check the internet connection and try again, or skip this for now and pick your teams later in <xliff:g id="path" example="Settings › Sports › My teams">%1$s</xliff:g>.</string>
+    <!-- Translators: %1$s lists the competitions whose teams could not be loaded, e.g. "Bundesliga · Premier League". -->
+    <string name="onboarding_football_teams_partial">Not loaded yet: <xliff:g id="leagues" example="Bundesliga · Premier League">%1$s</xliff:g>.</string>
+    <string name="onboarding_football_retry">Try again</string>
+    <!-- Translators: %1$d is how many teams are ticked, %2$s their names, e.g. "2 ticked: Hamburg SV · Liverpool". -->
+    <plurals name="onboarding_football_teams_chosen">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> ticked: <xliff:g id="names" example="Hamburg SV">%2$s</xliff:g></item>
+        <item quantity="other"><xliff:g id="count" example="2">%1$d</xliff:g> ticked: <xliff:g id="names" example="Hamburg SV · Liverpool">%2$s</xliff:g></item>
+    </plurals>
+    <string name="onboarding_football_teams_none_yet">No team ticked yet. That’s fine too: then the matches of your competitions come first.</string>
 </resources>

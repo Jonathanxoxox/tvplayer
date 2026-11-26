@@ -12,19 +12,24 @@ import tv.own.owntv.core.sports.TeamNames
 import tv.own.owntv.core.sports.model.Sport
 
 /**
- * Jonathan's football, put into Settings → Sports once: the leagues he watches and his teams, HSV
- * first. Everything stays editable there (Sports and leagues, My teams); "Für dich", the football group
- * and the kick-off reminders read it from the profile's sports settings.
+ * Football in Settings → Sports for "Für dich", the football group and the match pages.
  *
- * Followed teams carry ESPN's ids, so they are looked up in the leagues' team lists (the same call the
- * My teams search makes). Without network the lookup is tried again on the next start; until it has
- * worked once, [FootballMatcher.from] matches the same teams by name.
+ * A new install starts with no football at all: the first-run journey's football chapter asks which
+ * competitions and teams the user follows and saves them in the profile's sports settings, exactly
+ * as Settings → Sports does (Sports and leagues, My teams). Nothing is chosen on the user's behalf.
+ *
+ * Installs that were set up before that chapter existed were given a fixed set of leagues and teams
+ * ([DEFAULT_LEAGUES], [DEFAULT_TEAMS]) once. They keep exactly what they have: [seed] only finishes
+ * that one-time setup where it had begun ([LEAGUES_DONE] written) but the teams could not be looked
+ * up yet (no network), and until it has worked [useDefaultTeams] lets [FootballMatcher.from] match
+ * those teams by name. On any other install neither does anything.
  */
 internal object FootballSetup {
 
-    /** A default team: its name as ESPN writes it, and where to look for it. */
+    /** A team of the fixed set older installs were given: its name as ESPN writes it, and where to look for it. */
     class DefaultTeam(val name: String, val leagues: List<String>)
 
+    /** The teams older installs were given once; never applied to a new install. */
     val DEFAULT_TEAMS = listOf(
         DefaultTeam("Hamburg SV", listOf("soccer/ger.1", "soccer/ger.2")),
         DefaultTeam("Borussia Dortmund", listOf("soccer/ger.1")),
@@ -35,6 +40,7 @@ internal object FootballSetup {
         DefaultTeam("Barcelona", listOf("soccer/esp.1")),
     )
 
+    /** The competitions older installs were given once; never applied to a new install. */
     val DEFAULT_LEAGUES = listOf(
         "soccer/ger.1", "soccer/uefa.champions", "soccer/ger.dfb_pokal", "soccer/eng.1", "soccer/esp.1",
         "soccer/uefa.nations", "soccer/fifa.worldq.uefa", "soccer/uefa.euro", "soccer/fifa.world", "soccer/fifa.friendly",
@@ -55,23 +61,32 @@ internal object FootballSetup {
         LauncherRowsWorker.refreshSoon(context, delaySeconds = 1)
     }
 
-    /** True while the default teams have not been looked up yet: match them by name meanwhile. */
-    fun useDefaultTeams(context: Context) = !prefs(context).getBoolean(TEAMS_DONE, false)
+    /**
+     * True only on an install that was given the fixed teams and whose lookup has not worked yet:
+     * those teams are matched by name meanwhile. Always false on an install set up through the
+     * first-run journey.
+     */
+    fun useDefaultTeams(context: Context): Boolean = prefs(context).let { defaultTeamsPending(it.getBoolean(LEAGUES_DONE, false), it.getBoolean(TEAMS_DONE, false)) }
 
-    /** Once per install, after a profile exists; a profile that already follows something is left alone. */
+    /**
+     * Whether an install still waits for its fixed teams, from its two flags: only where the one-time
+     * setup had begun ([leaguesDone]) and the lookup has not worked yet. What [useDefaultTeams] and
+     * [seed] decide on.
+     */
+    fun defaultTeamsPending(leaguesDone: Boolean, teamsDone: Boolean): Boolean = leaguesDone && !teamsDone
+
+    /**
+     * Finishes the one-time setup of an older install: looks its fixed teams up in the leagues' team
+     * lists (the call the My teams search makes) and saves them, unless the profile follows teams of
+     * its own by now. Returns at once on every other install, a new one included.
+     */
     suspend fun seed(context: Context) {
         val prefs = prefs(context)
-        if (prefs.getBoolean(LEAGUES_DONE, false) && prefs.getBoolean(TEAMS_DONE, false)) return
+        if (!defaultTeamsPending(prefs.getBoolean(LEAGUES_DONE, false), prefs.getBoolean(TEAMS_DONE, false))) return
         val koin = GlobalContext.get()
         val settings = koin.get<SettingsRepository>()
         val profileId = settings.activeProfileId.first { it >= 0L }
         val config = settings.activeSportsConfig.first()
-
-        if (!prefs.getBoolean(LEAGUES_DONE, false)) {
-            if (config.leagues.isEmpty()) settings.updateSportsConfig(profileId) { it.copy(leagues = DEFAULT_LEAGUES) }
-            prefs.edit().putBoolean(LEAGUES_DONE, true).apply()
-        }
-        if (prefs.getBoolean(TEAMS_DONE, false)) return
         if (config.teams.isNotEmpty()) {
             prefs.edit().putBoolean(TEAMS_DONE, true).apply()
             return
