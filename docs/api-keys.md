@@ -2,8 +2,10 @@
 
 Mayo TV bringt keine Schlüssel für fremde Dienste mit. Drei Extras nutzen solche Dienste, und für jedes
 brauchst du einen **eigenen Schlüssel** (oft „API-Key“ genannt) von deinem eigenen Konto dort. Alle drei
-sind freiwillig: Ohne Schlüssel funktioniert Mayo TV ganz normal, nur das jeweilige Extra fehlt. Die
-App sagt dir an der Stelle, wo es fehlt, was du dafür brauchst.
+sind freiwillig: Ohne Schlüssel funktioniert Mayo TV ganz normal, nur das jeweilige Extra fehlt. Wo
+es fehlt, sagt dir die App, welchen Schlüssel du dafür brauchst: auf der Infoseite eines Films oder
+einer Serie (TMDB), auf der Suchseite (TypeSafe und TMDB) und wenn die Sprachsuche dich nicht
+verstanden hat (ElevenLabs).
 
 | Dienst | Schaltet frei | Ohne Schlüssel |
 |------|------|------|
@@ -67,8 +69,9 @@ mit `api.typesafe.ai`.
 **Kosten:** Jede Suche nach Beschreibung verbraucht etwas von deinem Guthaben bei TypeSafe. Die
 aktuellen Konditionen findest du auf [typesafe.ai](https://typesafe.ai/).
 
-Ein TypeSafe-Schlüssel lässt sich vorab nicht prüfen. Mayo TV speichert ihn so, wie du ihn eingibst;
-ob er stimmt, merkst du bei der ersten Suche nach Beschreibung.
+Mayo TV prüft auch den TypeSafe-Schlüssel gleich, ohne Guthaben zu verbrauchen. Die Suche nach
+Beschreibung braucht zusätzlich den TMDB-Schlüssel: TypeSafe versteht deinen Wunsch, TMDB findet die
+passenden Filme und Serien.
 
 ## Datenschutz
 

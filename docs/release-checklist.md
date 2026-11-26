@@ -172,8 +172,8 @@ installieren, genau wie ein neuer Nutzer.
 - [ ] **Fußball**: ohne Internet (Vereinsliste nicht erreichbar) und mit; „Kein Fußball für mich“.
 - [ ] **Extras**: Schlüssel per QR-Code vom Handy, einmal falsch, einmal richtig; ohne Netzwerk sagt
       die Seite das. Danach in den Einstellungen ändern und entfernen.
-- [ ] **Ohne jeden Schlüssel**: Filme/Serien, Suche und Mikrofon sagen klar, was fehlt, und nichts
-      hängt oder stürzt ab.
+- [ ] **Ohne jeden Schlüssel**: Infoseite eines Films oder einer Serie, die Suchseite und eine nicht
+      verstandene Sprachsuche sagen klar, welcher Schlüssel fehlt; nichts hängt oder stürzt ab.
 - [ ] **Update statt Neuinstallation**: die letzte alte Release-APK installieren und einrichten, dann
       die neue darüber installieren. Erwartet: keine Einrichtung, alles wie vorher (Poster gehen erst
       wieder, wenn ein eigener Schlüssel eingetragen ist, siehe Abschnitt 1).
