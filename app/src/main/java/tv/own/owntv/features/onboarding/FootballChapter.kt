@@ -124,7 +124,9 @@ private fun FootballPages(start: SportsConfig, settings: SettingsRepository, onN
         }
     }
 
-    val settingsPath = stringResource(R.string.onboarding_football_path, stringResource(R.string.common_nav_settings), stringResource(R.string.sports_title))
+    // As the Settings root shows it: the group, then the page inside it.
+    val groupPath = stringResource(R.string.onboarding_football_path, stringResource(R.string.common_nav_settings), stringResource(R.string.settings_mayo_group_live))
+    val settingsPath = stringResource(R.string.onboarding_football_path, groupPath, stringResource(R.string.sports_title))
     val teamsPath = stringResource(R.string.onboarding_football_path, settingsPath, stringResource(R.string.sports_my_teams))
     val back = stringResource(R.string.common_back)
 
@@ -243,10 +245,14 @@ private fun TeamsPage(
     val retryFocus = remember { FocusRequester() }
     var searchHasFocus by remember { mutableStateOf(false) }
     var placed by remember { mutableStateOf(false) }
+    // Try again was pressed: the pill goes away when the lists arrive, so focus is placed again then.
+    var retried by remember { mutableStateOf(false) }
     // First focus: the first crest once the grid is there, Try again when nothing loaded, the search
-    // meanwhile. A later phase change only moves focus that is still parked on an empty search.
+    // meanwhile. A later phase change only moves focus that is still parked on an empty search, or that
+    // sat on Try again.
     LaunchedEffect(phase, sections.isNotEmpty()) {
-        if (placed && !(searchHasFocus && query.isEmpty())) return@LaunchedEffect
+        if (placed && !(searchHasFocus && query.isEmpty()) && !retried) return@LaunchedEffect
+        if (phase == TeamsPhase.READY) retried = false
         delay(FOCUS_SETTLE_MS)
         val target = when {
             phase == TeamsPhase.READY && sections.isNotEmpty() -> firstCrest
@@ -314,7 +320,10 @@ private fun TeamsPage(
                 } else {
                     FootballNote(stringResource(R.string.onboarding_football_teams_failed, teamsPath), Modifier.padding(top = 16.mpx), icon = OwnTVIcon.WARNING)
                 }
-                RetryPill(focus = retryFocus) { loader.load(keys, retry = true) }
+                RetryPill(focus = retryFocus) {
+                    retried = true
+                    loader.load(keys, retry = true)
+                }
             }
             TeamsPhase.READY -> {
                 sections.forEachIndexed { s, section ->
@@ -324,7 +333,10 @@ private fun TeamsPage(
                 if (missing.isNotEmpty()) {
                     val names = missing.mapNotNull { SportsCatalog.league(it)?.name }.joinToString(separator)
                     FootballNote(stringResource(R.string.onboarding_football_teams_partial, names), Modifier.padding(top = 16.mpx), icon = OwnTVIcon.WARNING)
-                    RetryPill(focus = retryFocus) { loader.load(keys, retry = true) }
+                    RetryPill(focus = retryFocus) {
+                        retried = true
+                        loader.load(keys, retry = true)
+                    }
                 }
             }
         }

@@ -173,22 +173,23 @@ private fun SummaryLines(s: ReadySummary) {
         done = true,
     )
 
-    val hasPlaylist = s.playlists > 0
+    val channelsLine = channelsLine(s.playlists, s.channels, s.importing)
     val loading = stringResource(R.string.onboarding_ready_channels_loading)
     SummaryLine(
-        mark = { SummaryIcon(OwnTVIcon.LIVE_TV, hasPlaylist) },
+        mark = { SummaryIcon(OwnTVIcon.LIVE_TV, channelsLine.done) },
         label = stringResource(R.string.onboarding_ready_row_channels),
-        value = when {
-            !hasPlaylist -> stringResource(R.string.onboarding_ready_no_playlist)
-            s.channels == 0 && s.importing -> loading
-            else -> pluralStringResource(R.plurals.onboarding_ready_channels, s.channels, s.channels)
+        value = when (channelsLine) {
+            ChannelsLine.NO_PLAYLIST -> stringResource(R.string.onboarding_ready_no_playlist)
+            ChannelsLine.NONE_LOADED -> stringResource(R.string.onboarding_ready_no_channels)
+            ChannelsLine.LOADING -> loading
+            ChannelsLine.COUNT -> pluralStringResource(R.plurals.onboarding_ready_channels, s.channels, s.channels)
         },
         detail = when {
-            !hasPlaylist -> laterIn(R.string.settings_mayo_group_sources)
+            !channelsLine.done -> laterIn(R.string.settings_mayo_group_sources)
             s.importing && s.channels > 0 -> loading
             else -> pluralStringResource(R.plurals.onboarding_ready_playlists, s.playlists, s.playlists)
         },
-        done = hasPlaylist,
+        done = channelsLine.done,
     )
 
     SummaryLine(
@@ -213,7 +214,7 @@ private fun SummaryLines(s: ReadySummary) {
         label = stringResource(R.string.onboarding_ready_row_football),
         value = teamText ?: leagueText ?: stringResource(R.string.onboarding_ready_no_teams),
         detail = when {
-            !football -> laterIn(R.string.sports_title)
+            !football -> laterIn(R.string.settings_mayo_group_live, R.string.sports_title)
             teamText != null -> leagueText
             else -> null
         },
@@ -229,14 +230,37 @@ private fun SummaryLines(s: ReadySummary) {
             total -> stringResource(R.string.onboarding_ready_extras_all)
             else -> pluralStringResource(R.plurals.onboarding_ready_extras_some, total, s.keys, total)
         },
-        detail = if (s.keys < total) laterIn(R.string.keys_settings_title) else null,
+        detail = if (s.keys < total) laterIn(R.string.settings_cleanup_group_system, R.string.keys_settings_title) else null,
         done = s.keys > 0,
     )
 }
 
-/** "Later under Settings › [group]": the same Settings page the chapter itself named. */
+/** What the channels line of the summary says; [done] marks it as set up. */
+internal enum class ChannelsLine(val done: Boolean) {
+    NO_PLAYLIST(false),
+    /** The first import is still running and no channel has arrived yet. */
+    LOADING(true),
+    /** A playlist exists, but no channel arrived and nothing is importing: the import failed or found none. */
+    NONE_LOADED(false),
+    COUNT(true),
+}
+
+internal fun channelsLine(playlists: Int, channels: Int, importing: Boolean): ChannelsLine = when {
+    playlists == 0 -> ChannelsLine.NO_PLAYLIST
+    channels > 0 -> ChannelsLine.COUNT
+    importing -> ChannelsLine.LOADING
+    else -> ChannelsLine.NONE_LOADED
+}
+
+/**
+ * "Later under Settings › [group]", or "› [group] › [page]" for a page inside a group: the path as the
+ * Settings root shows it, the same one the chapter itself named.
+ */
 @Composable
-private fun laterIn(@StringRes group: Int): String = stringResource(R.string.onboarding_ready_later_in, stringResource(group))
+private fun laterIn(@StringRes group: Int, @StringRes page: Int? = null): String {
+    val path = if (page == null) stringResource(group) else stringResource(R.string.settings_breadcrumb, stringResource(group), stringResource(page))
+    return stringResource(R.string.onboarding_ready_later_in, path)
+}
 
 /** A small accent heading over each half of the page. */
 @Composable

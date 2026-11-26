@@ -10,9 +10,9 @@
     <!-- Translators: small label above the competition chips (leagues, cups, tournaments). -->
     <string name="onboarding_football_leagues_label">Competitions</string>
     <!-- Translators: %1$s is the settings path, e.g. "Settings › Sports". -->
-    <string name="onboarding_football_leagues_more">More leagues and other sports are waiting in <xliff:g id="path" example="Settings › Sports">%1$s</xliff:g>.</string>
+    <string name="onboarding_football_leagues_more">More leagues and other sports are waiting in <xliff:g id="path" example="Settings › Live TV &amp; sport › Sports">%1$s</xliff:g>.</string>
     <!-- Translators: shown when no competition is ticked; Continue then leaves the football step. %1$s is the settings path, e.g. "Settings › Sports". -->
-    <string name="onboarding_football_leagues_none">Nothing ticked: Mayo TV won’t pick out any matches for you. You can change that any time in <xliff:g id="path" example="Settings › Sports">%1$s</xliff:g>.</string>
+    <string name="onboarding_football_leagues_none">Nothing ticked: Mayo TV won’t pick out any matches for you. You can change that any time in <xliff:g id="path" example="Settings › Live TV &amp; sport › Sports">%1$s</xliff:g>.</string>
     <!-- Translators: button that leaves the football step and switches the football extras off. -->
     <string name="onboarding_football_action_no_football">No football for me</string>
 
@@ -24,9 +24,9 @@
     <string name="onboarding_football_teams_search_hint">Name, city or short name, e.g. HSV</string>
     <!-- Translators: %1$s is what the user typed. -->
     <string name="onboarding_football_teams_not_found">No team called “<xliff:g id="query" example="Werder">%1$s</xliff:g>” in your competitions. Is its league ticked on the previous page?</string>
-    <string name="onboarding_football_teams_loading">Loading the teams of your competitions …</string>
+    <string name="onboarding_football_teams_loading">Loading the teams of your competitions…</string>
     <!-- Translators: %1$s is the settings path, e.g. "Settings › Sports › My teams". -->
-    <string name="onboarding_football_teams_failed">The team list can’t be reached right now. Check the internet connection and try again, or skip this for now and pick your teams later in <xliff:g id="path" example="Settings › Sports › My teams">%1$s</xliff:g>.</string>
+    <string name="onboarding_football_teams_failed">The team list can’t be reached right now. Check the internet connection and try again, or skip this for now and pick your teams later in <xliff:g id="path" example="Settings › Live TV &amp; sport › Sports › My teams">%1$s</xliff:g>.</string>
     <!-- Translators: %1$s lists the competitions whose teams could not be loaded, e.g. "Bundesliga · Premier League". -->
     <string name="onboarding_football_teams_partial">Not loaded yet: <xliff:g id="leagues" example="Bundesliga · Premier League">%1$s</xliff:g>.</string>
     <string name="onboarding_football_retry">Try again</string>

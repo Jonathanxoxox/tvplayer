@@ -18,6 +18,8 @@
     </plurals>
     <string name="onboarding_ready_channels_loading">Still loading in the background…</string>
     <string name="onboarding_ready_no_playlist">No playlist yet</string>
+    <!-- Translators: a playlist was added, but no channels arrived (the import failed or the playlist has none). -->
+    <string name="onboarding_ready_no_channels">No channels loaded</string>
     <string name="onboarding_ready_row_start">Start screen</string>
     <string name="onboarding_ready_start_on">The Home button opens Mayo TV</string>
     <string name="onboarding_ready_start_off">Not set up</string>
@@ -36,7 +38,7 @@
     <string name="onboarding_ready_no_teams">No teams chosen</string>
     <!-- Translators: the optional own service keys (posters, voice search, search by description). -->
     <string name="onboarding_ready_row_extras">Extras</string>
-    <string name="onboarding_ready_extras_none">Without own keys</string>
+    <string name="onboarding_ready_extras_none">No keys of your own</string>
     <!-- Translators: e.g. "2 of 3 set up": how many of the optional service keys are entered. -->
     <!-- Translators: how many of the optional keys are set; the quantity follows the total. -->
     <plurals name="onboarding_ready_extras_some">
@@ -44,7 +46,7 @@
         <item quantity="other"><xliff:g id="count" example="2">%1$d</xliff:g> of <xliff:g id="total" example="3">%2$d</xliff:g> set up</item>
     </plurals>
     <string name="onboarding_ready_extras_all">All set up</string>
-    <!-- Translators: a hint under a skipped item. %1$s is a Settings group, e.g. "Playlists & EPG". -->
+    <!-- Translators: a hint under a skipped item. %1$s is a Settings group, or a group and a page in it, e.g. "System › API keys". -->
     <string name="onboarding_ready_later_in">Later under Settings › <xliff:g id="group" example="Playlists &amp; EPG">%1$s</xliff:g></string>
 
     <string name="onboarding_ready_tips_heading">Three tips for the remote</string>
@@ -53,6 +55,6 @@
     <string name="onboarding_ready_tip_zap">In full screen, switch to the next or previous channel.</string>
     <string name="onboarding_ready_tip_list_key">◀</string>
     <string name="onboarding_ready_tip_list">Opens the channel list with what’s on now.</string>
-    <string name="onboarding_ready_tip_ok">Shows the info card. Hold OK for options such as favourite or record.</string>
+    <string name="onboarding_ready_tip_ok">Shows the info card. Hold OK for options such as adding to favorites or recording.</string>
     <string name="onboarding_ready_tips_more">Hold Back to jump from any menu to the last channel. Every key can be changed in Settings.</string>
 </resources>

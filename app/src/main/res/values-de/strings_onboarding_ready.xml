@@ -15,22 +15,23 @@
         <item quantity="one">Aus <xliff:g id="count" example="1">%1$d</xliff:g> Playlist</item>
         <item quantity="other">Aus <xliff:g id="count" example="2">%1$d</xliff:g> Playlists</item>
     </plurals>
-    <string name="onboarding_ready_channels_loading">Wird noch im Hintergrund geladen …</string>
+    <string name="onboarding_ready_channels_loading">Wird noch im Hintergrund geladen…</string>
     <string name="onboarding_ready_no_playlist">Noch keine Playlist</string>
+    <string name="onboarding_ready_no_channels">Keine Sender geladen</string>
     <string name="onboarding_ready_row_start">Startbildschirm</string>
     <string name="onboarding_ready_start_on">Die Home-Taste öffnet Mayo TV</string>
     <string name="onboarding_ready_start_off">Nicht eingerichtet</string>
     <string name="onboarding_ready_row_football">Fußball</string>
     <string name="onboarding_ready_teams_two"><xliff:g id="first" example="Hamburger SV">%1$s</xliff:g> und <xliff:g id="second" example="Liverpool">%2$s</xliff:g></string>
     <plurals name="onboarding_ready_teams_more">
-        <item quantity="one"><xliff:g id="first" example="Hamburger SV">%1$s</xliff:g>, <xliff:g id="second" example="Liverpool">%2$s</xliff:g> und <xliff:g id="count" example="1">%3$d</xliff:g> weiteres</item>
+        <item quantity="one"><xliff:g id="first" example="Hamburger SV">%1$s</xliff:g>, <xliff:g id="second" example="Liverpool">%2$s</xliff:g> und <xliff:g id="count" example="1">%3$d</xliff:g> weiterer</item>
         <item quantity="other"><xliff:g id="first" example="Hamburger SV">%1$s</xliff:g>, <xliff:g id="second" example="Liverpool">%2$s</xliff:g> und <xliff:g id="count" example="3">%3$d</xliff:g> weitere</item>
     </plurals>
     <plurals name="onboarding_ready_leagues">
         <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> Wettbewerb</item>
         <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> Wettbewerbe</item>
     </plurals>
-    <string name="onboarding_ready_no_teams">Keine Teams gewählt</string>
+    <string name="onboarding_ready_no_teams">Keine Vereine gewählt</string>
     <string name="onboarding_ready_row_extras">Extras</string>
     <string name="onboarding_ready_extras_none">Ohne eigene Schlüssel</string>
     <plurals name="onboarding_ready_extras_some">
