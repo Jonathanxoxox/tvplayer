@@ -20,8 +20,8 @@ import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import org.json.JSONObject
-import tv.own.owntv.BuildConfig
 import tv.own.owntv.R
+import tv.own.owntv.features.keys.ApiKeys
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.Locale
@@ -35,14 +35,15 @@ import java.util.concurrent.TimeUnit
  *
  * The remote's microphone reaches the app only some time after recording starts (the box bridges it in,
  * about 0.6 s on the Nokia box): [listen]'s `onReady` fires when it does, so "Speak now" is not shown
- * before anyone can hear it. Blank key = off (the on-box recogniser stands in, see [OfflineSpeech]).
+ * before anyone can hear it. The key is the user's own ElevenLabs key from [ApiKeys], read at each
+ * search, so one entered in Settings works at once. No key = off (the on-box recogniser stands in, see
+ * [OfflineSpeech]).
  */
-class ScribeRealtime(private val context: Context, okHttp: OkHttpClient) {
+class ScribeRealtime(private val context: Context, okHttp: OkHttpClient, private val keys: ApiKeys) {
 
     private val http = okHttp.newBuilder().readTimeout(0, TimeUnit.MILLISECONDS).pingInterval(10, TimeUnit.SECONDS).build()
-    private val apiKey = BuildConfig.ELEVENLABS_API_KEY
 
-    val available: Boolean get() = apiKey.isNotBlank()
+    val available: Boolean get() = keys.elevenLabs.value.isNotBlank()
 
     private val keyterms: List<String> by lazy {
         runCatching {
@@ -74,7 +75,9 @@ class ScribeRealtime(private val context: Context, okHttp: OkHttpClient) {
     @SuppressLint("MissingPermission") // The caller asks for RECORD_AUDIO first.
     suspend fun listen(stopRequested: () -> Boolean, onReady: () -> Unit, onPartial: (String) -> Unit): Outcome = withContext(Dispatchers.IO) {
         val events = Channel<Event>(Channel.UNLIMITED)
-        val socket = http.newWebSocket(request(), object : WebSocketListener() {
+        val apiKey = keys.elevenLabs.value
+        if (apiKey.isBlank()) return@withContext Outcome.Failed(NO_KEY)
+        val socket = http.newWebSocket(request(apiKey), object : WebSocketListener() {
             override fun onMessage(webSocket: WebSocket, text: String) {
                 val o = runCatching { JSONObject(text) }.getOrNull() ?: return
                 val type = o.optString(F_TYPE)
@@ -192,7 +195,7 @@ class ScribeRealtime(private val context: Context, okHttp: OkHttpClient) {
         }
     }
 
-    private fun request(): Request {
+    private fun request(apiKey: String): Request {
         val url = URL.toHttpUrl().newBuilder()
             .addQueryParameter(P_MODEL, MODEL)
             .addQueryParameter(P_FORMAT, PCM_FORMAT)
@@ -212,6 +215,8 @@ class ScribeRealtime(private val context: Context, okHttp: OkHttpClient) {
 
     private companion object {
         const val TAG = "ScribeRealtime"
+        /** Why [listen] did nothing: the key was removed between [available] and the press. */
+        const val NO_KEY = "no key"
         const val URL = "https://api.elevenlabs.io/v1/speech-to-text/realtime"
         const val MODEL = "scribe_v2_realtime"
         const val PCM_FORMAT = "pcm_16000"

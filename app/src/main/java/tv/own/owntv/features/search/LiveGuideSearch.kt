@@ -3,7 +3,6 @@ package tv.own.owntv.features.search
 import android.content.Context
 import android.util.Log
 import okhttp3.OkHttpClient
-import tv.own.owntv.BuildConfig
 import tv.own.owntv.R
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -17,6 +16,7 @@ import tv.own.owntv.core.repository.ActiveProfileSources
 import tv.own.owntv.features.home.MagentaEpgRules
 import tv.own.owntv.features.home.MagentaGuide
 import tv.own.owntv.features.home.MagentaNames
+import tv.own.owntv.features.keys.ApiKeys
 import tv.own.owntv.features.search.JevClient.Companion.noul
 
 /**
@@ -37,8 +37,9 @@ class LiveGuideSearch(
     okHttp: OkHttpClient,
     private val magenta: MagentaGuide,
     private val searchReader: SearchReader,
+    keys: ApiKeys,
 ) {
-    private val jev = JevClient(okHttp, BuildConfig.TYPESAFE_API_KEY)
+    private val jev = JevClient(okHttp) { keys.typeSafe.value }
     private val prompts: JSONObject by lazy {
         JSONObject(context.resources.openRawResource(R.raw.jev_mood_search).bufferedReader().use { it.readText() })
     }

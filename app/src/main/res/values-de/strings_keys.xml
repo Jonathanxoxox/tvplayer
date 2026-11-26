@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="keys_settings_title">Eigene Schlüssel</string>
+    <string name="keys_settings_line">Deine eigenen Schlüssel für Poster, Sprachsuche und Suche nach Beschreibung</string>
+    <string name="keys_settings_heading">Dienste</string>
+    <string name="keys_settings_about_heading">Über diese Schlüssel</string>
+    <string name="keys_settings_about">Mayo TV funktioniert auch ganz ohne diese Schlüssel. Jeder schaltet ein Extra frei, das einen fremden Dienst nutzt – mit deinem eigenen Konto bei diesem Dienst.</string>
+    <string name="keys_settings_privacy">Deine Schlüssel bleiben auf diesem Fernseher. Eine Sicherung enthält den TMDB-Schlüssel nur, wenn du sie mit einem Passwort schützt; die anderen beiden Schlüssel sind nie in einer Sicherung.</string>
+    <string name="keys_search_keywords">API Schlüssel Token TMDB ElevenLabs TypeSafe Sprachsuche Mikrofon Beschreibung Poster</string>
+
+    <string name="keys_tmdb_line">Poster, Handlung und Besetzung für Filme und Serien</string>
+    <string name="keys_elevenlabs_line">Sprachsuche, die auch Namen richtig versteht</string>
+    <string name="keys_typesafe_line">Suche nach Beschreibung</string>
+
+    <string name="keys_tmdb_unlocks">Poster, Hintergrundbilder, Handlung und Besetzung für Filme und Serien, die Film- und Serien-Kataloge und wo ein Titel gerade streamt. Ohne Schlüssel siehst du, was deine Playlist mitliefert.</string>
+    <string name="keys_elevenlabs_unlocks">Die Sprachsuche schreibt genau mit, was du sagst – auch Namen. Ohne Schlüssel nutzt Mayo TV die Spracherkennung des Fernsehers, falls er eine hat.</string>
+    <string name="keys_typesafe_unlocks">Suche nach Beschreibung: Schreib oder sag, worauf du Lust hast, etwa „ein gruseliger Film mit einer Hütte im Wald“, und Mayo TV findet passende Filme, Serien und Sendungen. Außerdem hilft sie der Sprachsuche, den Sender oder Titel zu finden, den du gemeint hast.</string>
+
+    <string name="keys_tmdb_where">Kostenlos auf themoviedb.org: Konto anlegen, dann Einstellungen › API. Kopiere den „API-Schlüssel“ (32 Zeichen), nicht das lange Lese-Zugriffstoken.</string>
+    <string name="keys_elevenlabs_where">Auf elevenlabs.io unter API-Schlüssel. Ein Schlüssel nur für Speech to Text reicht. Jede Sprachsuche verbraucht etwas von deinem ElevenLabs-Guthaben.</string>
+    <string name="keys_typesafe_where">Auf typesafe.ai: anmelden und einen API-Schlüssel erstellen. Jede Suche nach Beschreibung verbraucht etwas von deinem TypeSafe-Guthaben.</string>
+
+    <string name="keys_state_not_set">Nicht eingerichtet</string>
+    <string name="keys_state_set">Eingerichtet · <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g></string>
+
+    <string name="keys_field_label">Schlüssel</string>
+    <string name="keys_field_placeholder">Schlüssel eingeben oder einfügen</string>
+    <string name="keys_field_placeholder_replace">Neuen Schlüssel eingeben, um <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g> zu ersetzen</string>
+    <string name="keys_action_check">Prüfen</string>
+    <string name="keys_action_save">Prüfen und speichern</string>
+    <string name="keys_action_remove">Entfernen</string>
+    <string name="keys_remove_title"><xliff:g id="service" example="TMDB">%1$s</xliff:g>-Schlüssel entfernen?</string>
+    <string name="keys_remove_message">Was er freischaltet, ist dann aus, bis du wieder einen Schlüssel eingibst.</string>
+
+    <string name="keys_check_running">Schlüssel wird geprüft …</string>
+    <string name="keys_check_empty">Gib zuerst einen Schlüssel ein.</string>
+    <string name="keys_check_valid">Der Schlüssel funktioniert.</string>
+    <string name="keys_check_invalid"><xliff:g id="service" example="TMDB">%1$s</xliff:g> hat den Schlüssel nicht angenommen. Prüf, ob er vollständig ist und von der richtigen Stelle stammt.</string>
+    <string name="keys_check_tmdb_token">Das ist das Lese-Zugriffstoken von TMDB. Mayo TV braucht den kürzeren „API-Schlüssel“ von derselben Seite.</string>
+    <string name="keys_check_offline">Keine Verbindung zu <xliff:g id="service" example="TMDB">%1$s</xliff:g>. Prüf das Netzwerk und versuch es noch mal.</string>
+    <string name="keys_check_server"><xliff:g id="service" example="TMDB">%1$s</xliff:g> antwortet gerade nicht richtig (Fehler <xliff:g id="code" example="503">%2$d</xliff:g>). Versuch es später noch mal.</string>
+    <string name="keys_check_unknown">Dieser Schlüssel lässt sich vorab nicht prüfen. Er wird so verwendet, wie du ihn eingegeben hast.</string>
+
+    <string name="keys_saved">Schlüssel gespeichert. Er funktioniert.</string>
+    <string name="keys_saved_unchecked">Schlüssel ohne Prüfung gespeichert: <xliff:g id="service" example="TMDB">%1$s</xliff:g> war nicht erreichbar.</string>
+    <string name="keys_saved_unknown">Schlüssel gespeichert.</string>
+    <string name="keys_removed">Schlüssel entfernt</string>
+    <string name="keys_received">Schlüssel empfangen. Wähle „Prüfen und speichern“.</string>
+
+    <string name="keys_hint_tmdb_missing">Für Poster und Handlung brauchst du einen TMDB-Schlüssel: Einstellungen › System › Eigene Schlüssel</string>
+    <string name="keys_hint_elevenlabs_missing">Für eine genauere Sprachsuche füge einen ElevenLabs-Schlüssel hinzu: Einstellungen › System › Eigene Schlüssel</string>
+    <string name="keys_hint_typesafe_missing">Für die Suche nach Beschreibung brauchst du einen TypeSafe-Schlüssel: Einstellungen › System › Eigene Schlüssel</string>
+</resources>

@@ -12,7 +12,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
-import tv.own.owntv.BuildConfig
 import tv.own.owntv.R
 import tv.own.owntv.core.database.dao.MovieDao
 import tv.own.owntv.core.database.dao.SeriesDao
@@ -24,6 +23,7 @@ import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.repository.ActiveProfileSources
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.trending.TrendingMatcher
+import tv.own.owntv.features.keys.ApiKeys
 import tv.own.owntv.features.search.JevClient.Companion.choice
 import tv.own.owntv.features.search.JevClient.Companion.noul
 import java.net.URLEncoder
@@ -49,8 +49,8 @@ data class MoodResults(
  *    ones the playlist has — the same title matching the Trending row uses.
  * 4. Jev judges each kept title (genres + plot) against the wish; the best fits come first.
  *
- * The questions' wording lives in res/raw/jev_mood_search.json. Off without a TypeSafe key
- * (GitHub secret TYPESAFE_API_KEY) or a TMDB key.
+ * The questions' wording lives in res/raw/jev_mood_search.json. Off without the user's TypeSafe key;
+ * films and series also need their TMDB key (both from [ApiKeys], read at each search).
  */
 class MoodSearch(
     private val context: Context,
@@ -58,8 +58,9 @@ class MoodSearch(
     private val settings: SettingsRepository,
     private val movieDao: MovieDao,
     private val seriesDao: SeriesDao,
+    keys: ApiKeys,
 ) {
-    private val jev = JevClient(okHttp, BuildConfig.TYPESAFE_API_KEY)
+    private val jev = JevClient(okHttp) { keys.typeSafe.value }
     private val http = okHttp.newBuilder().callTimeout(15, TimeUnit.SECONDS).build()
     private val prompts: JSONObject by lazy {
         JSONObject(context.resources.openRawResource(R.raw.jev_mood_search).bufferedReader().use { it.readText() })
@@ -88,7 +89,8 @@ class MoodSearch(
         // The global search (both sides) and a section's search keep separate answers.
         val key = cacheKey(wish) + if (followKind) "" else "#" + movieSourceIds.isNotEmpty() + seriesSourceIds.isNotEmpty()
         synchronized(cache) { cache[key] }?.let { return it }
-        val tmdb = tmdbAccess() ?: return null
+        // No TMDB key (or TMDB switched off): nothing to discover films and series with, which is no failure.
+        val tmdb = tmdbAccess() ?: return MoodResults()
         val found = withTimeoutOrNull(TOTAL_TIMEOUT_MS) { runSearch(wish, movieSourceIds, seriesSourceIds, followKind, tmdb) } ?: return null
         synchronized(cache) { cache[key] = found }
         return found
@@ -399,8 +401,8 @@ class MoodSearch(
     private suspend fun tmdbAccess(): Tmdb? {
         val cfg = settings.metadataConfig()
         if (!cfg.enabled) return null
-        val key = cfg.tmdbApiKey.trim().ifBlank { BuildConfig.FLUTLICHT_TMDB_KEY }
-        return if (key.isBlank()) null else Tmdb(key, cfg.resolvedLanguage)
+        val key = ApiKeys.sanitize(cfg.tmdbApiKey)
+        return if (key.isEmpty()) null else Tmdb(key, cfg.resolvedLanguage)
     }
 
     private fun String.value(): String? = takeIf { it.isNotBlank() && it != "null" }

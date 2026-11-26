@@ -48,7 +48,6 @@
 2	preference-key	app/src/main/java/tv/own/owntv/OwnTVApp.kt	defaults_v5_applied
 1	file-path	app/src/main/java/tv/own/owntv/OwnTVApp.kt	image_cache
 1	performance	app/src/main/java/tv/own/owntv/OwnTVApp.kt	koin-started
-2	preference-key	app/src/main/java/tv/own/owntv/OwnTVApp.kt	tmdb_key_v1_applied
 2	preference-key	app/src/main/java/tv/own/owntv/OwnTVApp.kt	tmdb_lang_v1_applied
 1	preference-key	app/src/main/java/tv/own/owntv/OwnTVApp.kt	tvplayer
 1	log	app/src/main/java/tv/own/owntv/StartupGate.kt	startup-first-frame
@@ -409,12 +408,14 @@
 2	json	app/src/main/java/tv/own/owntv/features/home/SpotlightPicks.kt	tip
 2	json	app/src/main/java/tv/own/owntv/features/home/SpotlightPicks.kt	v
 3	json	app/src/main/java/tv/own/owntv/features/home/SpotlightPicks.kt	y
-1	url	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	$TMDB_CONFIGURATION?api_key=$clean
 1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	Authorization
-1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	Bearer $clean
+1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	Bearer
+1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	api_key
 1	json	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	detail
+1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	eyJ
 1	url	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	https://api.elevenlabs.io/v1/user
 1	url	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	https://api.themoviedb.org/3/configuration
+1	url	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	https://api.typesafe.ai/v1/models
 1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	missing_permissions
 1	json	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	status
 1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	xi-api-key
@@ -523,7 +524,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	r_${it.id}
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rhdr_$labelRes
 1	protocol	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	Authorization
-1	protocol	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	Bearer $apiKey
+1	protocol	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	Bearer $key
 1	log	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	HTTP $code: ${text.take(300)}
 1	log	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	Jev
 1	json	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	answers
@@ -746,6 +747,7 @@
 2	empty	app/src/main/java/tv/own/owntv/features/settings/AccentPopup.kt	\0
 4	technical	app/src/main/java/tv/own/owntv/features/settings/AccentPopup.kt	#
 1	technical	app/src/main/java/tv/own/owntv/features/settings/AccentPopup.kt	4E952A
+3	empty	app/src/main/java/tv/own/owntv/features/settings/ApiKeysSettingsScreen.kt	\0
 3	empty	app/src/main/java/tv/own/owntv/features/settings/BackupScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/BackupScreen.kt	dMMMyyyy
 1	empty	app/src/main/java/tv/own/owntv/features/settings/ChNavSettingsScreen.kt	\0
@@ -1531,6 +1533,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone read failed: $n
 1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone ready after ${now - opened} ms (${record.routedDevice?.type})
 1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	model_id
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	no key
 1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	partial_transcript
 1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	pcm_16000
 1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	realtime: ${e.why}

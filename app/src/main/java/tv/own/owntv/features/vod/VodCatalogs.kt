@@ -30,7 +30,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONArray
 import org.json.JSONObject
-import tv.own.owntv.BuildConfig
 import tv.own.owntv.R
 import tv.own.owntv.core.database.dao.MovieDao
 import tv.own.owntv.core.database.dao.SeriesDao
@@ -40,6 +39,7 @@ import tv.own.owntv.core.metadata.TrendingCandidate
 import tv.own.owntv.core.model.MediaType
 import tv.own.owntv.core.settings.SettingsRepository
 import tv.own.owntv.core.trending.TrendingMatcher
+import tv.own.owntv.features.keys.ApiKeys
 import java.io.File
 import java.net.URLEncoder
 import java.util.Locale
@@ -255,8 +255,9 @@ class VodCatalogSource(
     /** The section's TMDB catalogs: from memory or the file while fresh, else built now (empty without TMDB). */
     suspend fun catalogs(type: MediaType, sourceIds: List<Long>): List<VodCatalog> = lock.withLock {
         val cfg = settings.metadataConfig()
-        val key = cfg.tmdbApiKey.trim().ifBlank { BuildConfig.FLUTLICHT_TMDB_KEY }
-        if (!cfg.enabled || key.isBlank()) return@withLock emptyList()
+        // The user's own TMDB key, read at each call: none = no catalogs.
+        val key = ApiKeys.sanitize(cfg.tmdbApiKey)
+        if (!cfg.enabled || key.isEmpty()) return@withLock emptyList()
         val language = cfg.resolvedLanguage
         val cacheKey = cacheKey(type, sourceIds)
         val now = System.currentTimeMillis()

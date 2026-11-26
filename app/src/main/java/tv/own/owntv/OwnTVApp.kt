@@ -202,13 +202,6 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
                     settings.setReminderMode(tv.own.owntv.core.settings.SettingsRepository.ReminderMode.NOTIFY)
                     prefs.edit().putBoolean("defaults_v5_applied", true).apply()
                 }
-                // Posters, backdrops, plot and cast for Movies & Series: the build's own TMDB key, once,
-                // and only when no key is set yet (the shared OwnTV service answers 403 to this build).
-                if (BuildConfig.FLUTLICHT_TMDB_KEY.isNotBlank() && !prefs.getBoolean("tmdb_key_v1_applied", false)) {
-                    val settings = GlobalContext.get().get<tv.own.owntv.core.settings.SettingsRepository>()
-                    if (settings.currentTmdbApiKey().isBlank()) settings.setTmdbApiKey(BuildConfig.FLUTLICHT_TMDB_KEY)
-                    prefs.edit().putBoolean("tmdb_key_v1_applied", true).apply()
-                }
                 // Plot and titles from TMDB in the TV's language (German), not TMDB's English default.
                 if (!prefs.getBoolean("tmdb_lang_v1_applied", false)) {
                     val settings = GlobalContext.get().get<tv.own.owntv.core.settings.SettingsRepository>()
@@ -239,8 +232,8 @@ class OwnTVApp : Application(), SingletonImageLoader.Factory, androidx.work.Conf
             StartupGate.awaitSettled()
             kotlinx.coroutines.delay(SPORTS_START_DELAY_MS)
             runCatching { GlobalContext.get().get<tv.own.owntv.core.sports.SportsRepository>().appStarted() }
-            // Football for "Für dich", the football group and kick-off reminders: Jonathan's leagues and
-            // teams into Settings → Sports, once; afterwards whatever is chosen there.
+            // Older installs only: finishes looking up the fixed teams they were given once. New installs
+            // choose their football in the first-run journey.
             runCatching { tv.own.owntv.launcher.FootballSetup.seed(this@OwnTVApp) }
         }
         // NOTE: cold start does ZERO heavy DB work. Index + ANALYZE maintenance is piggy-backed onto the

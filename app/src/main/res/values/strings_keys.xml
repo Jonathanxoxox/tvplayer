@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The user's own service keys: Settings › API keys, the key checks, and the hints where a feature needs a key. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Settings page and its row on the System page -->
+    <string name="keys_settings_title">API keys</string>
+    <string name="keys_settings_line">Your own keys for posters, voice search and search by description</string>
+    <string name="keys_settings_heading">Services</string>
+    <string name="keys_settings_about_heading">About these keys</string>
+    <string name="keys_settings_about">Mayo TV works without any of these keys. Each one switches on one extra that uses an outside service, on your own account with that service.</string>
+    <string name="keys_settings_privacy">Your keys stay on this TV. A backup carries the TMDB key only when you protect it with a password; the other two keys are never in a backup.</string>
+    <!-- Translators: words people may search Settings for to find this page; separated by spaces. -->
+    <string name="keys_search_keywords">api key keys token tmdb elevenlabs typesafe voice microphone description posters</string>
+
+    <!-- Service names: brand names, the same in every language. -->
+    <string name="keys_tmdb_name" translatable="false">TMDB</string>
+    <string name="keys_elevenlabs_name" translatable="false">ElevenLabs</string>
+    <string name="keys_typesafe_name" translatable="false">TypeSafe</string>
+
+    <!-- The short line under each service's row -->
+    <string name="keys_tmdb_line">Posters, plot and cast for films and series</string>
+    <string name="keys_elevenlabs_line">Voice search that gets names right</string>
+    <string name="keys_typesafe_line">Search by description</string>
+
+    <!-- What each key unlocks, in full -->
+    <string name="keys_tmdb_unlocks">Posters, backdrops, plot and cast for films and series, the film and series catalogs, and where a title is streaming. Without a key you see what your playlist provides.</string>
+    <string name="keys_elevenlabs_unlocks">Voice search writes down exactly what you say, names included. Without a key the TV\'s own speech recognition is used, if it has one.</string>
+    <string name="keys_typesafe_unlocks">Search by description: type or say what you feel like, such as “a creepy film with a cabin in the woods”, and Mayo TV finds fitting films, series and programmes. It also helps voice search pick the channel or title you meant.</string>
+
+    <!-- Where to get each key -->
+    <string name="keys_tmdb_where">Free at themoviedb.org: create an account, then go to Settings › API. Copy the “API Key” (32 characters), not the long read access token.</string>
+    <string name="keys_elevenlabs_where">At elevenlabs.io, under API keys. A key limited to speech to text is enough. Each voice search uses some of your ElevenLabs credits.</string>
+    <string name="keys_typesafe_where">At typesafe.ai: sign in and create an API key. Each search by description uses some of your TypeSafe credits.</string>
+
+    <!-- Key state -->
+    <string name="keys_state_not_set">Not set</string>
+    <!-- Translators: %1$s is the masked key, such as "••••c3f9". -->
+    <string name="keys_state_set">Set · <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g></string>
+
+    <!-- The edit popup -->
+    <string name="keys_field_label">Key</string>
+    <string name="keys_field_placeholder">Type or paste the key</string>
+    <!-- Translators: %1$s is the masked current key, such as "••••c3f9". -->
+    <string name="keys_field_placeholder_replace">Type a new key to replace <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g></string>
+    <string name="keys_action_check">Check</string>
+    <string name="keys_action_save">Check and save</string>
+    <string name="keys_action_remove">Remove</string>
+    <!-- Translators: %1$s is the service name, such as "TMDB". -->
+    <string name="keys_remove_title">Remove the <xliff:g id="service" example="TMDB">%1$s</xliff:g> key?</string>
+    <string name="keys_remove_message">What it switches on turns off until you enter a key again.</string>
+
+    <!-- Results of checking a key -->
+    <string name="keys_check_running">Checking the key…</string>
+    <string name="keys_check_empty">Enter a key first.</string>
+    <string name="keys_check_valid">The key works.</string>
+    <!-- Translators: %1$s is the service name, such as "TMDB". -->
+    <string name="keys_check_invalid"><xliff:g id="service" example="TMDB">%1$s</xliff:g> did not accept this key. Check that it is complete and copied from the right place.</string>
+    <string name="keys_check_tmdb_token">This is TMDB\'s read access token. Mayo TV needs the shorter “API Key” from the same page.</string>
+    <!-- Translators: %1$s is the service name, such as "TMDB". -->
+    <string name="keys_check_offline">No connection to <xliff:g id="service" example="TMDB">%1$s</xliff:g>. Check the network and try again.</string>
+    <!-- Translators: %1$s is the service name, %2$d an HTTP status code such as 503. -->
+    <string name="keys_check_server"><xliff:g id="service" example="TMDB">%1$s</xliff:g> is not answering properly right now (error <xliff:g id="code" example="503">%2$d</xliff:g>). Try again later.</string>
+    <string name="keys_check_unknown">This key cannot be checked in advance. It is used as entered.</string>
+
+    <!-- Short confirmations -->
+    <string name="keys_saved">Key saved. It works.</string>
+    <!-- Translators: %1$s is the service name, such as "TMDB". -->
+    <string name="keys_saved_unchecked">Key saved without a check: <xliff:g id="service" example="TMDB">%1$s</xliff:g> could not be reached.</string>
+    <string name="keys_saved_unknown">Key saved.</string>
+    <string name="keys_removed">Key removed</string>
+    <string name="keys_received">Key received. Choose Check and save.</string>
+
+    <!-- Hints where a feature would be, for a missing key -->
+    <string name="keys_hint_tmdb_missing">Posters and plot need a TMDB key: Settings › System › API keys</string>
+    <string name="keys_hint_elevenlabs_missing">For more accurate voice search, add an ElevenLabs key: Settings › System › API keys</string>
+    <string name="keys_hint_typesafe_missing">Search by description needs a TypeSafe key: Settings › System › API keys</string>
+</resources>

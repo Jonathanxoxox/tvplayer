@@ -35,9 +35,6 @@ jobs:
 
       - name: Build x86_64 APK
         env:
-          FLUTLICHT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
-          MAYO_TYPESAFE_KEY: ${{ secrets.TYPESAFE_API_KEY }}
-          MAYO_ELEVENLABS_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: sideload
           KEY_PASSWORD: android
@@ -64,15 +61,7 @@ jobs:
 
       - name: Metadaten-Dienst erreichbar?
         continue-on-error: true
-        env:
-          TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
         run: |
-          mkdir -p tour
-          if [ -n "$TMDB_KEY" ]; then
-            echo "TMDB mit eigenem Schlüssel -> $(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://api.themoviedb.org/3/search/movie?query=Gladiator&api_key=$TMDB_KEY")" | tee -a tour/net.txt
-          else
-            echo "Kein Secret TMDB_API_KEY" | tee -a tour/net.txt
-          fi
           mkdir -p tour
           for u in "https://owntv-tmdb-meta.xiannero.workers.dev/3/search/movie?query=Gladiator&language=de-DE" \
                    "https://tmdb.owntv.me/3/search/movie?query=Gladiator&language=de-DE"; do

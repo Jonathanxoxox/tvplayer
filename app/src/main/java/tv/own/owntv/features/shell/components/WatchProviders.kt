@@ -10,8 +10,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import org.koin.compose.koinInject
-import tv.own.owntv.BuildConfig
 import tv.own.owntv.core.settings.SettingsRepository
+import tv.own.owntv.features.keys.ApiKeys
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -30,8 +30,9 @@ class WatchProviders(okHttp: OkHttpClient, private val settings: SettingsReposit
         val id = "$type/$tmdbId"
         synchronized(cache) { cache[id] }?.let { return it }
         val cfg = settings.metadataConfig()
-        val key = cfg.tmdbApiKey.trim().ifBlank { BuildConfig.FLUTLICHT_TMDB_KEY }
-        if (!cfg.enabled || key.isBlank()) return emptyList()
+        // The user's own TMDB key, read at each call: none = no streaming services shown.
+        val key = ApiKeys.sanitize(cfg.tmdbApiKey)
+        if (!cfg.enabled || key.isEmpty()) return emptyList()
         val region = cfg.resolvedLanguage.substringAfter('-', "").takeIf { it.length == 2 }
             ?: Locale.getDefault().country.takeIf { it.length == 2 }
             ?: DEFAULT_REGION
