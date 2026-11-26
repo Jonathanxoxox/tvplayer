@@ -147,7 +147,8 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     var showRemoteHandover by remember { mutableStateOf(false) }
     LaunchedEffect(storedKey, storedUrl) {
         if (!seeded) {
-            key = storedKey; url = storedUrl
+            // The key field starts empty: a stored key is never shown in full, only masked as the placeholder.
+            url = storedUrl
             seeded = true
         }
     }
@@ -286,7 +287,7 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
     // declaring this above it drew the whole settings list on top of the dialog.
     if (showAdvanced) {
         AdvancedMetadataPopup(
-            key = key, url = url,
+            key = key, storedKey = storedKey, url = url,
             onKeyChange = { key = it }, onUrlChange = { url = it },
             onRemote = { showAdvanced = false; showRemoteHandover = true },
             onRemove = {
@@ -294,7 +295,10 @@ fun MetadataSettingsScreen(onBack: () -> Unit, modifier: Modifier = Modifier) {
                 if (storedKey.isNotBlank() || storedUrl.isNotBlank()) confirmClearAdvanced = true
             },
             onSave = {
-                vm.setTmdbApiKey(key); vm.setMetadataServerUrl(url); vm.resetMetadataTest()
+                // An empty key field keeps the stored key; Remove clears it.
+                val typed = tv.own.owntv.features.keys.ApiKeys.sanitize(key)
+                if (typed.isNotEmpty()) vm.setTmdbApiKey(typed)
+                vm.setMetadataServerUrl(url); vm.resetMetadataTest()
                 showAdvanced = false
             },
             onDismiss = { showAdvanced = false },
@@ -419,6 +423,7 @@ private fun maskSecret(secret: String): String {
 @Composable
 private fun AdvancedMetadataPopup(
     key: String,
+    storedKey: String,
     url: String,
     onKeyChange: (String) -> Unit,
     onUrlChange: (String) -> Unit,
@@ -453,7 +458,9 @@ private fun AdvancedMetadataPopup(
                 value = key,
                 onValueChange = onKeyChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = stringResource(R.string.settings_metadata_optional),
+                placeholder = if (storedKey.isBlank()) stringResource(R.string.settings_metadata_optional)
+                    else tv.own.owntv.features.keys.ApiKeys.mask(storedKey),
+                password = true,
             )
             tv.own.owntv.features.settings.StageFieldRow(
                 icon = tv.own.owntv.ui.components.OwnTVIcon.PENCIL,
