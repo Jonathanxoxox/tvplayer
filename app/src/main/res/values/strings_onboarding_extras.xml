@@ -5,12 +5,12 @@
     <string name="onboarding_extras_sub">Posters, voice search and search by description use outside services that need a key of your own. All of this is optional: Mayo TV works without it.</string>
 
     <!-- The three services as the chapter names them: what each one switches on. -->
-    <string name="onboarding_extras_tmdb_title">Covers &amp; film info</string>
+    <string name="onboarding_extras_tmdb_title">Posters &amp; film info</string>
     <string name="onboarding_extras_tmdb_line">Posters, plot and cast for films and series. Needs a free TMDB key.</string>
     <string name="onboarding_extras_elevenlabs_title">Voice search</string>
     <string name="onboarding_extras_elevenlabs_line">Just say what you are looking for, names included. Needs your own ElevenLabs key.</string>
     <string name="onboarding_extras_typesafe_title">Search by description</string>
-    <string name="onboarding_extras_typesafe_line">Describe a film in your own words and find it. Needs your own TypeSafe key.</string>
+    <string name="onboarding_extras_typesafe_line">Describe a film in your own words and find it. Needs your own TypeSafe key, and the TMDB key above.</string>
 
     <!-- The state on the right of each service -->
     <string name="onboarding_extras_state_none">Not set up</string>
@@ -57,7 +57,7 @@
     <!-- The page on the phone (served by the TV over the home network) -->
     <string name="onboarding_extras_web_title">Mayo TV · your keys</string>
     <string name="onboarding_extras_web_heading">Your keys for Mayo TV</string>
-    <string name="onboarding_extras_web_intro">Paste one or more keys and tap Send. Fields you leave empty change nothing.</string>
+    <string name="onboarding_extras_web_intro">Paste one or more keys and tap “Send to the TV”. Fields you leave empty change nothing.</string>
     <string name="onboarding_extras_web_get_key">Get a key</string>
     <string name="onboarding_extras_web_placeholder">Paste the key here</string>
     <string name="onboarding_extras_web_send">Send to the TV</string>

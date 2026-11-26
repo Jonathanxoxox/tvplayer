@@ -92,7 +92,6 @@ internal fun ExtrasServiceCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val (state, tone, detail) = statusTexts(service, stored, status)
     StageSurface(
         onClick = onClick,
         radius = 22.mpx,
@@ -100,6 +99,8 @@ internal fun ExtrasServiceCard(
         idle = Modifier.background(StageColors.Ink.copy(alpha = 0.05f), RoundedCornerShape(22.mpx)),
         modifier = modifier.fillMaxWidth().heightIn(min = 104.mpx),
     ) { focused ->
+        // Resolved inside the surface, so the colours follow its focused (light) palette.
+        val (state, tone, detail) = statusTexts(service, stored, status)
         Row(
             Modifier.fillMaxWidth().padding(horizontal = 24.mpx, vertical = 16.mpx),
             horizontalArrangement = Arrangement.spacedBy(20.mpx),
@@ -218,9 +219,12 @@ internal fun ExtrasPhonePanel(
                 PanelLine(stringResource(R.string.onboarding_extras_phone_same_wifi), StageColors.Muted, top = 10, size = 14)
             }
             PhoneLinkState.Starting -> PanelLine(stringResource(R.string.onboarding_extras_phone_starting), StageColors.Muted, top = 14)
-            PhoneLinkState.NoNetwork -> PanelLine(stringResource(R.string.onboarding_extras_phone_no_network), StageColors.Warn, top = 14)
-            PhoneLinkState.Failed, PhoneLinkState.Locked -> {
-                val text = if (state == PhoneLinkState.Locked) R.string.onboarding_extras_phone_locked else R.string.onboarding_extras_phone_failed
+            PhoneLinkState.NoNetwork, PhoneLinkState.Failed, PhoneLinkState.Locked -> {
+                val text = when (state) {
+                    PhoneLinkState.NoNetwork -> R.string.onboarding_extras_phone_no_network
+                    PhoneLinkState.Locked -> R.string.onboarding_extras_phone_locked
+                    else -> R.string.onboarding_extras_phone_failed
+                }
                 PanelLine(stringResource(text), StageColors.Warn, top = 14)
                 Box(Modifier.padding(top = 14.mpx)) {
                     StagePill(stringResource(R.string.onboarding_extras_phone_new_link), onClick = onRestart, icon = OwnTVIcon.REFRESH)

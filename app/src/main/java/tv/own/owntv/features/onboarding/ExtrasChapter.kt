@@ -21,12 +21,17 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.tv.material3.Text
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.compose.koinInject
 import tv.own.owntv.R
 import tv.own.owntv.features.keys.ApiKeyValidator
@@ -37,6 +42,7 @@ import tv.own.owntv.features.onboarding.extras.ExtrasPhonePage
 import tv.own.owntv.features.onboarding.extras.ExtrasPhonePanel
 import tv.own.owntv.features.onboarding.extras.ExtrasPhoneServer
 import tv.own.owntv.features.onboarding.extras.ExtrasServiceCard
+import tv.own.owntv.features.onboarding.extras.PhoneLinkState
 import tv.own.owntv.features.onboarding.extras.KeyEntryPopup
 import tv.own.owntv.features.onboarding.extras.extrasPhonePageTexts
 import tv.own.owntv.ui.theme.StageColors
@@ -50,7 +56,8 @@ import tv.own.owntv.ui.theme.stageText
  * Left: one card per service with what it switches on and the key's state. Right: a QR code and an
  * address for a small page on the home network where the phone pastes the keys; they arrive here at
  * once. OK on a card types the key with the remote instead. Every key is checked with its service and
- * stored unless the service rejects it. The phone link runs only while this chapter is on screen.
+ * stored unless the service rejects it. The phone link runs only while this chapter is on screen and
+ * the app is in front.
  *
  * Continue (the initial focus) and Later both move on, with or without keys; Settings has the same
  * keys for later.
@@ -89,11 +96,35 @@ fun ExtrasChapter(onNext: () -> Unit, onBack: (() -> Unit)?) {
             },
         )
     }
-    DisposableEffect(server) {
-        val starting = appScope.launch(Dispatchers.IO) { server.start() }
+    // Every start and stop of the link runs on this one thread, in the order asked, so a stop can never
+    // overtake an earlier start and leave a listener behind.
+    val linkThread = remember { Dispatchers.IO.limitedParallelism(1) }
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    // The link listens only while the chapter is composed and the app is in front: it closes when the
+    // app goes to the background (Home, another app, the screensaver) and opens with a new token on return.
+    DisposableEffect(server, lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_START -> appScope.launch(linkThread) { server.start() }
+                Lifecycle.Event.ON_STOP -> appScope.launch(linkThread) { server.stop() }
+                else -> Unit
+            }
+        }
+        lifecycle.addObserver(observer)
         onDispose {
-            starting.cancel()
-            appScope.launch(Dispatchers.IO) { server.stop() }
+            lifecycle.removeObserver(observer)
+            appScope.launch(linkThread) { server.stop() }
+        }
+    }
+    // Without a network on arrival (Wi-Fi still connecting after power-on), try again every few seconds.
+    LaunchedEffect(server, lifecycle) {
+        lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
+            while (true) {
+                delay(NETWORK_RETRY_MS)
+                withContext(linkThread) {
+                    if (server.state.value == PhoneLinkState.NoNetwork) server.start()
+                }
+            }
         }
     }
     val link by server.state.collectAsStateWithLifecycle()
@@ -137,20 +168,27 @@ fun ExtrasChapter(onNext: () -> Unit, onBack: (() -> Unit)?) {
                         modifier = Modifier.focusRequester(cardFocus.getValue(service)),
                     )
                 }
+                Text(
+                    stringResource(
+                        R.string.onboarding_extras_later,
+                        stringResource(R.string.settings_breadcrumb, stringResource(R.string.settings_cleanup_group_system), stringResource(R.string.keys_settings_title)),
+                    ),
+                    style = stageText(16, 500),
+                    color = StageColors.Muted,
+                    modifier = Modifier.padding(top = 6.mpx, start = 4.mpx),
+                )
             }
             ExtrasPhonePanel(
                 state = link,
                 received = received,
-                onRestart = { appScope.launch(Dispatchers.IO) { server.start() } },
+                onRestart = {
+                    // The pill goes away with the restart: hand focus to the first card before it does.
+                    runCatching { cardFocus.getValue(ApiService.entries.first()).requestFocus() }
+                    appScope.launch(linkThread) { server.start() }
+                },
                 modifier = Modifier.width(PHONE_PANEL_WIDTH.mpx),
             )
         }
-        Text(
-            stringResource(R.string.onboarding_extras_later, stringResource(R.string.keys_settings_title)),
-            style = stageText(16, 500),
-            color = StageColors.Muted,
-            modifier = Modifier.padding(top = 12.mpx, start = 4.mpx),
-        )
     }
 
     editing?.let { service ->
@@ -174,6 +212,7 @@ fun ExtrasChapter(onNext: () -> Unit, onBack: (() -> Unit)?) {
     }
 }
 
-private const val CHAPTER_WIDTH = 1180
-private const val PHONE_PANEL_WIDTH = 320
+private const val CHAPTER_WIDTH = 1240
+private const val PHONE_PANEL_WIDTH = 380
 private const val FOCUS_RETURN_DELAY_MS = 80L
+private const val NETWORK_RETRY_MS = 4_000L

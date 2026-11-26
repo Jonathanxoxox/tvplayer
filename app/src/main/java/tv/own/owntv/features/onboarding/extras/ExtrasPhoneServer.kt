@@ -53,7 +53,8 @@ sealed interface PhoneLinkState {
  * - only clients from private, link-local or loopback addresses are answered;
  * - a fresh random token per [start] is part of the path, compared in constant time; a request with a
  *   wrong token counts as a strike, and after [MAX_STRIKES] the listener closes itself ([PhoneLinkState.Locked]);
- * - the listener runs only while the chapter is on screen ([stop] when it leaves).
+ * - the listener runs only while the chapter is on screen and the app is in front; the chapter calls
+ *   [start] and [stop] one after another on a single thread.
  *
  * Nothing is logged: the URL carries the token and the bodies carry keys. [page] renders the HTML
  * (true = after a plain form post, with the "sent" notice) and is called on a worker thread.
