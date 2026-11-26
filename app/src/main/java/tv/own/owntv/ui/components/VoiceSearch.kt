@@ -114,7 +114,8 @@ fun rememberVoiceSearch(
                 val said = heard.guesses
                 if (said.isEmpty()) {
                     voice.heard = null
-                    voice.note = R.string.voice_search_not_understood
+                    // The box's own recogniser missed it (there is no ElevenLabs key): say what would hear better.
+                    voice.note = R.string.keys_hint_elevenlabs_missing
                     return@launch
                 }
                 voice.heard = said.first()

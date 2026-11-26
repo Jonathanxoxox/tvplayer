@@ -146,6 +146,14 @@ fun MediaDetailsScreen(details: MediaDetailsUi, onExit: () -> Unit, modifier: Mo
                     DetailsLabel(stringResource(R.string.content_media_overview))
                     Text(details.plot, style = stageText(21, 400).copy(lineHeight = (21 * 1.55f).mpxSp), color = StageColors.ItemText, modifier = Modifier.widthIn(max = 1300.mpx))
                 }
+                // Without a TMDB key this page only has what the playlist brings: say what would add more.
+                if (tv.own.owntv.features.keys.ApiService.TMDB in tv.own.owntv.features.keys.rememberMissingKeys()) {
+                    tv.own.owntv.features.keys.MissingKeyHint(
+                        R.string.keys_hint_tmdb_missing,
+                        Modifier.padding(top = 24.mpx).widthIn(max = 1300.mpx),
+                        size = 19,
+                    )
+                }
                 val streaming = rememberWatchProviders(details.tmdbType, details.tmdbId)
                 if (streaming.isNotEmpty()) {
                     DetailsLabel(stringResource(R.string.details_streaming_on))

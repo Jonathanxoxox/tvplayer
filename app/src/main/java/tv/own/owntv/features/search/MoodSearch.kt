@@ -58,7 +58,7 @@ class MoodSearch(
     private val settings: SettingsRepository,
     private val movieDao: MovieDao,
     private val seriesDao: SeriesDao,
-    keys: ApiKeys,
+    private val keys: ApiKeys,
 ) {
     private val jev = JevClient(okHttp) { keys.typeSafe.value }
     private val http = okHttp.newBuilder().callTimeout(15, TimeUnit.SECONDS).build()
@@ -71,7 +71,8 @@ class MoodSearch(
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, MoodResults>?) = size > CACHE_SIZE
     }
 
-    val available: Boolean get() = jev.available
+    /** Needs both keys: TypeSafe reads the wish, TMDB finds the films and series that fit it. */
+    val available: Boolean get() = jev.available && keys.tmdb.value.isNotEmpty()
 
     fun cached(query: String): MoodResults? = synchronized(cache) { cache[cacheKey(query)] }
 

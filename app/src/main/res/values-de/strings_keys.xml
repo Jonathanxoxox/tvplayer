@@ -32,7 +32,7 @@
     <string name="keys_remove_title"><xliff:g id="service" example="TMDB">%1$s</xliff:g>-Schlüssel entfernen?</string>
     <string name="keys_remove_message">Was er freischaltet, ist dann aus, bis du wieder einen Schlüssel eingibst.</string>
 
-    <string name="keys_check_running">Schlüssel wird geprüft …</string>
+    <string name="keys_check_running">Schlüssel wird geprüft…</string>
     <string name="keys_check_empty">Gib zuerst einen Schlüssel ein.</string>
     <string name="keys_check_valid">Der Schlüssel funktioniert.</string>
     <string name="keys_check_invalid"><xliff:g id="service" example="TMDB">%1$s</xliff:g> hat den Schlüssel nicht angenommen. Prüf, ob er vollständig ist und von der richtigen Stelle stammt.</string>
@@ -50,4 +50,5 @@
     <string name="keys_hint_tmdb_missing">Für Poster und Handlung brauchst du einen TMDB-Schlüssel: Einstellungen › System › Eigene Schlüssel</string>
     <string name="keys_hint_elevenlabs_missing">Für eine genauere Sprachsuche füge einen ElevenLabs-Schlüssel hinzu: Einstellungen › System › Eigene Schlüssel</string>
     <string name="keys_hint_typesafe_missing">Für die Suche nach Beschreibung brauchst du einen TypeSafe-Schlüssel: Einstellungen › System › Eigene Schlüssel</string>
+    <string name="keys_hint_typesafe_needs_tmdb">Die Suche nach Beschreibung braucht zusätzlich einen TMDB-Schlüssel: Einstellungen › System › Eigene Schlüssel</string>
 </resources>

@@ -822,6 +822,20 @@ private fun RecentRow(term: String, onClick: () -> Unit) {
     }
 }
 
+/**
+ * What search by description is missing, as a hint for where its results would be: the TypeSafe key
+ * first, then the TMDB key it also needs. Null when both are there.
+ */
+@Composable
+private fun descriptionSearchHint(): Int? {
+    val missing = tv.own.owntv.features.keys.rememberMissingKeys()
+    return when {
+        tv.own.owntv.features.keys.ApiService.TYPESAFE in missing -> R.string.keys_hint_typesafe_missing
+        tv.own.owntv.features.keys.ApiService.TMDB in missing -> R.string.keys_hint_typesafe_needs_tmdb
+        else -> null
+    }
+}
+
 /** The empty page's glass card: what Search does, and where a result takes you. */
 @Composable
 private fun LauncherCard(modifier: Modifier = Modifier) {
@@ -835,6 +849,7 @@ private fun LauncherCard(modifier: Modifier = Modifier) {
             modifier = Modifier.padding(top = 14.mpx, bottom = 10.mpx),
         )
         Text(stringResource(R.string.search_card_body), style = stageText(19, 400).copy(lineHeight = (19 * 1.55f).mpxSp), color = StageColors.Muted)
+        descriptionSearchHint()?.let { tv.own.owntv.features.keys.MissingKeyHint(it, Modifier.padding(top = 18.mpx)) }
     }
 }
 
@@ -847,5 +862,6 @@ private fun NothingFound(title: String, modifier: Modifier = Modifier) {
             stringResource(R.string.search_nothing_found_body), style = stageText(19, 400).copy(lineHeight = (19 * 1.55f).mpxSp),
             color = StageColors.Muted, modifier = Modifier.padding(top = 10.mpx),
         )
+        descriptionSearchHint()?.let { tv.own.owntv.features.keys.MissingKeyHint(it, Modifier.padding(top = 18.mpx), size = 19) }
     }
 }
