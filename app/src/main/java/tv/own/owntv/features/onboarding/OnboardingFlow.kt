@@ -34,8 +34,8 @@ import tv.own.owntv.ui.theme.ownTvTween
  * profile run once that has happened; finishing READY completes the journey and MainActivity shows
  * the shell on its own.
  *
- * Chapters change with a short fade and a slight slide in the direction of travel, instant when
- * animations are off.
+ * Chapters change with a short fade and a slight slide in the direction of travel (a plain fade
+ * after the intro), instant when animations are off.
  */
 @Composable
 fun OnboardingFlow(
@@ -57,10 +57,17 @@ fun OnboardingFlow(
             modifier = modifier.fillMaxSize(),
             transitionSpec = {
                 val forward = targetState.ordinal >= initialState.ordinal
+                // The intro hands its lockup over to the wizard's at the exact same spot, so that
+                // step fades without the slide.
+                val fromIntro = initialState == OnboardingChapter.INTRO
                 // The new chapter fades in over the old one, which stays opaque until then: both draw
                 // the full Stage background, and fading both at once would dip it in the middle.
-                (fadeIn(fade) + slideInHorizontally(slide) { w -> (if (forward) w else -w) / SLIDE_FRACTION }) togetherWith
-                    fadeOut(snap(delayMillis = fade.durationMillis))
+                val enter = if (fromIntro) {
+                    fadeIn(fade)
+                } else {
+                    fadeIn(fade) + slideInHorizontally(slide) { w -> (if (forward) w else -w) / SLIDE_FRACTION }
+                }
+                enter togetherWith fadeOut(snap(delayMillis = fade.durationMillis))
             },
             label = "onboardingChapter",
         ) { shown ->

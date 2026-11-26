@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="onboarding_intro_skip_hint">OK drücken zum Überspringen</string>
+    <string name="onboarding_intro_skip_hint">Mit OK überspringen</string>
+    <string name="onboarding_intro_tagline">Dein Fernsehen im Flutlicht.</string>
 </resources>
