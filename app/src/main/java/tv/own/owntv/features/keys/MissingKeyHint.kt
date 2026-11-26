@@ -37,3 +37,13 @@ fun MissingKeyHint(@StringRes text: Int, modifier: Modifier = Modifier, size: In
         Text(stringResource(text), style = stageText(size, 500), color = StageColors.Muted)
     }
 }
+
+/**
+ * Filme / Serien: the line under the category column while there is no TMDB key (the catalogs and
+ * posters are then missing), or null once a key is set.
+ */
+@Composable
+fun rememberVodCatalogsHint(): (@Composable () -> Unit)? {
+    if (ApiService.TMDB !in rememberMissingKeys()) return null
+    return { MissingKeyHint(tv.own.owntv.R.string.keys_hint_tmdb_catalogs, Modifier.padding(start = 14.mpx, end = 14.mpx, top = 14.mpx), size = 15) }
+}

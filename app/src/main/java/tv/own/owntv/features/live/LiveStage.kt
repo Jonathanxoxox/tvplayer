@@ -441,6 +441,8 @@ internal fun LiveCategories(
     searchGap: androidx.compose.ui.unit.Dp? = null,
     /** Where the first row's middle really is on screen (px from the top): the guide lines it up with its first channel. */
     onFirstRowCentre: ((Float) -> Unit)? = null,
+    /** A fixed line under the rows (Filme / Serien: what is missing without a TMDB key). */
+    footer: (@Composable () -> Unit)? = null,
 ) {
     var localQuery by remember { mutableStateOf("") }
     val query = if (showSearch) searchQuery ?: localQuery else ""
@@ -607,6 +609,7 @@ internal fun LiveCategories(
             }
         }
         }
+        footer?.invoke()
     }
 }
 

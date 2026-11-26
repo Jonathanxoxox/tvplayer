@@ -48,6 +48,7 @@
     <string name="keys_received">Schlüssel empfangen. Wähle „Prüfen und speichern“.</string>
 
     <string name="keys_hint_tmdb_missing">Für Poster und Handlung brauchst du einen TMDB-Schlüssel: Einstellungen › System › Eigene Schlüssel</string>
+    <string name="keys_hint_tmdb_catalogs">Trends, Genres und Poster brauchen einen TMDB-Schlüssel: Einstellungen › System › Eigene Schlüssel</string>
     <string name="keys_hint_elevenlabs_missing">Für eine genauere Sprachsuche füge einen ElevenLabs-Schlüssel hinzu: Einstellungen › System › Eigene Schlüssel</string>
     <string name="keys_hint_typesafe_missing">Für die Suche nach Beschreibung brauchst du einen TypeSafe-Schlüssel: Einstellungen › System › Eigene Schlüssel</string>
     <string name="keys_hint_typesafe_needs_tmdb">Die Suche nach Beschreibung braucht zusätzlich einen TMDB-Schlüssel: Einstellungen › System › Eigene Schlüssel</string>

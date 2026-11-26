@@ -71,6 +71,7 @@
 
     <!-- Hints where a feature would be, for a missing key -->
     <string name="keys_hint_tmdb_missing">Posters and plot need a TMDB key: Settings › System › API keys</string>
+    <string name="keys_hint_tmdb_catalogs">Trending lists, genres and posters need a TMDB key: Settings › System › API keys</string>
     <string name="keys_hint_elevenlabs_missing">For more accurate voice search, add an ElevenLabs key: Settings › System › API keys</string>
     <string name="keys_hint_typesafe_missing">Search by description needs a TypeSafe key: Settings › System › API keys</string>
     <!-- Translators: shown where search by description would be when the TypeSafe key is there but the TMDB key is not. -->
