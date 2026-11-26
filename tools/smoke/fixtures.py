@@ -79,8 +79,7 @@ for group, titles in movies.items():
         logo = f"{base}/poster/m{len(posters)}.png"
         posters.append(title)
         lines.append(f'#EXTINF:-1 type="movie" tvg-logo="{logo}" group-title="{group}",{title}')
-        # Ein toter Sender für das Fehlerbild des Players.
-        lines.append(f"{base}/stream/{'fehlt' if name.startswith('Kein Signal') else 'index'}.m3u8")
+        lines.append(f"{base}/stream/index.m3u8")
 for group, shows_ in series.items():
     for show, seasons, episodes in shows_:
         logo = f"{base}/poster/m{len(posters)}.png"
@@ -88,8 +87,7 @@ for group, shows_ in series.items():
         for s_ in range(1, seasons + 1):
             for e_ in range(1, episodes + 1):
                 lines.append(f'#EXTINF:-1 type="series" tvg-logo="{logo}" group-title="{group}",{show} S{s_:02d}E{e_:02d}')
-                # Ein toter Sender für das Fehlerbild des Players.
-        lines.append(f"{base}/stream/{'fehlt' if name.startswith('Kein Signal') else 'index'}.m3u8")
+                lines.append(f"{base}/stream/index.m3u8")
 try:  # Ersatzposter; ohne Pillow bleiben die Kacheln eben ohne Bild
     from PIL import Image, ImageDraw
 

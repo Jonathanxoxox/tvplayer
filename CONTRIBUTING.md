@@ -1,8 +1,9 @@
 # Mitmachen bei Mayo TV
 
 Mayo TV ist eine veränderte Fassung von [OwnTV](https://github.com/ahXN00/OwnTV). Die Kernbibliothek
-(Datenbank, Parser, EPG, Player-Engines) kommt unverändert als Maven-Paket von dort; geändert wird nur
-die App in `app/`.
+(Datenbank, Parser, EPG, Player-Engines) wird aus dem eigenen Fork gebaut, den
+[`core-fork.properties`](core-fork.properties) nennt; lokal zeigt `owntv.corePath` in
+`~/.gradle/gradle.properties` auf einen Checkout davon. Dieses Repository enthält die App in `app/`.
 
 ## Grundregeln
 
@@ -28,7 +29,12 @@ Vor dem Push lohnt sich die Textprüfung lokal, sie braucht kein Android SDK:
 python3 tools/i18n/check_hardcoded_strings.py verify-ci --base-sha "$(git merge-base HEAD origin/main)"
 ```
 
-Eigene Texte gehören nach `app/src/main/res/values/strings.xml` (Präfix `tvplayer_`, Deutsch).
+Neue Texte stehen nie fest im Code: Englisch (die Quelle) in einer Datei unter `app/src/main/res/values/`,
+Deutsch in der gleichnamigen Datei unter `values-de/`. Welche Datei und wie, steht in
+[docs/i18n.md](docs/i18n.md).
+
+Schlüssel für fremde Dienste (TMDB, ElevenLabs, TypeSafe) gehören nie ins Repository, in die APK oder in
+ein Protokoll. Jeder Nutzer bringt seine eigenen mit, siehe [docs/api-keys.md](docs/api-keys.md).
 
 ## Lizenz
 

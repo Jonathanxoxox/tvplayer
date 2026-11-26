@@ -22,7 +22,8 @@ mkdir -p tour
 adb logcat -v time -s MayoJank:I OwnTVPerf:V > tour/perf-raw.txt 2>/dev/null &
 PERF_PID=$!
 adb shell monkey -p io.github.jonathanxoxox.tvplayer -c android.intent.category.LAUNCHER 1
-sleep 20
+# Short wait only: the tour waits for the first screen itself and photographs the intro on the way.
+sleep 2
 python3 tools/smoke/tour.py tour
 # Cold start, five times after the tour (playlist set up): ActivityManager's TotalTime per launch.
 APP=io.github.jonathanxoxox.tvplayer

@@ -17,18 +17,21 @@ required reading — skim the headings and stop where something looks useful.
 
 ## 🚀 Start here
 
-A fresh install walks you through this, in order. Nothing here is permanent — every choice can be
-changed later in Settings.
+The very first start walks you through this, in order, with nothing but the remote. Nothing here is
+permanent — every choice can be changed later in Settings. If Mayo TV was already set up before an
+update, you don't see any of it again.
 
 ```
-Welcome  →  Display  →  Disclaimer  →  Set up Mayo TV  →  Profile
-                                                          ↓
-              All set + TV guide  ←  Import  ←  Add a playlist
+Intro  →  Welcome  →  Display  →  Disclaimer  →  Set up Mayo TV  →  Profile  →  Add a playlist
+                                                                                    ↓
+   Ready  ←  Extras  ←  Football  ←  Start screen  ←  Look  ←  Import (carries on in the background)
 ```
 
-Every step has the same frame: step dots at the top, **Back** / **Next** at the bottom, and the keys
-for that step shown in the corner.
+Every step has the same frame: the Mayo TV logo top left, the journey's dots top right with the
+current step named, **Back** / **Continue** at the bottom.
 
+0. **Intro** — a few seconds of logo with a sound logo. Any key skips it; the remote's **mute** key
+   silences it, now and next time.
 1. **Welcome** — the language picker is on this screen: one of 26, or keep **System default**.
    Press **Get started**.
 2. **Display** — step UI Zoom and Font size while a sample row resizes, so you judge it from your
@@ -42,12 +45,55 @@ for that step shown in the corner.
    playlists straight away. An encrypted backup asks for its
    password; press ▶ on the field to see what you typed.
 5. **Profile** — name it, pick an avatar, and optionally make it a **Kids** profile or give it a PIN.
-6. **Add a playlist** — four cards: **Remote** (fill it in on your phone), **Type it here** (type it
-   with the remote: M3U, Xtream or Stalker), **Import** a backup file, or **Existing** (only shown
-   when another profile already has one). **Skip for now** is a valid answer; you can add one later
+6. **Add your channels** — up to four cards: **With your phone** (fill it in on your phone; the
+   recommended way), **Type it here** (type it with the remote: M3U, Xtream or Stalker), **Existing**
+   (only shown when another profile already has one), or **From a backup**. **Skip** is a valid answer; you can add one later
    from Settings.
-7. **Import** runs, then **All set** — with an **Add a TV guide** button that opens Settings → EPG
-   sources → Add as soon as the app is up.
+7. **Import** runs. During first setup you don't have to wait for it: carry on and your channels
+   arrive in the background. Once it's done, **Add a TV guide** opens Settings → EPG sources → Add.
+8. **Look** — how Home is laid out and which accent colour Mayo TV wears. Changeable later in
+   Settings → Appearance & Home.
+9. **Start screen** — recommended, never required. Mayo TV can open when you switch the box on and
+   come back whenever you press **Home**; see [Mayo TV as your start screen](#-mayo-tv-as-your-start-screen).
+   **Later** moves on without it.
+10. **Football** — tick the competitions and teams you follow; their matches then come first on Home
+    and in the channel list. There are no built-in favourite teams. **No football for me** switches the
+    football group off. Changeable later in Settings → Sports.
+11. **Extras** — your own keys for posters and film info (TMDB), voice search (ElevenLabs) and search
+    by description (TypeSafe). All optional; see [Your own API keys](#-your-own-api-keys).
+    **Later** moves on without them.
+12. **Ready** — a summary of what you chose and three tips for the remote.
+
+### 🏠 Mayo TV as your start screen
+**Where:** first setup → **Start screen**, or later Settings → **Power-on & Home button**
+Android TV doesn't let an app replace the Home button on its own, so Mayo TV uses the **Home guard**:
+an accessibility service that brings Mayo TV back whenever the box's own start screen comes up.
+Android never lets an app switch on its own accessibility service, so the setup shows you the way:
+**Open accessibility settings**, find **Mayo TV Home guard**, switch it on, press **Back** until you
+are in Mayo TV again — the status turns **Active** by itself. Android shows its usual warning about
+"full control" for every accessibility service.
+**What the guard sees:** only which app comes to the front. It cannot read what is on screen, sees no
+key presses, and sends nothing anywhere.
+Afterwards you choose what appears at power-on: Mayo TV's Home, Live TV straight away, or the box's
+own start screen as before. Some boxes don't allow any of this; Mayo TV works the same without it.
+With a computer and ADB you can let Mayo TV switch the guard on itself; the setup shows the command
+under **For experts**.
+
+### 🔑 Your own API keys
+**Where:** first setup → **Extras**, or later Settings → System → **API keys**
+Mayo TV ships with no keys for outside services. Each key unlocks one extra, with your own account at
+that service:
+
+| Key | Unlocks | Without it |
+|------|------|------|
+| **TMDB** (free) | Posters, backdrops, plot and cast, the film and series catalogues, "Streaming on", search by actor | What your playlist provides |
+| **ElevenLabs** | Voice search that gets names right | The box's own speech recognition, if it has one |
+| **TypeSafe** | Search by description ("the film with the shark") | Search by title, channel and programme |
+
+The easiest way in is your phone: scan the QR code on the TV, paste your keys, **Send to the TV**. Your
+phone must be on the same Wi-Fi. Mayo TV checks each key and says whether it works. Keys stay on the
+TV and go only to their own service. Where to get each key, step by step:
+[docs/api-keys.md](../docs/api-keys.md) (German).
 
 ### 🔄 Already have Mayo TV on another device?
 **Where:** the **Set up Mayo TV** screen → **From another device**
@@ -416,8 +462,9 @@ the channels that show a match — nothing is streamed from ESPN.
 
 ### 🏁 First time
 **Where:** rail → **Sports**
-Nothing is followed at first. Open **Settings → App → Sports → Sports and leagues**, choose a sport on the
-left and switch on its leagues on the right. The more you choose, the longer loading takes.
+Your football competitions and teams come from the **Football** step of the first setup. More leagues
+and other sports: **Settings → Sports → Sports and leagues**, choose a sport on the left and switch on
+its leagues on the right. The more you choose, the longer loading takes.
 **Sport buttons → All sports** fetches every league instead.
 
 ### 🗂️ The Sports page
@@ -515,14 +562,12 @@ remembers it.
 **Metadata source** picks *Provider only*, *Provider + TMDB* or *TMDB only*. **Language** sets the
 language of plots and artwork — separate from the app's own language.
 
-### 📊 Your daily share
-The built-in service is shared by everyone using Mayo TV, so it has minute/hour/day allowances shown at
-the top of the page.
-
-### 🔑 Use your own key instead — recommended
-**Where:** Settings → Content & metadata → Metadata (TMDB) → **Get advanced TMDB info**
-A free personal TMDB key removes the shared limit. It's 32 characters, so send it from your phone by
-QR + PIN rather than typing it. A self-hosted Cloudflare Worker also works (one is in the repo).
+### 🔑 Your own TMDB key
+**Where:** first setup → Extras, or Settings → System → **API keys**
+Mayo TV ships with no TMDB key: posters, plots and cast need a free key of your own
+([how to get one](../docs/api-keys.md#tmdb-poster-und-filminfos)). It's 32 characters, so send it
+from your phone by QR code rather than typing it. A self-hosted Cloudflare Worker also works (one is
+in the repo; Settings → Content & metadata → Metadata (TMDB) → **Get advanced TMDB info**).
 
 ### 🔎 Fix a wrong match
 **Where:** long-press a film or show
