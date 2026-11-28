@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: the brand intro before setup. -->
+<resources>
+    <!-- Translators: small hint during the opening animation; any key on the remote skips it. -->
+    <string name="onboarding_intro_skip_hint">Press OK to skip</string>
+    <!-- Translators: the brand line under the Mayo TV logo at the end of the opening animation, a night stadium whose floodlights switch on. Short and warm; "floodlights" nods to the app's old name, Flutlicht. -->
+    <string name="onboarding_intro_tagline">Your TV, under the floodlights.</string>
+</resources>

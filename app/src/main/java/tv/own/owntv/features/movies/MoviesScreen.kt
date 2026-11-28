@@ -509,6 +509,8 @@ fun MoviesScreen(
         }
     }
     // The category column: a sheet over Cinematic, a column beside the titles otherwise.
+    // Without a TMDB key the catalogs (trending, genres …) are missing from the column: say so under it.
+    val catalogsHint = tv.own.owntv.features.keys.rememberVodCatalogsHint()
     val categoryColumn: @Composable (Boolean, () -> Unit, Modifier) -> Unit = { sheet, onRight, columnModifier ->
         LiveCategories(
             // One search per section: the field above the titles (titles, people, genres) — none here.
@@ -526,6 +528,7 @@ fun MoviesScreen(
             onRowFocused = { railFocusRow = null },
             onRowFocus = { catFocusIndex = it },
             sheetHint = stringResource(R.string.common_nav_movies),
+            footer = catalogsHint,
             modifier = categoriesModifier.then(columnModifier),
         )
     }

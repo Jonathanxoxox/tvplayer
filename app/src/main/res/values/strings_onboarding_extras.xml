@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: optional keys of your own for posters, voice search and search by description. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="onboarding_extras_title">Extras with your own keys</string>
+    <string name="onboarding_extras_sub">Posters, voice search and search by description use outside services that need a key of your own. All of this is optional: Mayo TV works without it.</string>
+
+    <!-- The three services as the chapter names them: what each one switches on. -->
+    <string name="onboarding_extras_tmdb_title">Posters &amp; film info</string>
+    <string name="onboarding_extras_tmdb_line">Posters, plot and cast for films and series. Needs a free TMDB key.</string>
+    <string name="onboarding_extras_elevenlabs_title">Voice search</string>
+    <string name="onboarding_extras_elevenlabs_line">Just say what you are looking for, names included. Needs your own ElevenLabs key.</string>
+    <string name="onboarding_extras_typesafe_title">Search by description</string>
+    <string name="onboarding_extras_typesafe_line">Describe a film in your own words and find it. Needs your own TypeSafe key, and the TMDB key above.</string>
+
+    <!-- The state on the right of each service -->
+    <string name="onboarding_extras_state_none">Not set up</string>
+    <string name="onboarding_extras_state_checking">Checking…</string>
+    <!-- Translators: %1$s is the masked key, such as "••••c3f9". -->
+    <string name="onboarding_extras_state_works">Works · <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g></string>
+    <!-- Translators: %1$s is the masked key, such as "••••c3f9". The key is stored but has not been checked. -->
+    <string name="onboarding_extras_state_saved">Saved · <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g></string>
+    <string name="onboarding_extras_state_rejected">Key rejected</string>
+    <string name="onboarding_extras_state_unchecked">Saved, not checked</string>
+    <string name="onboarding_extras_detail_rejected">The key was not saved. Press OK to enter it again.</string>
+    <string name="onboarding_extras_detail_retry">Press OK to check it again.</string>
+
+    <!-- The phone panel beside the services -->
+    <string name="onboarding_extras_phone_heading">Easiest with your phone</string>
+    <string name="onboarding_extras_phone_scan">Scan the code, paste your keys and send them. They show up here right away.</string>
+    <string name="onboarding_extras_phone_or_open">or open</string>
+    <string name="onboarding_extras_phone_same_wifi">Your phone needs to be on the same Wi-Fi as this TV.</string>
+    <string name="onboarding_extras_phone_starting">Getting the link ready…</string>
+    <string name="onboarding_extras_phone_no_network">This TV is not connected to a network, so your phone cannot reach it. Enter the keys with the remote instead.</string>
+    <string name="onboarding_extras_phone_failed">The link for your phone could not be opened. Try again, or enter the keys with the remote.</string>
+    <string name="onboarding_extras_phone_locked">Too many wrong addresses were tried, so the link was closed for safety. Open a new one to continue.</string>
+    <string name="onboarding_extras_phone_new_link">New link</string>
+    <plurals name="onboarding_extras_phone_received">
+        <item quantity="one">%1$d key received from your phone</item>
+        <item quantity="other">%1$d keys received from your phone</item>
+    </plurals>
+
+    <!-- Below the services -->
+    <!-- Translators: %1$s is the name of the settings page, such as "API keys". -->
+    <string name="onboarding_extras_later">Everything here is optional. You can add or change keys at any time in Settings under “<xliff:g id="page" example="API keys">%1$s</xliff:g>”.</string>
+
+    <!-- Entering a key with the remote -->
+    <string name="onboarding_extras_field_label">Key</string>
+    <string name="onboarding_extras_field_placeholder">Press OK and type the key</string>
+    <!-- Translators: %1$s is the masked current key, such as "••••c3f9". -->
+    <string name="onboarding_extras_field_placeholder_replace">Press OK to type a new key instead of <xliff:g id="masked_key" example="••••c3f9">%1$s</xliff:g></string>
+    <string name="onboarding_extras_field_tip">Long keys are quicker to send from your phone: scan the code next to the list.</string>
+    <string name="onboarding_extras_field_empty">Type a key first.</string>
+    <string name="onboarding_extras_action_save">Check and save</string>
+    <string name="onboarding_extras_action_recheck">Check again</string>
+    <string name="onboarding_extras_action_remove">Remove</string>
+
+    <!-- The page on the phone (served by the TV over the home network) -->
+    <string name="onboarding_extras_web_title">Mayo TV · your keys</string>
+    <string name="onboarding_extras_web_heading">Your keys for Mayo TV</string>
+    <string name="onboarding_extras_web_intro">Paste one or more keys and tap “Send to the TV”. Fields you leave empty change nothing.</string>
+    <string name="onboarding_extras_web_get_key">Get a key</string>
+    <string name="onboarding_extras_web_placeholder">Paste the key here</string>
+    <string name="onboarding_extras_web_send">Send to the TV</string>
+    <string name="onboarding_extras_web_sent">Sent. Your TV now shows whether each key works.</string>
+    <string name="onboarding_extras_web_error">The TV could not be reached. Is it still showing the Extras page? Then try again.</string>
+    <string name="onboarding_extras_web_privacy">Your keys go straight to your TV over your home network and stay there.</string>
+</resources>

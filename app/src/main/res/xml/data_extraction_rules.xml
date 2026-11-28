@@ -8,8 +8,9 @@
    - <device-transfer>  Device-to-device migration (new TV / phone setup). **This one is NOT
                         covered by allowBackup="false"** — on Android 12+ D2D transfer runs even
                         when cloud backup is off, so without these excludes the plaintext
-                        playlist/proxy passwords and API keys would still be copied to the new
-                        device without the user ever typing a backup password.
+                        playlist/proxy passwords and API keys (`owntv_settings`, `mayo_keys`) would
+                        still be copied to the new device without the user ever typing a backup
+                        password.
 
    Users move OwnTV data with More → Backup & Restore, which is explicit and encryptable.
 -->

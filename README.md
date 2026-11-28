@@ -43,6 +43,40 @@ das der Updater in der App findet (Einstellungen → App → Nach Updates suchen
 - Bis Oktober 2026 hieß die App Flutlicht. Der alte Link auf `Flutlicht.apk` liefert vorerst
   dieselbe APK.
 
+## Erste Schritte
+
+Beim allerersten Start führt dich Mayo TV durch die Einrichtung, nur mit der Fernbedienung. Oben
+rechts siehst du, wo du gerade bist; alles, was du hier wählst, kannst du später in den Einstellungen
+ändern.
+
+1. **Intro**: ein paar Sekunden Logo mit Ton. Jede Taste überspringt es, die Stummtaste der
+   Fernbedienung schaltet den Ton ab (auch für später).
+2. **Sprache, Anzeigegröße, Hinweis**: Mayo TV ist nur ein Player, die Sender kommen von deinem
+   Anbieter.
+3. **Profil**: Name, Bild, auf Wunsch eine PIN oder ein Kinderprofil. Wer Mayo TV schon hat, holt
+   stattdessen alles aus einer Sicherung oder von einem anderen Gerät im WLAN.
+4. **Playlist**: am bequemsten vom Handy per QR-Code, sonst mit der Fernbedienung (M3U, Xtream,
+   Stalker). Ohne Anbieter überspringst du den Schritt einfach. Der Import läuft im Hintergrund weiter,
+   während du den Rest einrichtest.
+5. **Aussehen**: wie deine Startseite aufgebaut ist und welche Akzentfarbe Mayo TV trägt.
+6. **Startbildschirm** (empfohlen, aber freiwillig): Mayo TV öffnet sich beim Einschalten und kommt
+   mit der Home-Taste zurück. Dafür gibt es den **Home-Wächter**, eine Bedienungshilfe von Android.
+   Android lässt keine App ihre Bedienungshilfe selbst einschalten, deshalb zeigt dir Mayo TV den Weg
+   in die Einstellungen der Box und prüft danach von selbst, ob es geklappt hat. Danach wählst du, was
+   beim Einschalten erscheint: die Startseite, gleich Live-TV oder wie bisher die Box. Der Wächter erfährt
+   nur, welche App gerade vorne ist: nichts vom Bildschirminhalt, keine Tastendrücke, und er sendet
+   nichts irgendwohin. Erlaubt eine Box das nicht, geht es mit **Später** weiter; einrichten kannst
+   du das jederzeit unter Einstellungen → Einschalten & Home-Taste.
+7. **Fußball**: Wettbewerbe und Vereine, denen du folgst. Mit „Kein Fußball für mich“ bleibt die
+   Fußball-Gruppe aus.
+8. **Extras**: eigene Schlüssel für Poster und Filminfos (TMDB), Sprachsuche (ElevenLabs) und Suche
+   nach Beschreibung (TypeSafe). Alles freiwillig; Mayo TV bringt keine Schlüssel mit und funktioniert
+   auch ohne. Am einfachsten schickst du die Schlüssel per QR-Code vom Handy. Woher du sie bekommst,
+   steht in [docs/api-keys.md](docs/api-keys.md).
+9. **Alles bereit**: eine Übersicht deiner Wahl und drei Tipps für die Fernbedienung.
+
+Wer Mayo TV schon eingerichtet hat, sieht diese Einrichtung nach einem Update nicht noch einmal.
+
 ## Was Mayo TV kann
 
 ### Fußball
@@ -57,8 +91,8 @@ das der Updater in der App findet (Einstellungen → App → Nach Updates suchen
 - **Gruppe „Fußball jetzt & heute“** ganz oben in Senderliste und TV-Guide, mit allen Sendern, die
   heute ein passendes Spiel zeigen. Laufende Spiele stehen vorn, Sender-Varianten (HD, UHD, Backup)
   eines Spiels stehen untereinander.
-- Teams und Ligen frei wählbar unter **Einstellungen → Sport**. Ab Werk: HSV, BVB, Bayern, Liverpool,
-  Barça, Bundesliga, Champions League, deutsche und dänische Nationalmannschaft.
+- Deine Vereine und Wettbewerbe wählst du bei der Einrichtung, später jederzeit unter
+  **Einstellungen → Sport**. Vorgegebene Lieblingsvereine gibt es nicht.
 
 ### Fernsehen
 - **Vollbild-Bedienung wie bei klassischen IPTV-Playern**: Senderliste mit Programm und Vorschau,
@@ -81,7 +115,9 @@ das der Updater in der App findet (Einstellungen → App → Nach Updates suchen
 
 ### Filme & Serien
 - Kataloge mit Postern und Infos von TMDB, links eine Kategorien-Spalte, oben „Weiterschauen“.
-  Gezeigt werden nur Titel, die deine Playlist wirklich abspielen kann.
+  Gezeigt werden nur Titel, die deine Playlist wirklich abspielen kann. Poster und Infos von TMDB
+  brauchen einen eigenen, kostenlosen TMDB-Schlüssel ([so geht's](docs/api-keys.md)); ohne ihn siehst
+  du, was deine Playlist mitliefert.
 - „Fortsetzen“ und „Weiterschauen“ spielen sofort weiter, ohne noch einmal zu fragen.
 - Im Player dieselbe Glas-Karte wie beim Fernsehen: Poster, Titel, Staffel und Folge, Restzeit und
   Ende, darunter die Fortschrittslinie zum Spulen und Pause, Von vorn, Vorherige/Nächste Folge,
@@ -90,10 +126,11 @@ das der Updater in der App findet (Einstellungen → App → Nach Updates suchen
 
 ### Suche
 - Eine Suche für Sender, Filme und Serien: nach Titel, nach Schauspielern und Regie („Mit
-  Tom Cruise“) und nach Beschreibung („der Film mit dem Hai“).
+  Tom Cruise“, mit TMDB-Schlüssel) und nach Beschreibung („der Film mit dem Hai“, mit
+  TypeSafe-Schlüssel).
 - Neben den Treffern läuft das Bild des Senders als Vorschau, darunter die laufende Sendung.
-- **Mikrofon-Knopf** an jedem Suchfeld: Die App nimmt selbst auf und schreibt mit, auch wenn die
-  Sprachsuche der Box ausgeschaltet ist.
+- **Mikrofon-Knopf** an jedem Suchfeld: Mit einem eigenen ElevenLabs-Schlüssel nimmt die App selbst
+  auf und schreibt genau mit, auch Namen. Ohne Schlüssel nutzt sie die Spracherkennung der Box.
 
 ### Fernbedienung
 Jede Taste ist im Vollbild frei belegbar, **kurz drücken und gedrückt halten getrennt**
@@ -159,9 +196,9 @@ Repository-Secrets:
 | Secret | Wofür | Fehlt es |
 |------|------|------|
 | `KEYSTORE_BASE64` | Signaturschlüssel der APK | Einmal-Schlüssel, Updates über eine bestehende Installation gehen nicht |
-| `TMDB_API_KEY` | Film- und Seriendaten | Metadaten müssen in der App von Hand eingerichtet werden |
-| `TYPESAFE_API_KEY` | Suche nach Beschreibung | Suche nach Beschreibung ist aus |
-| `ELEVENLABS_API_KEY` | Mitschreiben bei der Mikrofon-Suche | nur die Spracherkennung der Box |
+
+Schlüssel für TMDB, ElevenLabs und TypeSafe werden nicht mehr in die APK gebaut. Jeder gibt seine
+eigenen in der App ein, siehe [docs/api-keys.md](docs/api-keys.md).
 
 ### Lokal
 
@@ -172,11 +209,11 @@ Repository in Android Studio öffnen, Build-Variante `standard` (echte Boxen) od
 ./gradlew assembleStandardRelease
 ```
 
-Gebraucht wird JDK 21. Die Kernbibliothek (Datenbank, Parser, EPG, Player-Engines) lädt Gradle als
-fertiges Maven-Paket. Die Schlüssel von oben lassen sich als Umgebungsvariablen
-(`FLUTLICHT_TMDB_KEY`, `MAYO_TYPESAFE_KEY`, `MAYO_ELEVENLABS_KEY`) oder Gradle-Properties
-(`flutlicht.tmdbKey`, `mayo.typesafeKey`, `mayo.elevenLabsKey`) mitgeben, ohne sie baut die App
-trotzdem.
+Gebraucht wird JDK 21. Die Kernbibliothek (Datenbank, Parser, EPG, Player-Engines) kommt aus dem
+Fork, den [`core-fork.properties`](core-fork.properties) nennt, und wird aus dem Quelltext mitgebaut:
+Fork auschecken und den Pfad in `~/.gradle/gradle.properties` eintragen
+(`owntv.corePath=/pfad/zum/OwnTV_Core`), wie es [`tools/ci/core-fork.sh`](tools/ci/core-fork.sh) in der
+CI macht. Schlüssel für fremde Dienste braucht der Build nicht.
 
 ### Wo was liegt
 
@@ -190,11 +227,13 @@ app/src/main/java/tv/own/owntv/
 │   ├── sports/ Sport-Seite und Spielseite
 │   ├── movies/ series/ vod/   Filme und Serien (TMDB)
 │   ├── search/ voice/         Suche, Mikrofon, Suche nach Beschreibung
+│   ├── onboarding/ setup/     Ersteinrichtung: Intro, Assistent, Kapitel danach
+│   ├── keys/                  eigene Schlüssel (TMDB, ElevenLabs, TypeSafe) und ihre Prüfung
 │   ├── settings/ update/      Einstellungen, Updater
 │   └── …       Startseite, Multiview, Aufnahmen, Downloads, Profile
 ├── perf/       Startprotokoll und Frame-Messung
 └── ui/         Farbthemen, Schriften, Stage-Bausteine (Leisten, Listen, Fokus), Animationen
-app/src/main/res/values/strings.xml   eigene deutsche Texte (Präfix tvplayer_)
+app/src/main/res/values*/            Texte: values/ Englisch (Quelle), values-de/ Deutsch, siehe docs/i18n.md
 app/src/test/                         JVM-Tests
 tools/smoke/                          Starttest, Screenshot-Tour und Härtetest
 tools/i18n/                           Prüfung auf feste Texte im Code
@@ -205,12 +244,13 @@ Wie man mitmacht, steht in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Dienste
 
-- Film- und Seriendaten von [TMDB](https://www.themoviedb.org/). This product uses the TMDB API
-  but is not endorsed or certified by TMDB.
+- Film- und Seriendaten von [TMDB](https://www.themoviedb.org/), mit deinem eigenen Schlüssel.
+  This product uses the TMDB API but is not endorsed or certified by TMDB.
 - Spielpläne, Ergebnisse und Statistiken von ESPN.
 - Untertitelsuche über [OpenSubtitles.com](https://www.opensubtitles.com/) mit deinem eigenen Konto.
 - Mitschreiben bei der Mikrofon-Suche mit [ElevenLabs](https://elevenlabs.io/) Scribe, Suche nach
-  Beschreibung mit [TypeSafe](https://typesafe.ai/).
+  Beschreibung mit Jev von [TypeSafe](https://typesafe.ai/), beides mit deinem eigenen Schlüssel.
+  Wie du die Schlüssel bekommst und was mit ihnen passiert: [docs/api-keys.md](docs/api-keys.md).
 - Wiedergabe über [mpv](https://mpv.io/)/[FFmpeg](https://ffmpeg.org/) und
   [Media3/ExoPlayer](https://github.com/androidx/media).
 
@@ -219,7 +259,8 @@ Wie man mitmacht, steht in [CONTRIBUTING.md](CONTRIBUTING.md).
 GNU General Public License v3.0, siehe [LICENSE](LICENSE). Mayo TV ist eine veränderte Fassung von
 [OwnTV](https://github.com/ahXN00/OwnTV) (© ahXN00, GPLv3). Geändert wurden ab Oktober 2026 unter
 anderem Name und Branding, die Vollbild-Bedienung, die Launcher-Zeilen und alle Fußball-Funktionen.
-Die Kernbibliothek stammt unverändert von dort.
+Die Kernbibliothek stammt ebenfalls von dort und wird als eigener Fork gepflegt
+(siehe [`core-fork.properties`](core-fork.properties)).
 
 Die mitgelieferten Schriften stehen unter der SIL Open Font License, siehe
 [`extras/font-licenses/`](extras/font-licenses/).

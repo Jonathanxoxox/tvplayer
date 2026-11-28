@@ -48,7 +48,6 @@
 2	preference-key	app/src/main/java/tv/own/owntv/OwnTVApp.kt	defaults_v5_applied
 1	file-path	app/src/main/java/tv/own/owntv/OwnTVApp.kt	image_cache
 1	performance	app/src/main/java/tv/own/owntv/OwnTVApp.kt	koin-started
-2	preference-key	app/src/main/java/tv/own/owntv/OwnTVApp.kt	tmdb_key_v1_applied
 2	preference-key	app/src/main/java/tv/own/owntv/OwnTVApp.kt	tmdb_lang_v1_applied
 1	preference-key	app/src/main/java/tv/own/owntv/OwnTVApp.kt	tvplayer
 1	log	app/src/main/java/tv/own/owntv/StartupGate.kt	startup-first-frame
@@ -409,6 +408,24 @@
 2	json	app/src/main/java/tv/own/owntv/features/home/SpotlightPicks.kt	tip
 2	json	app/src/main/java/tv/own/owntv/features/home/SpotlightPicks.kt	v
 3	json	app/src/main/java/tv/own/owntv/features/home/SpotlightPicks.kt	y
+1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	Authorization
+1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	Bearer
+1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	api_key
+1	json	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	detail
+1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	eyJ
+1	url	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	https://api.elevenlabs.io/v1/user
+1	url	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	https://api.themoviedb.org/3/configuration
+1	url	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	https://api.typesafe.ai/v1/models
+1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	missing_permissions
+1	json	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	status
+1	protocol	app/src/main/java/tv/own/owntv/features/keys/ApiKeyValidator.kt	xi-api-key
+4	empty	app/src/main/java/tv/own/owntv/features/keys/ApiKeys.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/keys/ApiKeys.kt	_-.
+1	preference-key	app/src/main/java/tv/own/owntv/features/keys/ApiKeys.kt	elevenlabs
+1	preference-key	app/src/main/java/tv/own/owntv/features/keys/ApiKeys.kt	mayo_keys
+1	preference-key	app/src/main/java/tv/own/owntv/features/keys/ApiKeys.kt	tmdb
+1	preference-key	app/src/main/java/tv/own/owntv/features/keys/ApiKeys.kt	typesafe
+2	technical	app/src/main/java/tv/own/owntv/features/keys/ApiKeys.kt	••••
 1	technical	app/src/main/java/tv/own/owntv/features/live/CatchupJumpDialog.kt	EEEHm
 1	technical	app/src/main/java/tv/own/owntv/features/live/CatchupJumpDialog.kt	Hm
 1	technical	app/src/main/java/tv/own/owntv/features/live/CatchupJumpDialog.kt	exact
@@ -482,6 +499,75 @@
 2	technical	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	tmdb_details
 1	url	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	w1280
 1	technical	app/src/main/java/tv/own/owntv/features/movies/MoviesScreen.kt	·
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingFlow.kt	onboardingChapter
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	appearance
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	chapter
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	completed
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	extras
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	football
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	home_screen
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	in_progress
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	intro
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	intro_muted
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	intro_seen
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	mayo_onboarding
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	not_started
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	phase
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	ready
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/OnboardingPrefs.kt	setup
+1	empty	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasKeys.kt	\0
+4	empty	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	\0
+1	uri	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	/
+1	uri	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	/favicon.ico
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Bad Request
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Cache-Control: no-store
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Connection: close
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Content-Length
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Content-Length:
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Content-Type:
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Error
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	GET
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	HTTP/1.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Method Not Allowed
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Not Found
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	OK
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	POST
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Payload Too Large
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	Referrer-Policy: no-referrer
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	abcdefghjkmnpqrstuvwxyz23456789
+1	log	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	mayo-extras-link
+1	mime	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	text/html; charset=utf-8
+1	mime	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasPhoneServer.kt	text/plain; charset=utf-8
+4	empty	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	\0
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&#39;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&amp;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&gt;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&lt;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	&quot;
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/extras/ExtrasViews.kt	{{$index}}
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/eng.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/esp.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/fifa.world
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/fra.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/ger.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/ita.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/ned.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/por.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/tur.1
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.champions
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.euro
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.europa
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.europa.conf
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/football/FootballPicks.kt	soccer/uefa.nations
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	armed
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	attempts
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	com.android.tv.settings
+1	protocol	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	com.android.tv.settings.accessibility.AccessibilityActivity
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	mayo_onboarding_home
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	open_failed
+1	preference-key	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupSystem.kt	step
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupUi.kt	homeStatusFill
+1	technical	app/src/main/java/tv/own/owntv/features/onboarding/homescreen/HomeSetupUi.kt	homeStatusPop
 5	empty	app/src/main/java/tv/own/owntv/features/profiles/ProfileComponents.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/profiles/ProfilePictureChooser.kt	bmp
 1	technical	app/src/main/java/tv/own/owntv/features/profiles/ProfilePictureChooser.kt	jpeg
@@ -491,7 +577,7 @@
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	r_${it.id}
 1	technical	app/src/main/java/tv/own/owntv/features/recordings/RecordingsScreen.kt	rhdr_$labelRes
 1	protocol	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	Authorization
-1	protocol	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	Bearer $apiKey
+1	protocol	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	Bearer $key
 1	log	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	HTTP $code: ${text.take(300)}
 1	log	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	Jev
 1	json	app/src/main/java/tv/own/owntv/features/search/JevClient.kt	answers
@@ -714,6 +800,7 @@
 2	empty	app/src/main/java/tv/own/owntv/features/settings/AccentPopup.kt	\0
 4	technical	app/src/main/java/tv/own/owntv/features/settings/AccentPopup.kt	#
 1	technical	app/src/main/java/tv/own/owntv/features/settings/AccentPopup.kt	4E952A
+3	empty	app/src/main/java/tv/own/owntv/features/settings/ApiKeysSettingsScreen.kt	\0
 3	empty	app/src/main/java/tv/own/owntv/features/settings/BackupScreen.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/settings/BackupScreen.kt	dMMMyyyy
 1	empty	app/src/main/java/tv/own/owntv/features/settings/ChNavSettingsScreen.kt	\0
@@ -1059,6 +1146,7 @@
 12	empty	app/src/main/java/tv/own/owntv/features/setup/SetupViewModel.kt	\0
 5	empty	app/src/main/java/tv/own/owntv/features/setup/SetupWizard.kt	\0
 1	technical	app/src/main/java/tv/own/owntv/features/setup/SetupWizard.kt	+
+1	technical	app/src/main/java/tv/own/owntv/features/setup/WizardFrame.kt	journeyDot
 3	technical	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	\0
 1	performance	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	:
 1	protocol	app/src/main/java/tv/own/owntv/features/shell/OwnTVShell.kt	ass
@@ -1498,6 +1586,7 @@
 1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone read failed: $n
 1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	microphone ready after ${now - opened} ms (${record.routedDevice?.type})
 1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	model_id
+1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	no key
 1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	partial_transcript
 1	protocol	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	pcm_16000
 1	log	app/src/main/java/tv/own/owntv/features/voice/ScribeRealtime.kt	realtime: ${e.why}

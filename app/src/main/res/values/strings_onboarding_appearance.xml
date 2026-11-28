@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: how Home and the app look. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="onboarding_appearance_title">How should Mayo TV look?</string>
+
+    <!-- Translators: page 1 of the chapter, under the title. The placeholder is the name of the Settings group, e.g. "Appearance & Home". -->
+    <string name="onboarding_appearance_layout_sub">Pick the layout of your Home screen. You can change it any time under Settings › <xliff:g id="group" example="Appearance &amp; Home">%1$s</xliff:g>.</string>
+    <!-- Translators: one short line under each Home layout's miniature; keep each under about 55 characters. -->
+    <string name="onboarding_appearance_layout_standard_line">Channels first, your apps below as large tiles.</string>
+    <string name="onboarding_appearance_layout_classic_line">Apps as buttons on top, their channels right after.</string>
+    <string name="onboarding_appearance_layout_stage_line">The focused channel shown large, logos in a strip below.</string>
+    <string name="onboarding_appearance_layout_spotlight_line">Like Stage, twice as large, with a muted live picture.</string>
+
+    <!-- Translators: page 2 of the chapter. -->
+    <string name="onboarding_appearance_look_title">Colour and Home</string>
+    <!-- Translators: the placeholder is the name of the Settings group, e.g. "Appearance & Home". -->
+    <string name="onboarding_appearance_look_sub">Your accent colour marks what is chosen and where you are, and this page takes it on straight away. Everything here can be changed later under Settings › <xliff:g id="group" example="Appearance &amp; Home">%1$s</xliff:g>.</string>
+    <!-- Translators: the name of Mayo TV's own accent colour, a bright cyan. -->
+    <string name="onboarding_appearance_accent_mayo">Mayo cyan</string>
+    <string name="onboarding_appearance_apps_title">Apps on Home</string>
+    <string name="onboarding_appearance_apps_line_standard">Your apps as a row of large tiles under the channels</string>
+    <string name="onboarding_appearance_apps_line_compact">Your apps as buttons at the top of Home</string>
+    <string name="onboarding_appearance_channels_line">Continue watching and tips from YouTube, Nuvio and other apps</string>
+    <plurals name="onboarding_appearance_spotlight_auto_line">
+        <item quantity="one">The Spotlight moves on to the next highlight every <xliff:g id="seconds" example="1">%1$d</xliff:g> second</item>
+        <item quantity="other">The Spotlight moves on to the next highlight every <xliff:g id="seconds" example="12">%1$d</xliff:g> seconds</item>
+    </plurals>
+</resources>

@@ -7,6 +7,21 @@
 > Issue numbers that are part of a title are fine; explanatory parentheticals are not. The detail —
 > what, why, files and verification — belongs in the commit message, never here.
 
+## Unreleased — Mayo TV
+
+### ✨ New features
+- **🎬 First run: a short intro with a sound logo, then a guided setup with the remote**
+- **🎨 Setup: choose your Home layout and accent colour**
+- **🏠 Setup: Mayo TV as the start screen — Home guard and what opens at power-on (optional)**
+- **⚽ Setup: pick your own football competitions and teams**
+- **🔑 Your own API keys for TMDB, ElevenLabs and TypeSafe, sent from your phone or typed with the remote**
+- **⚙️ Settings → System → API keys**
+
+### 🐛 Fixes
+- **No service keys are built into the APK any more**
+- **A fresh install no longer starts with preset favourite teams**
+- **Existing installs keep their setup and skip the first-run journey**
+
 ## v5.2.1 — 2026-10-21
 
 ### ✨ New features

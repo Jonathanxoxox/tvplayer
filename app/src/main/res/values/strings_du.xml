@@ -111,7 +111,7 @@
     <string name="settings_tier_key">Your TMDB key</string>
     <string name="setup_phone_background_description">On any device with a browser on the same Wi-Fi — a phone, a computer or another TV — scan the QR (or open the URL), enter this PIN and send a photo. It becomes the background instantly.</string>
     <string name="setup_profile_sub">A profile keeps its own favorites, history and Home. Add more later in Settings › Profile.</string>
-    <string name="setup_restore_choice_description">Send the backup by Remote from any device with a browser on the same Wi-Fi, or pick a backup file already on this device.</string>
+    <string name="setup_restore_choice_description">Send the backup from a phone or computer on the same Wi-Fi, or pick a backup file already on this TV.</string>
     <string name="setup_setup_choice_description">Start fresh, or bring back your profiles, playlists and favorites from a backup file or another device.</string>
     <string name="setup_welcome_sub">Your own IPTV player. Choose a language to begin — you can change it later in Settings.</string>
     <string name="sync_error_auth">The server rejected your login. Check your username and password.</string>

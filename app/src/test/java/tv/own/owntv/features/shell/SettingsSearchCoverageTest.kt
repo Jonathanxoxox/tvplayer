@@ -167,6 +167,8 @@ class SettingsSearchCoverageTest {
         "player_subtitles_connected_user", "player_subtitles_delete_action", "player_subtitles_sign_in",
         "player_subtitles_sign_out", "settings_open_subtitles_advanced", "settings_open_subtitles_setup_local",
         "settings_open_subtitles_setup_remote",
+        // API keys: the confirmation before a key is removed, not a setting of its own.
+        "keys_remove_title",
         // Stage: a full page's own heading — the screen, which has its own entry — and the
         // titles and options of its popups and confirmations.
         "settings_epg_sources_title", "settings_home_screen", "settings_home_page", "settings_title_date_time_weather",

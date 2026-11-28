@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: the setup wizard's pages (language, display size, note, profile, playlist, import), written for someone who has never set up IPTV. The add-source pages in Settings share some of them. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Translators: under "Welcome to Mayo TV", right after the brand intro. The language row follows. -->
+    <string name="onboarding_wizard_welcome_sub">Good to have you here. Choose your language first; setup only takes a few minutes.</string>
+
+    <!-- Translators: title of the short legal note before setup continues. -->
+    <string name="onboarding_wizard_disclaimer_title">A quick note first</string>
+    <!-- Translators: the legal note. It must stay clear that the app is only a player and the user is responsible for the content. -->
+    <string name="onboarding_wizard_disclaimer">Mayo TV is a player, like a TV without an antenna: it comes with no channels, films or playlists, and sells none. What you watch comes from your own provider, and you are responsible for making sure you are allowed to use it.</string>
+
+    <string name="onboarding_wizard_choice_sub">New here? Create your profile. Used Mayo TV before? Bring everything over from a backup or from another device.</string>
+    <string name="onboarding_wizard_choice_new_line">Create a profile, then add your playlist</string>
+    <string name="onboarding_wizard_choice_restore_line">From a backup file, on this TV or sent from your phone</string>
+
+    <string name="onboarding_wizard_profile_title">Your profile</string>
+    <!-- Translators: shown while the profile has no name yet, so "Create profile" cannot be pressed. "Name" is the row's label. -->
+    <string name="onboarding_wizard_profile_need_name">Give the profile a name first: OK on Name opens the keyboard.</string>
+    <string name="onboarding_wizard_profile_pin_short">A PIN needs at least 4 digits. Leave it empty if you don’t want one.</string>
+
+    <!-- Translators: title of the step where the user adds their IPTV playlist. -->
+    <string name="onboarding_wizard_playlist_title">Add your channels</string>
+    <!-- Translators: explains IPTV sources to someone who has never heard of M3U or Xtream. -->
+    <string name="onboarding_wizard_playlist_sub">Mayo TV has no channels of its own: they come from your IPTV provider. From them you have either a playlist link (M3U, often ending in .m3u) or an Xtream login with a server address, username and password. You’ll usually find it in their email or in your customer account.</string>
+    <!-- Translators: the comfortable way to enter a playlist: on a phone or computer, via a QR code. -->
+    <string name="onboarding_wizard_phone_title">With your phone</string>
+    <string name="onboarding_wizard_phone_card_line">Recommended. Scan a QR code, then type or paste the details on your phone or computer.</string>
+    <string name="onboarding_wizard_type_card_line">With the remote, one field at a time</string>
+    <string name="onboarding_wizard_backup_card_title">From a backup</string>
+    <string name="onboarding_wizard_backup_card_line">Bring playlists back from a backup file</string>
+    <!-- Translators: %1$s is the Settings group where playlists are added, e.g. "Playlists & EPG". -->
+    <string name="onboarding_wizard_playlist_later">No provider yet? Then skip this step. You can add a playlist any time under Settings › <xliff:g id="group" example="Playlists &amp; EPG">%1$s</xliff:g>.</string>
+
+    <!-- Translators: help beside the QR code on the "With your phone" page. Keep the three numbered steps. -->
+    <string name="onboarding_wizard_phone_help">1. Scan the QR code with your phone’s camera, or open the address in a browser. The phone needs to be on the same Wi-Fi.\n2. Enter the PIN and fill in the form.\n3. Send it. The details appear here on the TV, where you start the import with OK.</string>
+    <!-- Translators: help for the source type (Xtream / M3U / Stalker) on the add-source form. -->
+    <string name="onboarding_wizard_type_help">Pick what your provider gave you. Xtream: a server address, username and password. M3U: a single link, often ending in .m3u, or a file. Stalker: a portal address and a MAC address; only if your provider calls it that.</string>
+    <string name="onboarding_wizard_backup_phone_line">Send the file from a phone or computer on the same Wi-Fi</string>
+    <string name="onboarding_wizard_restoring_sub">This usually takes just a moment.</string>
+
+    <!-- Translators: while the first playlist imports during first-run setup; more setup pages follow. -->
+    <string name="onboarding_wizard_importing_sub_journey">Depending on your provider this takes a minute or two. No need to wait: let it carry on in the background and set up the rest meanwhile. Your channels will keep arriving.</string>
+    <string name="onboarding_wizard_importing_sub">Depending on your provider this takes a minute or two. You can start watching while the rest loads in the background.</string>
+    <string name="onboarding_wizard_in_background">Continue in background</string>
+    <!-- Translators: the playlist has been imported during first-run setup. -->
+    <string name="onboarding_wizard_imported_title">Your channels are here</string>
+    <string name="onboarding_wizard_add_guide_line">Only if your provider gave you a separate guide (XMLTV) address</string>
+
+    <!-- Translators: after a failed import: back to the form with everything still filled in. -->
+    <string name="onboarding_wizard_edit_details">Change details</string>
+    <string name="onboarding_wizard_fail_login">Login rejected</string>
+    <string name="onboarding_wizard_fail_address">Address not reachable</string>
+    <string name="onboarding_wizard_fail_provider">The provider isn’t answering</string>
+    <string name="onboarding_wizard_fail_offline">No internet connection</string>
+    <string name="onboarding_wizard_fail_mac">MAC address not accepted</string>
+    <string name="onboarding_wizard_fail_file">Can’t read the playlist file</string>
+    <string name="onboarding_wizard_hint_login">Watch out for upper and lower case and for spaces at the end. Your username and password are in your provider’s message; on your phone you can paste them instead of typing.</string>
+    <string name="onboarding_wizard_hint_address">Check the address character by character: it starts with http:// or https:// and often has a port such as :8080. The surest way is to paste it on your phone.</string>
+    <string name="onboarding_wizard_hint_provider">That’s usually down to the provider, not you. Wait a moment, then try again.</string>
+    <string name="onboarding_wizard_hint_offline">Check the Wi-Fi or the network cable in the TV’s settings, then try again.</string>
+    <!-- Translators: "Test connection" is the label of a row on the add-source form (setup_test_connection). -->
+    <string name="onboarding_wizard_hint_generic">Check your details, or try again later. “Test connection” on the form shows what the provider answers.</string>
+</resources>

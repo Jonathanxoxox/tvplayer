@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="onboarding_wizard_welcome_sub">Schön, dass du da bist. Wähl zuerst deine Sprache – die Einrichtung dauert nur ein paar Minuten.</string>
+
+    <string name="onboarding_wizard_disclaimer_title">Kurz vorab</string>
+    <string name="onboarding_wizard_disclaimer">Mayo TV ist ein Player – wie ein Fernseher ohne Antenne: Es bringt keine Sender, Filme oder Playlists mit und verkauft auch keine. Was du schaust, kommt von deinem eigenen Anbieter, und du bist dafür verantwortlich, dass du es nutzen darfst.</string>
+
+    <string name="onboarding_wizard_choice_sub">Neu hier? Dann leg dein Profil an. Hattest du Mayo TV schon? Dann hol alles aus einer Sicherung oder von einem anderen Gerät.</string>
+    <string name="onboarding_wizard_choice_new_line">Profil anlegen, dann deine Playlist hinzufügen</string>
+    <string name="onboarding_wizard_choice_restore_line">Aus einer Sicherungsdatei – auf diesem Fernseher oder vom Handy geschickt</string>
+
+    <string name="onboarding_wizard_profile_title">Dein Profil</string>
+    <string name="onboarding_wizard_profile_need_name">Gib dem Profil zuerst einen Namen: OK auf „Name“ öffnet die Tastatur.</string>
+    <string name="onboarding_wizard_profile_pin_short">Eine PIN braucht mindestens 4 Ziffern. Lass das Feld leer, wenn du keine möchtest.</string>
+
+    <string name="onboarding_wizard_playlist_title">Deine Sender hinzufügen</string>
+    <string name="onboarding_wizard_playlist_sub">Mayo TV bringt keine eigenen Sender mit – die kommen von deinem IPTV-Anbieter. Von ihm hast du entweder einen Playlist-Link (M3U, endet oft auf .m3u) oder einen Xtream-Zugang mit Server-Adresse, Benutzername und Passwort. Meist steht das in seiner E-Mail oder in deinem Kundenkonto.</string>
+    <string name="onboarding_wizard_phone_title">Mit dem Handy</string>
+    <string name="onboarding_wizard_phone_card_line">Empfohlen. QR-Code scannen und die Daten bequem am Handy oder Computer eintippen oder einfügen.</string>
+    <string name="onboarding_wizard_type_card_line">Mit der Fernbedienung, Feld für Feld</string>
+    <string name="onboarding_wizard_backup_card_title">Aus einer Sicherung</string>
+    <string name="onboarding_wizard_backup_card_line">Playlists aus einer Sicherungsdatei zurückholen</string>
+    <string name="onboarding_wizard_playlist_later">Noch keinen Anbieter? Dann überspring diesen Schritt. Eine Playlist kannst du jederzeit unter Einstellungen › <xliff:g id="group" example="Playlists &amp; EPG">%1$s</xliff:g> hinzufügen.</string>
+
+    <string name="onboarding_wizard_phone_help">1. Scanne den QR-Code mit der Handykamera oder öffne die Adresse im Browser. Das Handy muss im selben WLAN sein.\n2. Gib die PIN ein und füll das Formular aus.\n3. Schick es ab. Die Daten erscheinen hier auf dem Fernseher, dort startest du den Import mit OK.</string>
+    <string name="onboarding_wizard_type_help">Wähl, was dein Anbieter dir gegeben hat. Xtream: Server-Adresse, Benutzername und Passwort. M3U: ein einzelner Link, oft mit .m3u am Ende, oder eine Datei. Stalker: Portal-Adresse und MAC-Adresse – nur, wenn dein Anbieter es so nennt.</string>
+    <string name="onboarding_wizard_backup_phone_line">Datei vom Handy oder Computer im selben WLAN schicken</string>
+    <string name="onboarding_wizard_restoring_sub">Das dauert meist nur einen Moment.</string>
+
+    <string name="onboarding_wizard_importing_sub_journey">Je nach Anbieter dauert das ein, zwei Minuten. Du musst nicht warten: Lass es im Hintergrund weiterlaufen und richte inzwischen den Rest ein – deine Sender kommen nach.</string>
+    <string name="onboarding_wizard_importing_sub">Je nach Anbieter dauert das ein, zwei Minuten. Du kannst schon loslegen, während der Rest im Hintergrund lädt.</string>
+    <string name="onboarding_wizard_in_background">Im Hintergrund weiter</string>
+    <string name="onboarding_wizard_imported_title">Deine Sender sind da</string>
+    <string name="onboarding_wizard_add_guide_line">Nur, wenn dein Anbieter dir eine eigene Programm-Adresse (XMLTV) gegeben hat</string>
+
+    <string name="onboarding_wizard_edit_details">Angaben ändern</string>
+    <string name="onboarding_wizard_fail_login">Anmeldung abgelehnt</string>
+    <string name="onboarding_wizard_fail_address">Adresse nicht erreichbar</string>
+    <string name="onboarding_wizard_fail_provider">Der Anbieter antwortet gerade nicht</string>
+    <string name="onboarding_wizard_fail_offline">Keine Internetverbindung</string>
+    <string name="onboarding_wizard_fail_mac">MAC-Adresse nicht akzeptiert</string>
+    <string name="onboarding_wizard_fail_file">Playlist-Datei nicht lesbar</string>
+    <string name="onboarding_wizard_hint_login">Achte auf Groß- und Kleinschreibung und auf Leerzeichen am Ende. Benutzername und Passwort stehen in der Nachricht deines Anbieters – am Handy kannst du sie einfügen statt tippen.</string>
+    <string name="onboarding_wizard_hint_address">Prüf die Adresse Zeichen für Zeichen: Sie beginnt mit http:// oder https:// und hat oft einen Port wie :8080. Am sichersten fügst du sie am Handy ein.</string>
+    <string name="onboarding_wizard_hint_provider">Das liegt meist am Anbieter, nicht an dir. Warte einen Moment und versuch es dann noch einmal.</string>
+    <string name="onboarding_wizard_hint_offline">Prüf WLAN oder Netzwerkkabel in den Einstellungen des Fernsehers und versuch es dann noch einmal.</string>
+    <string name="onboarding_wizard_hint_generic">Prüf deine Angaben oder versuch es später noch einmal. „Verbindung testen“ im Formular zeigt, was der Anbieter antwortet.</string>
+</resources>

@@ -67,8 +67,8 @@ internal class FootballMatcher(
     companion object {
 
         /**
-         * The matcher for [config]. Until the default teams were looked up once ([defaultTeams]), the
-         * same teams are matched by name, so "Für dich" is right from the first start.
+         * The matcher for [config]. Until an older install's fixed teams were looked up once
+         * ([defaultTeams]), those teams are matched by name. New installs never use them.
          */
         fun from(config: SportsConfig, defaultTeams: Boolean): FootballMatcher {
             val teamNames = if (config.teams.isEmpty() && defaultTeams) FootballSetup.DEFAULT_TEAMS.map { it.name }

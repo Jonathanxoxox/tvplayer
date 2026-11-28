@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First run: the last page before the app opens. What was set up, three tips for the remote, and into the app. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="onboarding_ready_title">All set</string>
+    <string name="onboarding_ready_sub">Mayo TV is set up. Here’s what you chose; everything can be changed later in Settings.</string>
+
+    <string name="onboarding_ready_summary_heading">Your setup</string>
+    <string name="onboarding_ready_row_profile">Profile</string>
+    <string name="onboarding_ready_profile_pin">Protected with a PIN</string>
+    <string name="onboarding_ready_row_channels">Channels</string>
+    <plurals name="onboarding_ready_channels">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> channel</item>
+        <item quantity="other"><xliff:g id="count" example="240">%1$d</xliff:g> channels</item>
+    </plurals>
+    <plurals name="onboarding_ready_playlists">
+        <item quantity="one">From <xliff:g id="count" example="1">%1$d</xliff:g> playlist</item>
+        <item quantity="other">From <xliff:g id="count" example="2">%1$d</xliff:g> playlists</item>
+    </plurals>
+    <string name="onboarding_ready_channels_loading">Still loading in the background…</string>
+    <string name="onboarding_ready_no_playlist">No playlist yet</string>
+    <!-- Translators: a playlist was added, but no channels arrived (the import failed or the playlist has none). -->
+    <string name="onboarding_ready_no_channels">No channels loaded</string>
+    <string name="onboarding_ready_row_start">Start screen</string>
+    <string name="onboarding_ready_start_on">The Home button opens Mayo TV</string>
+    <string name="onboarding_ready_start_off">Not set up</string>
+    <string name="onboarding_ready_row_football">Football</string>
+    <!-- Translators: two followed teams, e.g. "Hamburger SV and Liverpool". -->
+    <string name="onboarding_ready_teams_two"><xliff:g id="first" example="Hamburger SV">%1$s</xliff:g> and <xliff:g id="second" example="Liverpool">%2$s</xliff:g></string>
+    <!-- Translators: the first two followed teams and how many more there are. -->
+    <plurals name="onboarding_ready_teams_more">
+        <item quantity="one"><xliff:g id="first" example="Hamburger SV">%1$s</xliff:g>, <xliff:g id="second" example="Liverpool">%2$s</xliff:g> and <xliff:g id="count" example="1">%3$d</xliff:g> more</item>
+        <item quantity="other"><xliff:g id="first" example="Hamburger SV">%1$s</xliff:g>, <xliff:g id="second" example="Liverpool">%2$s</xliff:g> and <xliff:g id="count" example="3">%3$d</xliff:g> more</item>
+    </plurals>
+    <plurals name="onboarding_ready_leagues">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> competition</item>
+        <item quantity="other"><xliff:g id="count" example="4">%1$d</xliff:g> competitions</item>
+    </plurals>
+    <string name="onboarding_ready_no_teams">No teams chosen</string>
+    <!-- Translators: the optional own service keys (posters, voice search, search by description). -->
+    <string name="onboarding_ready_row_extras">Extras</string>
+    <string name="onboarding_ready_extras_none">No keys of your own</string>
+    <!-- Translators: e.g. "2 of 3 set up": how many of the optional service keys are entered. -->
+    <!-- Translators: how many of the optional keys are set; the quantity follows the total. -->
+    <plurals name="onboarding_ready_extras_some">
+        <item quantity="one"><xliff:g id="count" example="2">%1$d</xliff:g> of <xliff:g id="total" example="3">%2$d</xliff:g> set up</item>
+        <item quantity="other"><xliff:g id="count" example="2">%1$d</xliff:g> of <xliff:g id="total" example="3">%2$d</xliff:g> set up</item>
+    </plurals>
+    <string name="onboarding_ready_extras_all">All set up</string>
+    <!-- Translators: a hint under a skipped item. %1$s is a Settings group, or a group and a page in it, e.g. "System › API keys". -->
+    <string name="onboarding_ready_later_in">Later under Settings › <xliff:g id="group" example="Playlists &amp; EPG">%1$s</xliff:g></string>
+
+    <string name="onboarding_ready_tips_heading">Three tips for the remote</string>
+    <!-- Translators: the keys as drawn on a key cap; usually left as they are. -->
+    <string name="onboarding_ready_tip_zap_key">▲ ▼</string>
+    <string name="onboarding_ready_tip_zap">In full screen, switch to the next or previous channel.</string>
+    <string name="onboarding_ready_tip_list_key">◀</string>
+    <string name="onboarding_ready_tip_list">Opens the channel list with what’s on now.</string>
+    <string name="onboarding_ready_tip_ok">Shows the info card. Hold OK for options such as adding to favorites or recording.</string>
+    <string name="onboarding_ready_tips_more">Hold Back to jump from any menu to the last channel. Every key can be changed in Settings.</string>
+</resources>

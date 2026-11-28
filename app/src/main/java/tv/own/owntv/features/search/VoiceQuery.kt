@@ -5,10 +5,10 @@ import android.util.Log
 import okhttp3.OkHttpClient
 import org.json.JSONArray
 import org.json.JSONObject
-import tv.own.owntv.BuildConfig
 import tv.own.owntv.R
 import tv.own.owntv.core.content.SearchResults
 import tv.own.owntv.core.live.ProviderTags
+import tv.own.owntv.features.keys.ApiKeys
 import tv.own.owntv.features.search.JevClient.Companion.choice
 
 /**
@@ -21,9 +21,9 @@ import tv.own.owntv.features.search.JevClient.Companion.choice
  * Without a TypeSafe key, or when nothing in the playlist sounds alike, the best guess is used.
  * The question's wording lives in res/raw/jev_voice_search.json.
  */
-class VoiceQuery(private val context: Context, okHttp: OkHttpClient) {
+class VoiceQuery(private val context: Context, okHttp: OkHttpClient, keys: ApiKeys) {
 
-    private val jev = JevClient(okHttp, BuildConfig.TYPESAFE_API_KEY)
+    private val jev = JevClient(okHttp) { keys.typeSafe.value }
     private val prompt: JSONObject by lazy {
         JSONObject(context.resources.openRawResource(R.raw.jev_voice_search).bufferedReader().use { it.readText() })
     }

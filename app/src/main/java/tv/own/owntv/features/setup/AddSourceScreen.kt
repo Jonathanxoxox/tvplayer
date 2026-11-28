@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -119,7 +120,9 @@ fun AddSourceScreen(
     ) -> Unit)? = null,
 ) {
     val editing = initial != null
-    var kind by remember {
+    // The form's fields are saveable: a host that keeps saved state while the form is away (the setup
+    // wizard during an import) gets them back exactly as typed, so a failed import costs no retyping.
+    var kind by rememberSaveable {
         mutableStateOf(
             when (initial?.type) {
                 SourceType.M3U -> SourceKind.M3U
@@ -128,36 +131,36 @@ fun AddSourceScreen(
             },
         )
     }
-    var name by remember(initial) { mutableStateOf(initial?.name ?: "") }
-    var server by remember(initial) { mutableStateOf(if (initial != null && initial.type == SourceType.XTREAM) initial.url else "") }
-    var username by remember(initial) { mutableStateOf(initial?.username ?: "") }
-    var password by remember(initial) { mutableStateOf(initial?.password ?: "") }
-    var m3uUrl by remember(initial) { mutableStateOf(if (initial != null && initial.type == SourceType.M3U) initial.url else "") }
-    var portalUrl by remember(initial) { mutableStateOf(if (initial != null && initial.type == SourceType.STALKER) initial.url else "") }
-    var mac by remember(initial) { mutableStateOf(initial?.mac ?: "") }
-    var stalkerSerialNumber by remember(initial) { mutableStateOf(initial?.stalkerSerialNumber ?: "") }
-    var stalkerDeviceId by remember(initial) { mutableStateOf(initial?.stalkerDeviceId ?: "") }
-    var stalkerDeviceId2 by remember(initial) { mutableStateOf(initial?.stalkerDeviceId2 ?: "") }
-    var stalkerSignature by remember(initial) { mutableStateOf(initial?.stalkerSignature ?: "") }
+    var name by rememberSaveable(initial) { mutableStateOf(initial?.name ?: "") }
+    var server by rememberSaveable(initial) { mutableStateOf(if (initial != null && initial.type == SourceType.XTREAM) initial.url else "") }
+    var username by rememberSaveable(initial) { mutableStateOf(initial?.username ?: "") }
+    var password by rememberSaveable(initial) { mutableStateOf(initial?.password ?: "") }
+    var m3uUrl by rememberSaveable(initial) { mutableStateOf(if (initial != null && initial.type == SourceType.M3U) initial.url else "") }
+    var portalUrl by rememberSaveable(initial) { mutableStateOf(if (initial != null && initial.type == SourceType.STALKER) initial.url else "") }
+    var mac by rememberSaveable(initial) { mutableStateOf(initial?.mac ?: "") }
+    var stalkerSerialNumber by rememberSaveable(initial) { mutableStateOf(initial?.stalkerSerialNumber ?: "") }
+    var stalkerDeviceId by rememberSaveable(initial) { mutableStateOf(initial?.stalkerDeviceId ?: "") }
+    var stalkerDeviceId2 by rememberSaveable(initial) { mutableStateOf(initial?.stalkerDeviceId2 ?: "") }
+    var stalkerSignature by rememberSaveable(initial) { mutableStateOf(initial?.stalkerSignature ?: "") }
     var showUaPresetPicker by remember { mutableStateOf(false) }
-    var epgUrl by remember(initial) { mutableStateOf(initial?.epgUrl ?: "") }
-    var userAgent by remember(initial) { mutableStateOf(initial?.userAgent ?: "") }
-    var referer by remember(initial) { mutableStateOf(initial?.httpReferer ?: "") }
+    var epgUrl by rememberSaveable(initial) { mutableStateOf(initial?.epgUrl ?: "") }
+    var userAgent by rememberSaveable(initial) { mutableStateOf(initial?.userAgent ?: "") }
+    var referer by rememberSaveable(initial) { mutableStateOf(initial?.httpReferer ?: "") }
     var autoRefresh by remember(initialAutoRefresh) { mutableStateOf(initialAutoRefresh) }
-    var isDefault by remember(initialIsDefault) { mutableStateOf(initialIsDefault) }
-    var preferHls by remember(initial) { mutableStateOf(initial?.preferHls == true) }
+    var isDefault by rememberSaveable(initialIsDefault) { mutableStateOf(initialIsDefault) }
+    var preferHls by rememberSaveable(initial) { mutableStateOf(initial?.preferHls == true) }
     // Edit: On(=Now)/Off from persisted flags. Add: default all Now for Xtream; Stalker defaults
     // Live Now + Movies/Series Later when the kind switches (see LaunchedEffect below).
-    var syncLive by remember(initial) {
+    var syncLive by rememberSaveable(initial) {
         mutableStateOf(if (initial?.syncLive == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
     }
-    var syncMovies by remember(initial) {
+    var syncMovies by rememberSaveable(initial) {
         mutableStateOf(if (initial?.syncMovies == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
     }
-    var syncSeries by remember(initial) {
+    var syncSeries by rememberSaveable(initial) {
         mutableStateOf(if (initial?.syncSeries == false) SyncScopeChoice.Off else SyncScopeChoice.Now)
     }
-    var hasRemoteStalkerScopes by remember { mutableStateOf(false) }
+    var hasRemoteStalkerScopes by rememberSaveable { mutableStateOf(false) }
     var showFileBrowser by remember { mutableStateOf(false) }
     var showAutoRefreshPicker by remember { mutableStateOf(false) }
     var showManualDaysPicker by remember { mutableStateOf(false) }
@@ -478,7 +481,7 @@ fun AddSourceScreen(
             onStep = if (editing) null else { step -> kind = kinds[(kinds.indexOf(kind) + step).coerceIn(0, kinds.lastIndex)] },
             help = help(
                 typeTitle,
-                stringResource(if (editing) R.string.setup_edit_source_description else R.string.setup_byo_source_description),
+                stringResource(if (editing) R.string.setup_edit_source_description else R.string.onboarding_wizard_type_help),
                 if (editing) listOf(back to parent) else listOf("◀ ▶" to stringResource(R.string.settings_key_change), back to parent),
             ),
         )

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <string name="onboarding_football_title">Dein Fußball</string>
+    <string name="onboarding_football_sub">Wähle die Wettbewerbe und Vereine, denen du folgst. Mayo TV stellt ihre Spiele dann nach vorn – auf der Startseite und in der Senderliste.</string>
+    <string name="onboarding_football_path"><xliff:g id="parent" example="Einstellungen">%1$s</xliff:g> › <xliff:g id="page" example="Sport">%2$s</xliff:g></string>
+
+    <string name="onboarding_football_leagues_label">Wettbewerbe</string>
+    <string name="onboarding_football_leagues_more">Weitere Ligen und andere Sportarten findest du unter <xliff:g id="path" example="Einstellungen › Live-TV &amp; Sport › Sport">%1$s</xliff:g>.</string>
+    <string name="onboarding_football_leagues_none">Nichts angehakt: Dann sucht Mayo TV keine Spiele für dich heraus. Du kannst das jederzeit unter <xliff:g id="path" example="Einstellungen › Live-TV &amp; Sport › Sport">%1$s</xliff:g> ändern.</string>
+    <string name="onboarding_football_action_no_football">Kein Fußball für mich</string>
+
+    <string name="onboarding_football_teams_title">Deine Vereine</string>
+    <string name="onboarding_football_teams_sub">Hake deine Vereine an, so viele du magst. Ihre Spiele stehen immer ganz vorn.</string>
+    <string name="onboarding_football_teams_search">Verein suchen</string>
+    <string name="onboarding_football_teams_search_hint">Name, Stadt oder Kürzel, z. B. HSV</string>
+    <string name="onboarding_football_teams_not_found">Kein Verein „<xliff:g id="query" example="Werder">%1$s</xliff:g>“ in deinen Wettbewerben. Ist seine Liga auf der Seite davor angehakt?</string>
+    <string name="onboarding_football_teams_loading">Die Vereine deiner Wettbewerbe werden geladen…</string>
+    <string name="onboarding_football_teams_failed">Die Vereinsliste ist gerade nicht erreichbar. Prüfe die Internetverbindung und versuch es noch mal – oder überspring das erst einmal und wähl deine Vereine später unter <xliff:g id="path" example="Einstellungen › Live-TV &amp; Sport › Sport › Meine Teams">%1$s</xliff:g>.</string>
+    <string name="onboarding_football_teams_partial">Noch nicht geladen: <xliff:g id="leagues" example="Bundesliga · Premier League">%1$s</xliff:g>.</string>
+    <string name="onboarding_football_retry">Erneut versuchen</string>
+    <plurals name="onboarding_football_teams_chosen">
+        <item quantity="one"><xliff:g id="count" example="1">%1$d</xliff:g> angehakt: <xliff:g id="names" example="Hamburger SV">%2$s</xliff:g></item>
+        <item quantity="other"><xliff:g id="count" example="2">%1$d</xliff:g> angehakt: <xliff:g id="names" example="Hamburger SV · Liverpool">%2$s</xliff:g></item>
+    </plurals>
+    <string name="onboarding_football_teams_none_yet">Noch kein Verein angehakt. Das geht auch: Dann stehen die Spiele deiner Wettbewerbe vorn.</string>
+</resources>

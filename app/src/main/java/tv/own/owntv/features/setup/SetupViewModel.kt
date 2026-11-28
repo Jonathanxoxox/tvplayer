@@ -68,10 +68,13 @@ class SetupViewModel(
     val epgSync: StateFlow<tv.own.owntv.features.settings.EpgSyncUi> = _epgSync.asStateFlow()
 
     private var importJob: Job? = null
+    private var epgJob: Job? = null
+    /** The guide sync was handed to the background: it outlives this ViewModel. */
+    private var epgHandedOff = false
 
     fun syncPendingEpg() {
         val src = pendingEpgSource ?: return
-        viewModelScope.launch {
+        epgJob = appScope.launch {
             tv.own.owntv.features.settings.runSemiAutoEpgSync(src, epgRepository, epgSourceStore) { _epgSync.value = it }
         }
     }
@@ -80,11 +83,12 @@ class SetupViewModel(
 
     /**
      * "Run in background" for the semi-auto EPG sync: enter the app now while the guide keeps
-     * downloading. The sync launched by [syncPendingEpg] runs in this activity-scoped [viewModelScope],
-     * so it survives leaving the wizard — exactly like the playlist [continueInBackground]. We only
-     * finish onboarding; the in-flight job is deliberately not cancelled.
+     * downloading. The sync launched by [syncPendingEpg] runs in the app scope and is cancelled with
+     * this ViewModel unless it was handed off here, so it survives leaving the wizard and even the
+     * activity, exactly like the playlist [continueInBackground].
      */
     fun syncEpgInBackground(onDone: (Long?) -> Unit = {}) {
+        epgHandedOff = true
         pendingEpgSource = null
         finish(onDone)
     }
@@ -99,6 +103,18 @@ class SetupViewModel(
             if (picture != null) profileDao.getById(id)?.let { profiles.setCustomAvatar(it, picture) }
             onCreated(id)
         }
+    }
+
+    /**
+     * First run only, where no profile is active yet: a profile that exists already was made by an
+     * earlier run of this wizard that ended before its playlist step was done (the app was closed or
+     * killed there). Adopts the newest such profile, so the wizard carries on at the playlist step
+     * instead of asking for everything again and creating a second profile. False when there is none.
+     */
+    suspend fun resumeInterruptedProfile(): Boolean {
+        val earlier = profileDao.getAllOnce().maxByOrNull { it.id } ?: return false
+        importer.useProfile(earlier.id)
+        return true
     }
 
     fun startXtream(
@@ -143,12 +159,13 @@ class SetupViewModel(
         runImport { importer.m3u(name, url, userAgent, epgUrl, autoRefresh, httpReferer = httpReferer) }
 
     /**
-     * Runs one import in the activity-scoped [viewModelScope] so "Run in background" can walk away
-     * from it, then raises the semi-auto EPG prompt if the playlist that just landed has a guide feed.
+     * Runs one import in the app scope, so "Run in background" can walk away from it even when the
+     * activity finishes before it is done ([onCleared] cancels it only when it was not handed off),
+     * then raises the semi-auto EPG prompt if the playlist that just landed has a guide feed.
      */
     private fun runImport(block: suspend () -> Unit) {
         importJob?.cancel()
-        val job = viewModelScope.launch {
+        val job = appScope.launch {
             block()
             val done = importer.state.value as? SourceImporter.ImportState.Success ?: return@launch
             val source = done.source ?: return@launch
@@ -218,9 +235,9 @@ class SetupViewModel(
     }
 
     /**
-     * "Run in background": enter the app now while the import keeps running. This ViewModel is
-     * activity-scoped, so the in-flight import survives leaving the wizard — the sync continues
-     * exactly as if the user had waited (success still runs ImportFinalizer + the remainder enqueue).
+     * "Run in background": enter the app now while the import keeps running. The import runs in the
+     * app scope and [onCleared] leaves it alone once handed off, so it survives leaving the wizard and
+     * the activity — the sync continues exactly as if the user had waited (success still runs ImportFinalizer + the remainder enqueue).
      * Deliberately does NOT cancel: cancelling would delete the half-imported source. The semi-auto
      * EPG prompt is skipped (its dialog lives in the wizard); EPG stays user-initiated from
      * Settings → EPG Sources, matching the app's EPG opt-in policy.
@@ -229,6 +246,15 @@ class SetupViewModel(
         importer.backgroundHandoff = true
         dismissPendingEpg()
         finish(onDone)
+    }
+
+    /**
+     * The wizard's activity is gone: work the user waited for stops with it (as it always did), work
+     * handed to the background keeps running in the app scope.
+     */
+    override fun onCleared() {
+        if (!importer.backgroundHandoff) importJob?.cancel()
+        if (!epgHandedOff) epgJob?.cancel()
     }
 
     /** Completes onboarding → makes the new profile active, routing the app into the shell. */

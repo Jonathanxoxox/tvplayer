@@ -28,6 +28,53 @@ DANGER = re.compile(
     re.I,
 )
 
+# ---------------------------------------------------------------- Texte der Ersteinrichtung
+# Alle Texte, an denen die Tour die Ersteinrichtung erkennt, stehen hier an einer Stelle (reguläre
+# Ausdrücke, Groß-/Kleinschreibung egal). Ändert sich ein Text in der App, nur diese Tabelle nachziehen.
+FIRST_RUN = {
+    # Das Intro mit Logo und Ton: endet von selbst, jede Taste überspringt es.
+    "intro": r"Mit OK überspringen|Dein Fernsehen im Flutlicht",
+    # Der Assistent (Sprache, Anzeige, Hinweis, Profil, Playlist).
+    "welcome": r"^Los geht",
+    "display_next": r"^Weiter$",
+    "disclaimer": r"^Ich verstehe",
+    "new_profile": r"^Neues Profil",
+    "create_profile": r"^Profil erstellen",
+    "type_here": r"^Hier eingeben",
+    "type_row": r"^Typ$",
+    "start_import": r"^Importieren starten",
+    "sync_epg": r"Jetzt synchronisieren",
+    # Der Import ist durch (oder gescheitert).
+    "imported": r"Jetzt synchronisieren|^Weiter$|Alles bereit|Deine Sender sind da|Fertig|fehlgeschlagen|failed",
+    # Knöpfe in der Fußzeile der Kapitel.
+    "continue": r"^Weiter$",
+    "skip": r"^Überspringen$",
+    "later": r"^Später$",
+    "done": r"^(Fertig|Los geht)",
+    # Ein Verein, den die Tour im Fußball-Kapitel anhakt, wenn er in der Liste steht.
+    "team": r"^(Hamburger SV|Hamburg SV|HSV)$",
+    # Solange das zu sehen ist, lädt eine Seite noch.
+    "loading": r"werden geladen|wird vorbereitet|^Wird geprüft\s*…",
+    # Die App ist eingerichtet: das Menü der Startseite.
+    "shell": r"^(Live-TV|Startseite)$",
+}
+# Die Kapitel nach dem Profil, Seite für Seite: Titel der Seite, Name des Fotos und die Schritte, die
+# die Tour der Reihe nach versucht (Schlüssel aus FIRST_RUN; "team" hakt nur an und geht weiter).
+# Startbildschirm und Extras werden immer übersprungen: die Tour schaltet keine Bedienungshilfe ein,
+# macht Mayo TV nicht zur Home-App und gibt keine Schlüssel ein.
+CHAPTER_PAGES = [
+    (r"^Wie soll Mayo TV aussehen", "kapitel-aussehen", ["continue"]),
+    (r"^Farbe und Startseite$", "kapitel-aussehen-farbe", ["continue"]),
+    (r"^Mayo TV als Startbildschirm$", "kapitel-startbildschirm", ["later", "skip"]),
+    (r"^(Home-Wächter einschalten|Mayo TV ist dein Startbildschirm)$", "kapitel-startbildschirm-waechter", ["later", "skip"]),
+    (r"^Beim Einschalten$", "kapitel-startbildschirm-einschalten", ["later", "skip"]),
+    (r"^Dein Fußball$", "kapitel-fussball", ["continue", "skip"]),
+    (r"^Deine Vereine$", "kapitel-fussball-vereine", ["team", "continue", "later", "skip"]),
+    (r"^Extras mit eigenen Schlüsseln$", "kapitel-extras", ["later", "skip", "continue"]),
+    (r"^Alles bereit$", "kapitel-bereit", ["done", "continue"]),
+]
+CHAPTER_TITLES = "|".join(rx for rx, _, _ in CHAPTER_PAGES)
+
 
 def adb(*args, check=False, timeout=60):
     r = subprocess.run(["adb", *args], capture_output=True, text=True, timeout=timeout)
@@ -117,14 +164,34 @@ def focused_text(root):
     return " · ".join(inner[:3])
 
 
-def shot(name):
+def screencap():
+    return subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=60).stdout
+
+
+def step_name(name):
     counter[0] += 1
-    fn = f"{counter[0]:03d}-{re.sub(r'[^A-Za-z0-9äöüÄÖÜß_-]+', '_', name)[:60]}"
+    return f"{counter[0]:03d}-{re.sub(r'[^A-Za-z0-9äöüÄÖÜß_-]+', '_', name)[:60]}"
+
+
+def save_png(name, data):
+    """Ein schon aufgenommenes Bild ohne UI-Baum ablegen (für Einblendungen, die nur kurz stehen)."""
+    fn = step_name(name)
+    with open(os.path.join(OUT, fn + ".png"), "wb") as f:
+        f.write(data)
+    entry = {"step": fn, "focus": "", "texts": [], "offscreen": []}
+    steps.append(entry)
+    log.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    log.flush()
+    print(f"[shot] {fn}  (nur Bild)", flush=True)
+
+
+def shot(name):
+    fn = step_name(name)
     time.sleep(0.8)
     # Erst das Bild, dann der UI-Baum: der Dump dauert Sekunden, kurze Einblendungen wären sonst weg.
     png = os.path.join(OUT, fn + ".png")
     with open(png, "wb") as f:
-        f.write(subprocess.run(["adb", "exec-out", "screencap", "-p"], capture_output=True, timeout=60).stdout)
+        f.write(screencap())
     root = dump()
     t = texts(root)
     w, h = 1920, 1080
@@ -137,18 +204,23 @@ def shot(name):
     return root
 
 
-def find(root, pattern, xmin=0, xmax=99999):
+def find(root, pattern, xmin=0, xmax=99999, action=False):
+    """Erstes Element mit passendem Text. Mit `action` zählen Knöpfe vor gleichlautenden Beschriftungen
+    (die Fortschrittspunkte der Einrichtung nennen den letzten Schritt ebenfalls „Fertig“): erst
+    fokussierbare oder klickbare Treffer, unter mehreren der unterste (die Fußzeile)."""
     rx = re.compile(pattern, re.I)
     hits = [n for n in root.iter("node") if label(n) and rx.search(label(n)) and xmin <= bounds(n)[0] <= xmax]
+    if action and hits:
+        hits.sort(key=lambda n: (n.get("focusable") != "true" and n.get("clickable") != "true", -bounds(n)[1]))
     return hits[0] if hits else None
 
 
-def goto(pattern, press=True, tries=24, xmin=0, xmax=99999):
+def goto(pattern, press=True, tries=24, xmin=0, xmax=99999, action=False):
     """Fokus per Steuerkreuz auf das Element mit passendem Text bewegen und (optional) OK drücken."""
     last = None
     for _ in range(tries):
         root = dump()
-        target = find(root, pattern, xmin, xmax)
+        target = find(root, pattern, xmin, xmax, action)
         if target is None:
             print(f"[goto] {pattern!r} nicht gefunden; sichtbar: {[s for s, _ in texts(root)][:25]}", flush=True)
             return False
@@ -208,15 +280,108 @@ def step(name, fn):
 
 
 # ---------------------------------------------------------------- Einrichtung
+def wait_for_welcome(limit=60):
+    """Nach dem Start erst das Intro abwarten: `goto` gibt sofort auf, wenn sein Ziel fehlt. Das Intro
+    endet von selbst (ohne Animationen nach unter einer Sekunde); steht es nach gut vier Sekunden noch,
+    überspringt es ein OK. Jede Runde nimmt erst ein Bild und dann den UI-Baum auf; zeigt der Baum das
+    Intro, wird das Bild als Foto des Intros abgelegt. Wahr, sobald eine bekannte Seite steht."""
+    known = "|".join([
+        FIRST_RUN["welcome"], FIRST_RUN["shell"], CHAPTER_TITLES,
+        r"Wer schaut gerade|Angenehm lesbar|Kurz vorab|Mayo TV einrichten|Dein Profil|Deine Sender hinzufügen|Playlist hinzufügen",
+    ])
+    t0 = time.time()
+    intro_since = None
+    intro_saved = pressed = False
+    while time.time() - t0 < limit:
+        data = screencap()
+        root = dump()
+        # Solange die App noch startet, steht der Startbildschirm der Box vorn; dessen Texte zählen nicht.
+        if not any(n.get("package") == PKG for n in root.iter("node")):
+            time.sleep(0.5)
+            continue
+        if find(root, known) is not None:
+            if intro_since is None:
+                print("[setup] Intro nicht gesehen (schon vorbei oder ausgeschaltet)", flush=True)
+            return True
+        if find(root, FIRST_RUN["intro"]) is not None:
+            if intro_since is None:
+                intro_since = time.time()
+            if not intro_saved:
+                save_png("intro", data)
+                intro_saved = True
+            # Nur einmal und nur, wenn der Baum das Intro wirklich zeigt: ein OK auf der Willkommensseite
+            # würde schon „Los geht's“ drücken.
+            if not pressed and time.time() - intro_since > 4:
+                print("[setup] Intro steht noch, OK überspringt es", flush=True)
+                key("DPAD_CENTER", wait=1.0)
+                pressed = True
+        time.sleep(0.5)
+    print(f"[setup] nach {limit} s keine bekannte Seite; sichtbar: {[t for t, _ in texts(dump())][:25]}", flush=True)
+    return False
+
+
+def chapter_page(root, name, actions, visit):
+    """Eine Seite der Kapitel nach dem Profil: warten, bis sie geladen hat, fotografieren, dann die
+    Schritte aus CHAPTER_PAGES der Reihe nach versuchen. Wahr, wenn ein Knopf gedrückt wurde."""
+    for _ in range(10):
+        if find(root, FIRST_RUN["loading"]) is None:
+            break
+        time.sleep(2)
+        root = dump()
+    root = shot(name if visit == 1 else f"{name}-{visit}")
+    for act in actions:
+        if act == "team":
+            if find(root, FIRST_RUN["team"]) is not None and goto(FIRST_RUN["team"], tries=16):
+                root = shot(f"{name}-angehakt")
+            continue
+        pattern = FIRST_RUN[act]
+        if find(root, pattern, action=True) is not None and goto(pattern, action=True):
+            time.sleep(1.0)
+            return True
+    print(f"[setup] {name}: keiner der Knöpfe {actions} erreichbar", flush=True)
+    return False
+
+
+def finish_first_run(limit=40):
+    """Nach dem Import bis zur Startseite: EPG-Abfrage und „Alles bereit!“ des Assistenten, dann die
+    Kapitel nach dem Profil (Aussehen, Startbildschirm, Fußball, Extras, Bereit), jedes mit Foto."""
+    visits = {}
+    for _ in range(limit):
+        root = dump()
+        print(f"[setup] Dump: {len(list(root.iter('node')))} Knoten, Fokus {focused_text(root)!r}", flush=True)
+        page = next(((n, a) for rx, n, a in CHAPTER_PAGES if find(root, rx) is not None), None)
+        if page is not None:
+            name, actions = page
+            visits[name] = visits.get(name, 0) + 1
+            if visits[name] > 3:
+                print(f"[setup] {name} kommt immer wieder, Einrichtung bricht ab", flush=True)
+                return
+            chapter_page(root, name, actions, visits[name])
+            continue
+        if find(root, FIRST_RUN["sync_epg"]):
+            goto(FIRST_RUN["sync_epg"])
+            time.sleep(8)
+            shot("epg-sync")
+        elif find(root, FIRST_RUN["shell"]) is not None:
+            return
+        elif find(root, FIRST_RUN["done"], action=True):
+            goto(FIRST_RUN["done"], action=True)
+        elif find(root, FIRST_RUN["continue"], action=True):
+            shot("fertig")
+            goto(FIRST_RUN["continue"], action=True)
+        time.sleep(2)
+
+
 def setup():
+    wait_for_welcome()
     shot("start")
-    for pattern, name in [
-        (r"^Los geht", "willkommen"),
-        (r"^Weiter$", "anzeigegroesse"),
-        (r"^Ich verstehe", "hinweis"),
-        (r"^Neues Profil", "einrichtung"),
+    for label_key, name in [
+        ("welcome", "willkommen"),
+        ("display_next", "anzeigegroesse"),
+        ("disclaimer", "hinweis"),
+        ("new_profile", "einrichtung"),
     ]:
-        goto(pattern)
+        goto(FIRST_RUN[label_key])
         shot(name)
     # Ohne Namen bleibt "Profil erstellen" gesperrt: Name-Zeile (erster Fokus) öffnen und tippen.
     # Der Name ist der erste Fokus; OK öffnet die Tastatur direkt in der Zeile.
@@ -225,12 +390,12 @@ def setup():
     type_text("Jonathan")
     key("ENTER", wait=1.2)
     shot("profil-name")
-    goto(r"^Profil erstellen")
+    goto(FIRST_RUN["create_profile"])
     shot("profil")
-    goto(r"^Hier eingeben")
+    goto(FIRST_RUN["type_here"])
     shot("quelle-formular")
     # Typ auf M3U stellen: Zeile "Typ" mit ◀ ▶
-    if goto(r"^Typ$", press=False):
+    if goto(FIRST_RUN["type_row"], press=False):
         key("DPAD_RIGHT")
     shot("quelle-m3u")
     # Die Eingabezeilen tauchen im UI-Baum nicht mit Text auf: von "Typ" aus zwei nach unten (Name, URL).
@@ -246,37 +411,23 @@ def setup():
             key("BACK", wait=1.0)
     root = shot("formular-fertig")
     # "Importieren starten" sitzt im Feld rechts und ist von jeder Zeile mit ▶ erreichbar.
-    if not goto(r"^Importieren starten"):
+    if not goto(FIRST_RUN["start_import"]):
         key("DPAD_RIGHT", wait=1.0)
         shot("import-knopf")
-        if find(dump(), r"^Importieren starten") is not None:
+        if find(dump(), FIRST_RUN["start_import"]) is not None:
             key("DPAD_CENTER", wait=1.0)
     for i in range(30):
         time.sleep(3)
         root = dump()
-        if find(root, r"Jetzt synchronisieren|^Weiter$|Alles bereit|Fertig|fehlgeschlagen|failed"):
+        if find(root, FIRST_RUN["imported"]):
             break
     shot("import")
     # Die EPG-Abfrage hat den Fokus schon auf "Jetzt synchronisieren".
-    if steps and steps[-1]["focus"].startswith("Jetzt synchronisieren"):
+    if steps and re.search(FIRST_RUN["sync_epg"], steps[-1]["focus"], re.I):
         key("DPAD_CENTER", wait=8)
         shot("epg-sync")
-    # EPG-Abfrage, "Alles bereit" und Co. wegdrücken, bis die Startseite mit dem Menü steht.
-    for _ in range(12):
-        root = dump()
-        print(f"[setup] Dump: {len(list(root.iter('node')))} Knoten, Fokus {focused_text(root)!r}", flush=True)
-        if find(root, r"Jetzt synchronisieren"):
-            goto(r"Jetzt synchronisieren")
-            time.sleep(8)
-            shot("epg-sync")
-        elif find(root, r"^Fertig$"):
-            goto(r"^Fertig$")
-        elif find(root, r"^Weiter$"):
-            shot("fertig")
-            goto(r"^Weiter$")
-        elif find(root, r"^(Live-TV|Startseite)$") is not None:
-            break
-        time.sleep(2)
+    # EPG-Abfrage, "Alles bereit!" und die Kapitel nach dem Profil, bis die Startseite mit dem Menü steht.
+    finish_first_run()
     time.sleep(4)
     shot("app-start")
 
@@ -987,7 +1138,7 @@ def sports_tour():
 def main():
     step("einrichtung", setup)
     # Ohne fertige Einrichtung würden die weiteren Schritte nur im Assistenten herumdrücken.
-    if find(dump(), r"Los geht|Wer schaut gerade|Angenehm lesbar|Mayo TV einrichten|Playlist hinzufügen|Hier eingeben|Importieren starten") is not None:
+    if find(dump(), r"Los geht|Wer schaut gerade|Angenehm lesbar|Kurz vorab|Mayo TV einrichten|Dein Profil|Deine Sender hinzufügen|Playlist hinzufügen|Hier eingeben|Importieren starten|" + CHAPTER_TITLES) is not None:
         print("[tour] Einrichtung nicht abgeschlossen, Tour endet hier", flush=True)
         return
     # TOUR_PARTS=vod,scenes,player,… läuft nur durch diese Teile (schneller beim Arbeiten an einem Bereich).

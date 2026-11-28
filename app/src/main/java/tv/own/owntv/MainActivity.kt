@@ -40,6 +40,7 @@ import tv.own.owntv.core.launcher.LauncherDeepLink
 import tv.own.owntv.features.profiles.ProfileGate
 import tv.own.owntv.features.profiles.ProfileGateSessionViewModel
 import tv.own.owntv.features.profiles.ProfilesViewModel
+import tv.own.owntv.features.onboarding.OnboardingFlow
 import tv.own.owntv.features.setup.Onboarding
 import tv.own.owntv.features.shell.OwnTVShell
 import tv.own.owntv.features.shell.ShellViewModel
@@ -95,6 +96,7 @@ open class MainActivity : ComponentActivity() {
     private val sportsPlayback: tv.own.owntv.features.sports.SportsPlayback by inject()
     // The sole locale authority (SharedPreferences-backed; see docs/internationalization.md 0b).
     private val localeStore: tv.own.owntv.core.i18n.LocaleStore by inject()
+    private val onboardingPrefs: tv.own.owntv.features.onboarding.OnboardingPrefs by inject()
     private var pendingDeepLink by mutableStateOf<LauncherDeepLink?>(null)
 
     /** The process was started by a launcher tile (channel, movie, match…): the start mode must not also pick a picture. */
@@ -342,6 +344,19 @@ open class MainActivity : ComponentActivity() {
                 authenticatedProfileId = authenticatedProfileId,
                 gateRequired = gateRequired,
             )
+            // The first-run journey, read against the profiles that exist. An install from before the
+            // journey (a profile, journey never started) is recorded as completed and never sees it.
+            val onboardingStored by onboardingPrefs.state.collectAsStateWithLifecycle()
+            val hasActiveProfile = profilesLoaded && loadedProfileId != null && loadedProfileId >= 0L && activeProfileKnown
+            val journey = tv.own.owntv.features.onboarding.OnboardingJourney.resolve(onboardingStored, hasActiveProfile)
+            val hasAnyProfile = profilesLoaded && profiles.isNotEmpty()
+            LaunchedEffect(hasAnyProfile) {
+                if (hasAnyProfile) onboardingPrefs.adoptExistingInstall(hasProfile = true)
+            }
+            // A true first run: no profile at all, or a journey that already started (its wizard may
+            // have created the profile without making it active yet).
+            val firstRunJourney = profilesLoaded && (profiles.isEmpty() ||
+                onboardingStored.phase == tv.own.owntv.features.onboarding.OnboardingPhase.IN_PROGRESS)
             // Back from a user-requested switch returns to the shell (the cold-start gate exits the app).
             BackHandler(enabled = switchProfileRequested && !addingProfile) {
                 gateSession.cancelSwitchProfileRequest(loadedProfileId)
@@ -448,18 +463,19 @@ open class MainActivity : ComponentActivity() {
                         val profile = activeProfileId
                         when {
                             profile == null || !profilesLoaded -> Unit // active id / Room list loading
-                            // Adding a profile from the gate → onboard the new profile.
+                            // Adding a profile from the gate → onboard the new profile (wizard only).
                             addingProfile -> Onboarding(
                                 firstRun = false,
                                 onDone = { profileId -> gateSession.completeAddingProfile(profileId) },
                                 onCancel = { gateSession.cancelAddingProfile() },
                                 modifier = Modifier.fillMaxSize(),
                             )
-                            // First run (no profile yet) → full onboarding.
-                            profile < 0L -> Onboarding(
-                                firstRun = true,
-                                onDone = { profileId -> gateSession.authenticateProfile(profileId) },
-                                onCancel = {},
+                            // First run (no profile yet), and the journey's chapters after the profile
+                            // once the gate has let the profile in. One call site, so the journey moves
+                            // from the wizard to its next chapter without being rebuilt.
+                            (profile < 0L && firstRunJourney) || (journey.postProfilePending && shellReady) -> OnboardingFlow(
+                                hasActiveProfile = hasActiveProfile,
+                                onSetupDone = { profileId -> gateSession.authenticateProfile(profileId) },
                                 modifier = Modifier.fillMaxSize(),
                             )
                             // A loaded list that does not contain the persisted active id is also
@@ -467,6 +483,14 @@ open class MainActivity : ComponentActivity() {
                             // both an empty restore window and a stale id left by an interrupted restore.
                             !activeProfileKnown -> Onboarding(
                                 firstRun = false,
+                                onDone = { profileId -> gateSession.authenticateProfile(profileId) },
+                                onCancel = {},
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            // No active profile on an install that has profiles but no journey: the
+                            // wizard as before, never the first-run journey.
+                            profile < 0L -> Onboarding(
+                                firstRun = true,
                                 onDone = { profileId -> gateSession.authenticateProfile(profileId) },
                                 onCancel = {},
                                 modifier = Modifier.fillMaxSize(),

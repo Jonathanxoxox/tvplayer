@@ -64,7 +64,9 @@ body:
         - **Fire OS / Android version:**
         - **Mayo TV version:**
         - **Playlist type:** Xtream / M3U URL / local M3U file
-        - **Content type:** Live TV / Movie / Series / Catch-up / EPG
+        - **Content type:** Live TV / Movie / Series / Catch-up / EPG / First setup
+        - **Own API keys set (Settings → System → API keys):** none / TMDB / ElevenLabs / TypeSafe
+        - **Home guard on (Settings → Power-on & Home button):** yes / no
     validations:
       required: true
 
@@ -72,7 +74,9 @@ body:
     id: screenshot
     attributes:
       label: Screenshot / photo
-      description: A screenshot, or a phone photo of the TV screen, helps a lot — especially the error screen.
+      description: >
+        A screenshot, or a phone photo of the TV screen, helps a lot — especially the error screen.
+        Never post an API key: on Settings → System → API keys only the last characters are shown, keep it that way.
 
   - type: textarea
     id: logcat
@@ -80,4 +84,5 @@ body:
       label: Logcat (optional, but the most useful thing you can attach)
       description: >
         If you can, capture a logcat and attach it. Ask in the issue if you need the adb command.
-        ⚠️ Please remove your username/password from the log if they appear in any URL.
+        ⚠️ Please remove your username/password from the log if they appear in any URL, and never
+        paste an API key (TMDB, ElevenLabs, TypeSafe) here.

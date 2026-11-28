@@ -99,27 +99,8 @@ android {
             ?: ""
         buildConfigField("String", "TMDB_EDGE_KEY", "\"${edgeKey.replace("\\", "\\\\").replace("\"", "\\\"")}\"")
 
-        // Mayo TV: OwnTV's shared metadata service refuses builds without its edge key (403), so a
-        // TMDB API key of our own (GitHub secret TMDB_API_KEY → env FLUTLICHT_TMDB_KEY) is put into
-        // Settings → Metadata once on first start. Blank keeps the old behaviour.
-        val flutlichtTmdbKey = System.getenv("FLUTLICHT_TMDB_KEY")
-            ?: providers.gradleProperty("flutlicht.tmdbKey").orNull
-            ?: ""
-        buildConfigField("String", "FLUTLICHT_TMDB_KEY", "\"${flutlichtTmdbKey.filter { it.isLetterOrDigit() }}\"")
-
-        // Mayo TV: TypeSafe API key for Jev (search by description, see MoodSearch) — GitHub secret
-        // TYPESAFE_API_KEY → env MAYO_TYPESAFE_KEY. Blank switches the feature off.
-        val typesafeKey = System.getenv("MAYO_TYPESAFE_KEY")
-            ?: providers.gradleProperty("mayo.typesafeKey").orNull
-            ?: ""
-        buildConfigField("String", "TYPESAFE_API_KEY", "\"${typesafeKey.filter { it.isLetterOrDigit() || it in "_-." }}\"")
-
-        // Mayo TV: ElevenLabs key for the mic search's speech to text (Scribe) — GitHub secret
-        // ELEVENLABS_API_KEY → env MAYO_ELEVENLABS_KEY. Blank = the on-box recogniser only.
-        val elevenLabsKey = System.getenv("MAYO_ELEVENLABS_KEY")
-            ?: providers.gradleProperty("mayo.elevenLabsKey").orNull
-            ?: ""
-        buildConfigField("String", "ELEVENLABS_API_KEY", "\"${elevenLabsKey.filter { it.isLetterOrDigit() || it in "_-." }}\"")
+        // Mayo TV: no service keys (TMDB, TypeSafe, ElevenLabs) are built in. Users bring their own,
+        // entered in the onboarding or in Settings → API keys (features/keys/ApiKeys).
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

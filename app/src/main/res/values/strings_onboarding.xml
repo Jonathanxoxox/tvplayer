@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- First-run journey, shared by every chapter: the progress indicator and the frame's actions. Each chapter keeps its own text in strings_onboarding_<chapter>.xml. -->
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+    <!-- Translators: short label beside the current dot of the setup progress indicator. -->
+    <string name="onboarding_step_appearance">Look</string>
+    <!-- Translators: progress label for the step that makes the app the TV's start screen. -->
+    <string name="onboarding_step_home_screen">Start screen</string>
+    <string name="onboarding_step_football">Football</string>
+    <!-- Translators: progress label for the optional extras (own service keys). -->
+    <string name="onboarding_step_extras">Extras</string>
+    <!-- Translators: small line above each setup page's title, e.g. "Step 3 of 9". -->
+    <string name="onboarding_step_position">Step <xliff:g id="current" example="3">%1$d</xliff:g> of <xliff:g id="total" example="9">%2$d</xliff:g></string>
+    <string name="onboarding_action_continue">Continue</string>
+    <!-- Translators: leaves out an optional setup step; it can be done later in Settings. -->
+    <string name="onboarding_action_skip">Skip</string>
+    <!-- Translators: leaves an optional setup step for now; same meaning as Skip, used where the step is recommended. -->
+    <string name="onboarding_action_later">Later</string>
+    <!-- Translators: starts the setup on the welcome page and opens the app on the last page. -->
+    <string name="onboarding_action_go">Let’s go</string>
+    <!-- Translators: key hint for Back where setup has no previous step; the app goes to the background and setup continues here next time. -->
+    <string name="onboarding_key_pause">Pause setup</string>
+</resources>

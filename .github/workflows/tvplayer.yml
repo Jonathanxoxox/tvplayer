@@ -77,9 +77,6 @@ jobs:
       - name: Build APK
         env:
           VERSION_NAME: 1.0.${{ github.run_number }}
-          FLUTLICHT_TMDB_KEY: ${{ secrets.TMDB_API_KEY }}
-          MAYO_TYPESAFE_KEY: ${{ secrets.TYPESAFE_API_KEY }}
-          MAYO_ELEVENLABS_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           KEYSTORE_PASSWORD: android
           KEY_ALIAS: sideload
           KEY_PASSWORD: android

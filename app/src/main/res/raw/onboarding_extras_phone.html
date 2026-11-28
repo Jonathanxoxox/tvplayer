@@ -1,0 +1,100 @@
+<!doctype html>
+<!--
+  The page a phone opens from the first-run Extras chapter (served by ExtrasPhoneServer on the home
+  network). No prose lives here: every text arrives as {{n}}, HTML-escaped, in this order:
+  0 language code, 1 page title, 2 heading, 3 intro, 4 TMDB title, 5 TMDB help, 6 ElevenLabs title,
+  7 ElevenLabs help, 8 TypeSafe title, 9 TypeSafe help, 10 "get a key" link, 11 field placeholder,
+  12 send button, 13 notice shown after a plain form post (empty otherwise), 14 notice after sending,
+  15 error when the TV cannot be reached, 16 privacy note.
+  Field names are the services' names in lower case; empty fields change nothing.
+-->
+<html lang="{{0}}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>{{1}}</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         background: #0d1716; color: #eef3f1; }
+  main { max-width: 560px; margin: 0 auto; padding: 28px 18px 40px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; }
+  .tile { width: 34px; height: 34px; border-radius: 9px; background: #efe6d2; display: grid; place-items: center; }
+  .tile i { width: 0; height: 0; border-left: 12px solid #14535c; border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent; margin-left: 3px; }
+  h1 { font-size: 26px; line-height: 1.2; margin: 22px 0 8px; }
+  p.intro { color: #b7c4bf; margin: 0 0 20px; }
+  fieldset { border: 1px solid #24403c; border-radius: 16px; padding: 16px; margin: 0 0 14px; background: #12211f; }
+  legend { padding: 0 6px; font-weight: 800; font-size: 18px; }
+  .help { color: #b7c4bf; font-size: 14px; margin: 0 0 10px; }
+  .help a { color: #7fd6c5; font-weight: 700; white-space: nowrap; }
+  input { width: 100%; font: 16px ui-monospace, Menlo, Consolas, monospace; padding: 13px 14px; border-radius: 12px;
+          border: 1px solid #2f514c; background: #0a1312; color: #eef3f1; }
+  input:focus { outline: 2px solid #7fd6c5; border-color: transparent; }
+  button { width: 100%; margin-top: 6px; padding: 15px; font: 700 18px system-ui, sans-serif; border: 0;
+           border-radius: 14px; background: #7fd6c5; color: #0d1716; }
+  button:disabled { opacity: .6; }
+  .notice { margin: 16px 0 0; padding: 12px 14px; border-radius: 12px; background: #173b2f; color: #c9f2dd; }
+  .notice.error { background: #3b1d1d; color: #f6caca; }
+  .notice:empty { display: none; }
+  footer { color: #8a9a95; font-size: 13px; margin-top: 22px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="brand"><span class="tile"><i></i></span>Mayo TV</div>
+  <h1>{{2}}</h1>
+  <p class="intro">{{3}}</p>
+  <form id="keys" method="post" autocomplete="off" data-sent="{{14}}" data-error="{{15}}">
+    <fieldset>
+      <legend>{{4}}</legend>
+      <p class="help">{{5}} <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer">{{10}} ↗</a></p>
+      <input name="tmdb" placeholder="{{11}}" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="512">
+    </fieldset>
+    <fieldset>
+      <legend>{{6}}</legend>
+      <p class="help">{{7}} <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noopener noreferrer">{{10}} ↗</a></p>
+      <input name="elevenlabs" placeholder="{{11}}" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="512">
+    </fieldset>
+    <fieldset>
+      <legend>{{8}}</legend>
+      <p class="help">{{9}} <a href="https://typesafe.ai" target="_blank" rel="noopener noreferrer">{{10}} ↗</a></p>
+      <input name="typesafe" placeholder="{{11}}" autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="512">
+    </fieldset>
+    <button type="submit">{{12}}</button>
+    <p id="notice" class="notice" role="status">{{13}}</p>
+  </form>
+  <footer>{{16}}</footer>
+</main>
+<script>
+  (function () {
+    var form = document.getElementById('keys');
+    var notice = document.getElementById('notice');
+    var button = form.querySelector('button');
+    form.addEventListener('submit', function (event) {
+      if (!window.fetch || !window.URLSearchParams) return;
+      event.preventDefault();
+      button.disabled = true;
+      var body = new URLSearchParams();
+      Array.prototype.forEach.call(form.querySelectorAll('input'), function (field) {
+        body.append(field.name, field.value);
+      });
+      fetch(location.pathname, { method: 'POST', body: body, cache: 'no-store' })
+        .then(function (response) {
+          if (!response.ok) throw new Error();
+          Array.prototype.forEach.call(form.querySelectorAll('input'), function (field) { field.value = ''; });
+          notice.className = 'notice';
+          notice.textContent = form.getAttribute('data-sent');
+        })
+        .catch(function () {
+          notice.className = 'notice error';
+          notice.textContent = form.getAttribute('data-error');
+        })
+        .then(function () { button.disabled = false; });
+    });
+  })();
+</script>
+</body>
+</html>

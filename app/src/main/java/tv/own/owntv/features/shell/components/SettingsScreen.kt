@@ -102,7 +102,7 @@ import tv.own.owntv.ui.theme.primary
 
 internal enum class TileTone { PRIMARY, SECONDARY, TERTIARY }
 
-private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS, FONTS, BROWSING, SUBTITLE_STYLE, SPORTS, PER_PLAYLIST, RESETS, SPOTLIGHT, DELETE_SUBTITLES }
+private enum class SettingsTab { ROOT, LANGUAGE, SOURCES, EPG, BACKUP, LOCAL_SYNC, CUSTOMIZE, HOME, NETWORK, DNS, METADATA, OPEN_SUBTITLES, WEATHER, CH_NAV, PANEL_WIDTH, GUIDE_WIDTH, GLASS_EFFECT, CONTENT_MENUS, FONTS, BROWSING, SUBTITLE_STYLE, SPORTS, PER_PLAYLIST, RESETS, SPOTLIGHT, DELETE_SUBTITLES, API_KEYS }
 
 @Composable
 internal fun surroundModeLabel(mode: SurroundMode): String = stringResource(
@@ -390,6 +390,7 @@ fun SettingsScreen(
             SettingsTab.BROWSING, SettingsTab.FONTS -> LaunchedEffect(tab) { toRoot() }
             SettingsTab.SPOTLIGHT -> tv.own.owntv.features.settings.SpotlightSourcesScreen(onBack = { toRoot() }, modifier = modifier)
             SettingsTab.DELETE_SUBTITLES -> tv.own.owntv.features.settings.DeleteSubtitlesScreen(onBack = { toRoot() }, modifier = modifier)
+            SettingsTab.API_KEYS -> tv.own.owntv.features.settings.ApiKeysSettingsScreen(onBack = { toRoot() }, modifier = modifier)
             SettingsTab.SPORTS -> tv.own.owntv.features.sports.SportsSettingsScreen(onBack = { toRoot() }, modifier = modifier)
             // Mayo TV: the gathered pages (1 Nov 2026).
             // The Per playlist page is gone: those settings are on each playlist now (Playlists › Wiedergabe).
@@ -572,6 +573,13 @@ fun SettingsScreen(
         RootGroup("group_app", stringResource(R.string.settings_cleanup_group_system), OwnTVIcon.GEAR, ""),
         // System: Updates and Network here; the remembered values and Diagnostics are drawn after them.
         *systemRootRows(settingsVm, updateCheckOnStart, updateRowFocus, rowFocus, open) { saveScroll(); dialogReturn = updateRowFocus; showUpdate = true }.toTypedArray(),
+        // The user's own keys for TMDB, ElevenLabs and TypeSafe (features/keys).
+        RootRow(
+            tabRowKey(SettingsTab.API_KEYS), TileTone.PRIMARY, OwnTVIcon.SPARKLE,
+            title = stringResource(R.string.keys_settings_title), desc = stringResource(R.string.keys_settings_line),
+            focus = rowFocus.getValue(SettingsTab.API_KEYS),
+            onClick = { open(SettingsTab.API_KEYS) },
+        ),
     )
 
     // --- Two-pane root: the flat list above is the single source of truth for icon, chip and click of every
@@ -665,6 +673,7 @@ fun SettingsScreen(
             // Aussehen & Startseite, Bedienung, Einschalten & Home-Taste: each result goes to its row (6 Nov 2026).
             *appearanceSearchEntries(settingsVm, themeMode, fontCustomization, uiZoomPercent, jumpRow, selectGroup, open).toTypedArray(),
             SettingsSearchEntry(stringResource(R.string.settings_mayo_group_sources), stringResource(R.string.settings_metadata), stringResource(R.string.settings_search_keywords_metadata), OwnTVIcon.IMAGE, TileTone.PRIMARY) { open(SettingsTab.METADATA) },
+            SettingsSearchEntry(stringResource(SettingsGroup.APP.titleRes), stringResource(R.string.keys_settings_title), stringResource(R.string.keys_search_keywords), OwnTVIcon.SPARKLE, TileTone.PRIMARY) { open(SettingsTab.API_KEYS) },
             // No entries for the download folder, Backup, Local sync or Clear history. They
             // are not in Settings any more, and a result for something that is not here is a lie
             // about where it lives. The no-results state deliberately says nothing else either.

@@ -43,8 +43,8 @@ import tv.own.owntv.ui.theme.stageAccent
 import tv.own.owntv.ui.theme.stageText
 
 /**
- * Add a source › From your phone: the small LAN web server starts as the page opens;
- * the panel shows the QR, the address and the PIN. A submission hands off to the Type it here
+ * Add a source › With your phone: the small LAN web server starts as the page opens;
+ * the panel shows the QR, the address and the PIN, and the help walks through the three steps. A submission hands off to the Type it here
  * form, pre-filled, where the user presses Start import ([onPayloadReceived]). New PIN restarts the server
  * with a fresh PIN. The listener stops when this page leaves composition.
  */
@@ -70,13 +70,13 @@ fun RemoteSetupScreen(
     // The heading is drawn above the QR by [RemotePanel], so the help itself carries none.
     val help = SettingHelp(
         title = "",
-        text = stringResource(R.string.settings_remote_details_note),
+        text = stringResource(R.string.onboarding_wizard_phone_help),
         hints = listOf(stringResource(R.string.common_back) to stringResource(R.string.settings_key_stop_back)),
     )
     val panel: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit = { RemotePanel(state) }
     StageFullPage(
         parents = listOf(stringResource(R.string.setup_add_source)),
-        title = stringResource(R.string.setup_from_phone),
+        title = stringResource(R.string.onboarding_wizard_phone_title),
         count = "",
         onBack = onBack,
         modifier = modifier,
