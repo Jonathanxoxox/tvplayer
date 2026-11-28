@@ -59,6 +59,8 @@ import tv.own.owntv.ui.stage.StageSegmented
 import tv.own.owntv.ui.stage.StageTool
 import tv.own.owntv.ui.theme.StageColors
 import tv.own.owntv.ui.theme.mpx
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import tv.own.owntv.ui.theme.stageText
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -1467,7 +1469,15 @@ private fun EpisodeView(
                 directors = info.directors, series = true,
             )
         }
-        Column(Modifier.padding(start = fx(84), top = 104.mpx).width(fx(980))) {
+        // The header's bottom edge: with the plot on five lines (Jonathan, 19 Nov 2026) its buttons ran down over the
+        // season tabs (28 Nov 2026), so the tabs and the episodes move down by as much as the header needs.
+        var headerBottomPx by remember { mutableStateOf(0) }
+        val density = androidx.compose.ui.platform.LocalDensity.current
+        val pushDown = with(density) { (headerBottomPx.toDp() + 18.mpx - 504.mpx).coerceAtLeast(0.mpx) }
+        Column(
+            Modifier.padding(start = fx(84), top = 104.mpx).width(fx(980))
+                .onGloballyPositioned { headerBottomPx = (it.positionInParent().y + it.size.height).toInt() },
+        ) {
             // At most 170 high, the room the films' hero gives its title, so two lines shrink rather than
             // push the episodes down.
             tv.own.owntv.features.shell.components.VodHeroTitle(series.name, Modifier.heightIn(max = 170.mpx))
@@ -1527,7 +1537,7 @@ private fun EpisodeView(
 
         // Season tabs, Grid | List and the order tool, bottom-aligned; the tab underline ends at 564.
         Row(
-            Modifier.padding(top = 504.mpx).fillMaxWidth().height(60.mpx).focusGroup(),
+            Modifier.padding(top = 504.mpx + pushDown).fillMaxWidth().height(60.mpx).focusGroup(),
             verticalAlignment = Alignment.Bottom,
         ) {
             androidx.compose.foundation.lazy.LazyRow(
@@ -1579,7 +1589,7 @@ private fun EpisodeView(
                 }
         }
         val epArea = Modifier
-            .padding(top = 586.mpx)
+            .padding(top = 586.mpx + pushDown)
             .fillMaxSize()
             .onFocusChanged { epPaneFocused = it.hasFocus }
             .chNavPaging(
